@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-//  Aromiso — Shared abuse-protection helpers (Guard layer)
+//  Jewelry — Shared abuse-protection helpers (Guard layer)
 //
 //  P0 scope (this file): Turnstile server verification, KV blacklist,
 //  content-hash / same-email de-duplication, and a Resend daily budget

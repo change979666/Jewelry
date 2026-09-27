@@ -1,12 +1,13 @@
 /**
- * sitemap-pages.xml — static pages, solutions, countries, case studies, shop, blog/resources index.
+ * sitemap-pages.xml — static pages + blog posts + guides (V1.0: en/ar only).
+ * Product/collection URLs are served by D1 at runtime and are listed in
+ * sitemap-dynamic (if enabled); catalog pages live under /product/ & /collection/.
  */
 import type { APIRoute } from "astro";
 import { getCollection } from "astro:content";
-import { COUNTRY_SLUGS } from "../i18n-content";
 
 const SITE = "https://jewelry.com";
-const LOCALES = ["en", "es", "de"];
+const LOCALES = ["en", "ar"];
 
 function escapeXml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -22,22 +23,15 @@ export const GET: APIRoute = async () => {
     );
   };
 
-  // Static pages per locale
+  // Static pages per locale (only routes that actually exist in src/pages)
   const staticPages = [
     { path: "", p: "1.0" },
     { path: "/about", p: "0.7" },
     { path: "/contact", p: "0.8" },
-    { path: "/products", p: "0.9" },
+    { path: "/faq", p: "0.7" },
     { path: "/blog", p: "0.8" },
     { path: "/resources", p: "0.8" },
-    { path: "/solutions", p: "0.8" },
-    { path: "/export", p: "0.7" },
-    { path: "/case-studies", p: "0.7" },
-    { path: "/videos", p: "0.7" },
-    { path: "/shop", p: "0.8" },
-    { path: "/compare", p: "0.6" },
-    { path: "/oem", p: "0.8" },
-    { path: "/sourcing", p: "0.8" },
+    { path: "/cart", p: "0.5" },
   ];
 
   for (const locale of LOCALES) {
@@ -46,38 +40,26 @@ export const GET: APIRoute = async () => {
     }
   }
 
-  // Solution pages
-  const solutions = [
-    "hotels",
-    "spa-wellness",
-    "retail",
-    "amazon-sellers",
-    "supermarkets",
-    "brand-owners",
-    "wholesalers",
-    "distributors",
-  ];
+  // Blog posts (cross-locale keys; /en always served, /ar only when translated)
+  const posts = await getCollection("blog", ({ data }) => !data.draft);
+  const postKeys = [...new Set(posts.map((e) => e.data.key))];
   for (const locale of LOCALES) {
-    for (const s of solutions) {
-      push(`/${locale}/solutions/${s}/`, "0.7");
-    }
-  }
-
-  // Export market pages (consolidated from legacy /countries/)
-  for (const locale of LOCALES) {
-    for (const c of COUNTRY_SLUGS) {
-      push(`/${locale}/export/${c}/`, "0.6", "monthly");
-    }
-  }
-
-  // Case studies
-  const cases = await getCollection("caseStudies", ({ data }) => !data.draft);
-  const caseKeys = [...new Set(cases.map((e) => e.data.key))];
-  for (const locale of LOCALES) {
-    for (const key of caseKeys) {
-      const hasLocale = cases.some((e) => e.data.key === key && e.data.locale === locale);
+    for (const key of postKeys) {
+      const hasLocale = posts.some((e) => e.data.key === key && e.data.locale === locale);
       if (locale === "en" || hasLocale) {
-        push(`/${locale}/case-studies/${key}/`, "0.6", "monthly");
+        push(`/${locale}/blog/${key}/`, "0.6", "monthly");
+      }
+    }
+  }
+
+  // Guides
+  const guides = await getCollection("guides", ({ data }) => !data.draft);
+  const guideKeys = [...new Set(guides.map((e) => e.data.key))];
+  for (const locale of LOCALES) {
+    for (const key of guideKeys) {
+      const hasLocale = guides.some((e) => e.data.key === key && e.data.locale === locale);
+      if (locale === "en" || hasLocale) {
+        push(`/${locale}/resources/${key}/`, "0.6", "monthly");
       }
     }
   }

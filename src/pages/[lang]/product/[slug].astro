@@ -1,87 +1,198 @@
 ---
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { getCommerce } from "../../../lib/commerce";
+import { SITE_CFG } from "../../../consts";
 import type { Locale } from "../../../i18n";
 import { t } from "../../../i18n";
 
 const { slug, lang } = Astro.params;
 const locale = lang as Locale;
 
-// Use App.Locals to get DB
 const db = Astro.locals.runtime.env.DB;
-const commerce = getCommerce(db);
+if (!db) return new Response("Database unavailable", { status: 503 });
 
+const commerce = getCommerce(db);
 const product = await commerce.products.getProductBySlug(slug as string);
 
-if (!product) {
+if (!product || product.status !== 'active') {
   return new Response("Not Found", { status: 404 });
 }
 
-// Convert variant prices for display
-const formattedPrice = (price: number, currency: string) => {
-  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(price / 100);
-};
+const variants = product.variants.filter(v => v.status === 'active');
+const defaultVariant = variants[0] ?? null;
+const media = product.media;
+const hero = media.find(m => m.type === 'hero') ?? media[0] ?? null;
 
-const defaultVariant = product.variants[0];
-const displayPrice = defaultVariant ? formattedPrice(defaultVariant.price, defaultVariant.currency) : '';
+const formatMoney = (price: number, currency: string) =>
+  new Intl.NumberFormat(locale, { style: 'currency', currency }).format(price / 100);
+
+const minPrice = variants.length ? Math.min(...variants.map(v => v.price)) : null;
+const available = variants.some(v => v.inventory_policy === 'continue' || v.inventory_quantity > 0);
+
+const productJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  name: product.title,
+  description: product.seo_description || product.short_description || undefined,
+  image: hero?.url ? [hero.url] : undefined,
+  sku: product.sku ?? defaultVariant?.sku ?? undefined,
+  brand: { "@type": "Brand", name: SITE_CFG.name },
+  offers: minPrice ? {
+    "@type": "AggregateOffer",
+    lowPrice: minPrice / 100,
+    highPrice: Math.max(...variants.map(v => v.price)) / 100,
+    priceCurrency: defaultVariant?.currency ?? 'SAR',
+    availability: available ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+  } : undefined,
+};
 ---
+
 <BaseLayout locale={locale} title={product.seo_title || product.title} description={product.seo_description || product.short_description || ""}>
   <main class="container-x py-12">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-      
       <!-- Gallery -->
       <div class="flex flex-col gap-4">
-        {product.media.length > 0 ? (
-          <img src={product.media[0].url} alt={product.media[0].alt || product.title} class="w-full rounded-xl bg-beige" />
+        {hero ? (
+          <img id="pdp-main-image" src={hero.url} alt={hero.alt || product.title} class="w-full rounded-xl bg-beige aspect-square object-cover" />
         ) : (
           <div class="w-full aspect-square bg-beige rounded-xl flex items-center justify-center text-stone">No Image</div>
         )}
-        <div class="flex gap-2 overflow-x-auto">
-          {product.media.slice(1).map(m => (
-            <img src={m.url} alt={m.alt || product.title} class="w-20 h-20 rounded-lg object-cover bg-beige shrink-0" />
-          ))}
-        </div>
+        {media.length > 1 && (
+          <div class="flex gap-2 overflow-x-auto">
+            {media.map(m => (
+              <button type="button" class="pdp-thumb shrink-0" data-url={m.url} aria-label={m.alt || product.title}>
+                <img src={m.url} alt={m.alt || product.title} class="w-20 h-20 rounded-lg object-cover bg-beige" />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <!-- Details -->
       <div>
         <h1 class="text-3xl font-bold">{product.title}</h1>
-        <p class="mt-2 text-xl font-semibold text-accent">{displayPrice}</p>
-        
+        <p class="mt-2 text-xl font-semibold text-accent" id="pdp-price">
+          {minPrice !== null && formatMoney(minPrice, defaultVariant?.currency ?? 'SAR')}
+        </p>
+        {minPrice !== null && variants.some(v => v.compare_at_price && v.compare_at_price > v.price) && (
+          <p class="text-sm text-stone line-through" id="pdp-compare"></p>
+        )}
+
         {product.short_description && (
           <p class="mt-4 text-stone">{product.short_description}</p>
         )}
 
-        {/* Add to Cart Form */}
-        <form method="POST" action="/api/cart/add" class="mt-8">
+        {/* Variant + Add to cart */}
+        <form id="pdp-form" class="mt-8" data-lang={lang}>
           <input type="hidden" name="productId" value={product.id} />
-          {defaultVariant && <input type="hidden" name="variantId" value={defaultVariant.id} />}
-          <input type="hidden" name="lang" value={lang} />
-          
+          {variants.length > 1 && (
+            <fieldset class="mb-4">
+              <legend class="text-sm font-medium mb-2">{t(locale, "product.variant_label")}</legend>
+              <div class="flex flex-wrap gap-2">
+                {variants.map((v, i) => (
+                  <label class="cursor-pointer">
+                    <input type="radio" name="variant" value={v.id} class="peer sr-only"
+                      data-price={v.price} data-currency={v.currency} data-compare={v.compare_at_price ?? ''}
+                      data-available={v.inventory_policy === 'continue' || v.inventory_quantity > 0 ? '1' : '0'}
+                      checked={i === 0} />
+                    <span class="inline-block border border-line rounded-lg px-4 py-2 peer-checked:border-accent peer-checked:bg-accent/10">
+                      {v.option_values ? JSON.parse(v.option_values).join(' / ') : (v.sku || `Option ${i + 1}`)}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
+          {variants.length === 1 && <input type="hidden" name="variant" value={defaultVariant!.id}
+            data-price={defaultVariant!.price} data-currency={defaultVariant!.currency} data-compare={defaultVariant!.compare_at_price ?? ''} data-available="1" />}
+
           <div class="flex items-center gap-4">
-            <input type="number" name="quantity" min="1" value="1" class="border border-line rounded px-3 py-2 w-20" />
-            <button type="submit" class="btn btn-primary px-8">{t(locale, "shop.add_to_cart") || "Add to Cart"}</button>
+            <input type="number" name="quantity" min="1" max="99" value="1" aria-label={t(locale, "product.quantity_label")} class="border border-line rounded px-3 py-2 w-20" />
+            <button type="submit" id="pdp-add" disabled={!available} class="btn btn-primary px-8 disabled:opacity-50 disabled:cursor-not-allowed">
+              {available ? t(locale, "shop.add_to_cart") : t(locale, "product.sold_out")}
+            </button>
           </div>
+          <p id="pdp-error" class="mt-3 text-sm text-red-600 hidden"></p>
         </form>
 
         <!-- Product Facts -->
         <div class="mt-10 border-t border-line pt-6">
-          <h3 class="text-lg font-semibold">Product Facts</h3>
+          <h3 class="text-lg font-semibold">{t(locale, "product.facts_title")}</h3>
           <dl class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-            {product.material && <div><dt class="text-stone">Material</dt><dd class="font-medium">{product.material}</dd></div>}
-            {product.color && <div><dt class="text-stone">Color</dt><dd class="font-medium">{product.color}</dd></div>}
-            {product.dimensions && <div><dt class="text-stone">Dimensions</dt><dd class="font-medium">{product.dimensions}</dd></div>}
-            {product.care_instructions && <div class="sm:col-span-2"><dt class="text-stone">Care</dt><dd class="font-medium">{product.care_instructions}</dd></div>}
+            {product.material && <div><dt class="text-stone">{t(locale, "product.fact_material")}</dt><dd class="font-medium">{product.material}</dd></div>}
+            {product.base_material && <div><dt class="text-stone">{t(locale, "product.fact_base_material")}</dt><dd class="font-medium">{product.base_material}</dd></div>}
+            {product.plating && <div><dt class="text-stone">{t(locale, "product.fact_plating")}</dt><dd class="font-medium">{product.plating}</dd></div>}
+            {product.color && <div><dt class="text-stone">{t(locale, "product.fact_color")}</dt><dd class="font-medium">{product.color}</dd></div>}
+            {product.dimensions && <div><dt class="text-stone">{t(locale, "product.fact_dimensions")}</dt><dd class="font-medium">{product.dimensions}</dd></div>}
+            {product.weight && <div><dt class="text-stone">{t(locale, "product.fact_weight")}</dt><dd class="font-medium">{product.weight}</dd></div>}
+            {product.size_info && <div><dt class="text-stone">{t(locale, "product.fact_size")}</dt><dd class="font-medium">{product.size_info}</dd></div>}
+            {product.care_instructions && <div class="sm:col-span-2"><dt class="text-stone">{t(locale, "product.fact_care")}</dt><dd class="font-medium">{product.care_instructions}</dd></div>}
           </dl>
         </div>
 
         {product.description && (
           <div class="mt-10 border-t border-line pt-6">
-            <h3 class="text-lg font-semibold">Description</h3>
+            <h3 class="text-lg font-semibold">{t(locale, "product.description_title")}</h3>
             <div class="prose mt-4" set:html={product.description} />
           </div>
         )}
       </div>
     </div>
   </main>
+
+  <script type="application/ld+json" set:html={JSON.stringify(productJsonLd)} />
 </BaseLayout>
+
+<script>
+  // PDP interactivity: gallery thumbs, variant selection, add-to-cart (JSON API).
+  const form = document.getElementById('pdp-form') as HTMLFormElement | null;
+  const lang = form?.dataset.lang || 'en';
+
+  document.querySelectorAll<HTMLButtonElement>('.pdp-thumb').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const main = document.getElementById('pdp-main-image') as HTMLImageElement | null;
+      if (main && btn.dataset.url) main.src = btn.dataset.url;
+    });
+  });
+
+  function selectedVariant(): HTMLInputElement | null {
+    return document.querySelector<HTMLInputElement>('input[name="variant"]:checked');
+  }
+
+  function refreshPrice() {
+    const v = selectedVariant();
+    const priceEl = document.getElementById('pdp-price');
+    const compareEl = document.getElementById('pdp-compare');
+    const addBtn = document.getElementById('pdp-add') as HTMLButtonElement | null;
+    if (!v || !priceEl) return;
+    const currency = v.dataset.currency || 'SAR';
+    priceEl.textContent = new Intl.NumberFormat(lang, { style: 'currency', currency }).format(Number(v.dataset.price || 0) / 100);
+    if (compareEl) {
+      const cmp = Number(v.dataset.compare || 0);
+      compareEl.textContent = cmp > Number(v.dataset.price) ? new Intl.NumberFormat(lang, { style: 'currency', currency }).format(cmp / 100) : '';
+    }
+    if (addBtn) addBtn.disabled = v.dataset.available !== '1';
+  }
+  document.querySelectorAll<HTMLInputElement>('input[name="variant"]').forEach((r) => r.addEventListener('change', refreshPrice));
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const v = selectedVariant();
+    const errEl = document.getElementById('pdp-error');
+    if (!v) return;
+    const fd = new FormData(form);
+    const res = await fetch('/api/cart/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        product_id: String(fd.get('productId') || ''),
+        variant_id: v.value,
+        quantity: Math.max(1, Number(fd.get('quantity') || 1)),
+      }),
+    });
+    if (res.ok) { window.location.href = `/${lang}/cart`; return; }
+    let msg = 'add_failed';
+    try { msg = ((await res.json()) as { error?: string }).error || msg; } catch {}
+    if (errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); }
+  });
+</script>

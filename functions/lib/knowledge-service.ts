@@ -1,5 +1,5 @@
 // ============================================================================
-// Knowledge Service — Aromiso AI 知识 SSOT（2026-09-03，owner 指令第八条）
+// Knowledge Service — Jewelry AI 知识 SSOT
 //
 // 原则：所有 AI 模块统一从这里获取知识，禁止各自查库维护事实。
 //   - Fact 与 AI Inference 严格分离：human/product/catalog = 事实源（可升级

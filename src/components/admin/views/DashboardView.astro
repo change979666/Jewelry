@@ -1,7 +1,8 @@
 ---
 // Dashboard V2 视图（/admin-v2 与 /admin-v2/dashboard 共用）
-// 2026-09-02 五问主屏重写：What happened → What AI did → What worked → What needs me
-// 样式由引入页面负责 import，避免重复注入
+// Jewelry V1.0 商业驾驶舱：今日/本月订单与收入、待确认、低库存、最近订单、状态分布。
+// 数据源：/api/admin/v2/dashboard/kpi + /api/admin/v2/commerce/orders（复用，零新增 API）。
+// 已移除：AI Workforce / GSC / 询盘漏斗（旧自动化体系随 V1.0 下线）。
 import "../../../styles/admin-v2.css";
 import AdminShell from "../../../components/admin/layout/AdminShell.astro";
 import Sidebar from "../../../components/admin/layout/Sidebar.astro";
@@ -10,7 +11,7 @@ import Toast from "../../../components/admin/shared/Toast.astro";
 import Skeleton from "../../../components/admin/shared/Skeleton.astro";
 
 export interface Props {
-  contentStats?: { blog?: number; products?: number; guides?: number; cases?: number };
+  contentStats?: { blog?: number; guides?: number };
 }
 const { contentStats = {} } = Astro.props;
 ---
@@ -20,101 +21,70 @@ const { contentStats = {} } = Astro.props;
   <Topbar slot="topbar-left" title="总览" breadcrumbs={[{ label: "总览" }]} />
   <Toast />
 
-  <div class="admin-flex admin-flex-col admin-gap-6">
-    <!-- ① System Hero（Glass）：AROMISO OS 品牌 + 真实 Business Health Score -->
-    <section
-      class="dash-hero cc-glass cc-hero cc-stage cc-stage-1"
-      aria-label="系统状态"
-      data-stage="1"
-    >
-      <div
-        class="admin-flex admin-items-center admin-justify-between"
-        style="flex-wrap:wrap;gap:var(--sp-4);"
-      >
+  <div class="admin-flex admin-flex-col" style="gap:var(--sp-5);">
+    <!-- ① Hero：品牌 + 今日经营概览 -->
+    <section class="dash-hero cc-glass cc-hero" aria-label="经营概览">
+      <div class="admin-flex admin-items-center admin-justify-between" style="flex-wrap:wrap;gap:var(--sp-4);">
         <div style="flex:1;min-width:240px;">
-          <div class="cc-hero-brand">AROMISO <b>OS</b></div>
-          <div class="cc-hero-sub">AUTONOMOUS COMMERCE ENGINE</div>
+          <div class="cc-hero-brand">JEWELRY <b>COMMERCE</b></div>
+          <div class="cc-hero-sub">V1.0 COMMERCE CORE</div>
           <div class="dash-hero-title" id="hero-title" style="margin-top:var(--sp-3);">
             <Skeleton lines={1} height="24px" />
           </div>
           <div class="dash-hero-strip" id="hero-strip"><Skeleton lines={1} height="16px" /></div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
-          <div class="cc-health" id="cc-health-score">—</div>
-          <div class="cc-health-label">业务健康分</div>
-          <div class="cc-status-online" id="cc-system-status">
-            <span class="cc-dot cc-dot--online"></span> 系统在线
+          <div class="dash-hero-num" id="hero-orders-today" style="font-size:var(--fs-2xl);">—</div>
+          <div class="cc-health-label">今日订单</div>
+          <div class="cc-status-online" id="hero-revenue-today" style="margin-top:var(--sp-2);">
+            今日收入 —
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ② Business Pulse + ③ AI Workforce（控制面板，animated border + glass） -->
-    <section class="dash-two-col" data-stage="2">
-      <div>
-        <div class="dash-block-label">Business Pulse（业务怎么样）</div>
-        <div class="dash-pulse-grid" id="pulse-grid">
-          <div class="dash-pulse-card"><Skeleton lines={2} height="28px" /></div>
-          <div class="dash-pulse-card"><Skeleton lines={2} height="28px" /></div>
-          <div class="dash-pulse-card"><Skeleton lines={2} height="28px" /></div>
-          <div class="dash-pulse-card"><Skeleton lines={2} height="28px" /></div>
+    <!-- ② Business Pulse -->
+    <section>
+      <div class="dash-block-label">经营脉搏</div>
+      <div class="dash-pulse-grid" id="pulse-grid">
+        <div class="dash-pulse-card"><Skeleton lines={2} height="28px" /></div>
+        <div class="dash-pulse-card"><Skeleton lines={2} height="28px" /></div>
+        <div class="dash-pulse-card"><Skeleton lines={2} height="28px" /></div>
+        <div class="dash-pulse-card"><Skeleton lines={2} height="28px" /></div>
+      </div>
+    </section>
+
+    <!-- ③ 最近订单 + ④ 状态分布/低库存 -->
+    <section class="admin-dashboard-split" style="--left:1.6fr;--right:1fr;">
+      <div class="admin-card">
+        <div class="admin-card-header admin-flex admin-items-center admin-justify-between">
+          <span class="admin-card-title">最近订单</span>
+          <a href="/admin-v2/commerce/orders" class="admin-btn admin-btn-ghost admin-btn-sm">全部订单</a>
+        </div>
+        <div class="admin-card-body" id="recent-orders"><Skeleton lines={6} height="26px" /></div>
+      </div>
+      <div class="admin-flex admin-flex-col" style="gap:var(--sp-4);">
+        <div class="admin-card">
+          <div class="admin-card-header"><span class="admin-card-title">订单状态分布</span></div>
+          <div class="admin-card-body" id="status-dist"><Skeleton lines={5} height="22px" /></div>
+        </div>
+        <div class="admin-card">
+          <div class="admin-card-header admin-flex admin-items-center admin-justify-between">
+            <span class="admin-card-title">低库存预警</span>
+            <a href="/admin-v2/commerce/products" class="admin-btn admin-btn-ghost admin-btn-sm">商品管理</a>
+          </div>
+          <div class="admin-card-body" id="low-stock"><Skeleton lines={3} height="24px" /></div>
         </div>
       </div>
-      <div class="dash-ai-panel cc-ai-core cc-workforce cc-glass" aria-label="AI Workforce">
-        <div class="dash-block-label" style="margin-bottom:0;">AI Workforce（AI 在干什么）</div>
-        <div id="ai-roster" class="cc-roster"></div>
-        <div class="dash-ai-kpis" id="ai-panel-kpis"><Skeleton lines={1} height="36px" /></div>
-        <div id="ai-timeline"><Skeleton lines={4} height="20px" /></div>
-      </div>
     </section>
 
-    <!-- ④ AI Learning（什么策略有效——真实数据 + 诚实占位） -->
-    <section data-stage="3">
-      <div class="dash-block-label">AI Learning（什么策略有效）</div>
-      <div class="dash-learn-grid" id="learn-grid">
-        <div class="dash-learn-card"><Skeleton lines={2} height="20px" /></div>
-        <div class="dash-learn-card"><Skeleton lines={2} height="20px" /></div>
-        <div class="dash-learn-card"><Skeleton lines={2} height="20px" /></div>
-      </div>
-    </section>
-
-    <!-- ⑤ Needs You（需要我做什么）— 最高优先级决策区（accent + warm glow，仅真实数据） -->
-    <section class="dash-needs-you cc-needsyou" data-stage="4">
-      <div class="dash-block-label admin-flex admin-items-center admin-justify-between">
-        <span>需要你决策</span>
-        <span id="queue-count" style="font-weight:400;text-transform:none;letter-spacing:0;">—</span
-        >
-      </div>
-      <div id="queue-rows"><Skeleton lines={2} height="40px" /></div>
-    </section>
-
-    <!-- 详情区：运营总览 / 漏斗 / 最近动态（保留既有能力，供下钻） -->
+    <!-- ⑤ 内容总览（静态构建期统计，真实集合） -->
     <section>
-      <div class="admin-section-title">运营总览</div>
+      <div class="dash-block-label">内容总览</div>
       <div class="dash-pulse-grid" id="ops-overview" data-content={JSON.stringify(contentStats)}>
         <div class="dash-pulse-card"><Skeleton lines={2} height="28px" /></div>
         <div class="dash-pulse-card"><Skeleton lines={2} height="28px" /></div>
         <div class="dash-pulse-card"><Skeleton lines={2} height="28px" /></div>
-      </div>
-    </section>
-
-    <section class="admin-dashboard-split" style="--left:1.5fr;--right:1fr;">
-      <div id="funnel-inquiry">
-        <div class="admin-card admin-card-body"><Skeleton lines={4} height="32px" /></div>
-      </div>
-      <div id="funnel-commerce">
-        <div class="admin-card admin-card-body"><Skeleton lines={4} height="32px" /></div>
-      </div>
-    </section>
-
-    <section class="admin-dashboard-split" style="--left:1.5fr;--right:1fr;">
-      <div id="recent-content" class="admin-card">
-        <div class="admin-card-header"><span class="admin-card-title">最近编辑内容</span></div>
-        <div class="admin-card-body"><Skeleton lines={3} height="24px" /></div>
-      </div>
-      <div id="recent-inquiries" class="admin-card">
-        <div class="admin-card-header"><span class="admin-card-title">最近询盘</span></div>
-        <div class="admin-card-body"><Skeleton lines={3} height="24px" /></div>
       </div>
     </section>
   </div>

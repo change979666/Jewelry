@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-//  Aromiso OS 1.0 — Unified AI Call Layer
+//  Jewelry — Unified AI Call Layer
 //
 //  functions/lib/ai.ts
 //

@@ -190,7 +190,7 @@ import Toast from "../../../components/admin/shared/Toast.astro";
             inquiry: latestInq,
             to: c.email,
             name: c.name || "",
-            subject: c.company ? `${c.company} inquiry — Aromiso` : `Inquiry — Aromiso`,
+            subject: c.company ? `${c.company} inquiry — Jewelry` : `Inquiry — Jewelry`,
           });
           emailBtn.href = `/admin-v2/customers/emails?${params.toString()}`;
         } else {

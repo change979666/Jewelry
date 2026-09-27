@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-//  Aromiso V5.34→V5.35 — Organic Growth Intelligence · Opportunity Engine
+//  Jewelry V5.34→V5.35 — Organic Growth Intelligence · Opportunity Engine
 //
 //  纯函数机会引擎：GSC 数据 → SEO Growth Action Board（机会清单）。
 //  规则源：docs/ORGANIC_GROWTH_DESIGN.md（V5.34）+
@@ -126,8 +126,8 @@ const COMMERCIAL_INTENT_RE =
 const TRANSACTIONAL_INTENT_RE =
   /\b(buy|purchase|order|price\w*|pricing|cost|quot\w*|for\s+sale|shop|cheap|discount)\b/i;
 
-/** V5.35：导航意图（品牌词）。 */
-const NAVIGATIONAL_RE = /\baromiso\b/i;
+/** V5.35：导航意图（品牌词）。TBC: brand terms pending final brand name. */
+const NAVIGATIONAL_RE = /\bjewelry\b/i;
 
 /**
  * V5.35 Query Intent Mapping：搜索意图四分类。

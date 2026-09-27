@@ -1,10 +1,22 @@
-// Phase 5 — V2 Commerce Orders API
-// GET    /api/admin/v2/commerce/orders      → list orders (search/filter/sort/paginate)
-// GET    /api/admin/v2/commerce/orders?id=x → order detail + items + events
-// POST   /api/admin/v2/commerce/orders      → update order (status/shipping/note)
+// Jewelry V1.0 — Admin Orders API (Jewelry schema only, state machine enforced)
+// GET    /api/admin/v2/commerce/orders            → list (status/search/sort/paginate + KPIs)
+// GET    /api/admin/v2/commerce/orders?id=x       → detail (items/events/address/shipments/legal transitions)
+// POST   /api/admin/v2/commerce/orders            → { id, status, reason } legal transition only
+//
+// 金额一律 minor units（integer），由前端按 currency 格式化；旧版状态
+// （new/reviewing/quoted/paid/...）已彻底移除，任何业务状态变更必须经过
+// OrderService.updateOrderStatus（状态机），直接 UPDATE orders SET order_status
+// 在业务链路中禁止。
 
 import type { AdminEnv } from "../../../admin/shared";
 import { authenticateRequest, requirePermission } from "../../../../lib/admin/rbac";
+import {
+  OrderService,
+  canTransition,
+  ORDER_TRANSITIONS,
+} from "../../../../../src/lib/commerce/order.service";
+import type { OrderStatus } from "../../../../../src/lib/commerce/types";
+import { logAction } from "../../../../lib/admin/audit";
 
 function ok(data: unknown, meta?: unknown): Response {
   return new Response(JSON.stringify({ success: true, data, error: null, meta: meta || null }), {
@@ -19,16 +31,14 @@ function fail(code: string, message: string, status: number): Response {
   );
 }
 
-const VALID_STATUSES = [
-  "new",
-  "reviewing",
-  "quoted",
-  "paid",
-  "processing",
-  "shipped",
-  "completed",
-  "cancelled",
-];
+const STATUSES = Object.keys(ORDER_TRANSITIONS);
+
+const SORT_WHITELIST: Record<string, string> = {
+  created_at: "o.created_at",
+  total_amount: "o.total_amount",
+  order_number: "o.order_number",
+  order_status: "o.order_status",
+};
 
 export const onRequest: PagesFunction<AdminEnv> = async ({ request, env }) => {
   const user = await authenticateRequest(request, env);
@@ -36,193 +46,154 @@ export const onRequest: PagesFunction<AdminEnv> = async ({ request, env }) => {
   if (err) return err;
 
   const db = env.DB!;
+  const orders = new OrderService(db);
   const url = new URL(request.url);
   const method = request.method;
 
+  // ---- GET: detail or list ----
   if (method === "GET") {
     const id = url.searchParams.get("id");
-
     if (id) {
-      const order = await db
-        .prepare("SELECT * FROM commerce_orders WHERE id = ?")
-        .bind(id)
-        .first<Record<string, unknown>>();
+      const order = await orders.getOrder(id);
       if (!order) return fail("NOT_FOUND", "Order not found", 404);
-
-      const items = await db
-        .prepare("SELECT * FROM commerce_order_items WHERE order_id = ? ORDER BY created_at")
-        .bind(id)
-        .all();
-      const events = await db
-        .prepare("SELECT * FROM commerce_order_events WHERE order_id = ? ORDER BY created_at")
-        .bind(id)
-        .all();
-
-      return ok({ order, items: items.results, events: events.results });
+      const [items, events, address, shipments] = await Promise.all([
+        orders.getOrderItems(id),
+        orders.getOrderEvents(id),
+        orders.getOrderAddress(id),
+        orders.getShipments(id),
+      ]);
+      const current = order.order_status as OrderStatus;
+      return ok({
+        order,
+        items,
+        events,
+        address,
+        shipments,
+        // 合法下一步：状态机唯一事实源，UI 不得渲染非法跳转按钮。
+        legalTransitions: ORDER_TRANSITIONS[current] ?? [],
+        allStatuses: STATUSES,
+      });
     }
 
-    // List
     const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
     const pageSize = Math.min(100, Math.max(1, Number(url.searchParams.get("pageSize")) || 20));
     const offset = (page - 1) * pageSize;
     const status = url.searchParams.get("status") || "";
-    const country = url.searchParams.get("country") || "";
-    const search = url.searchParams.get("search") || "";
-    const sort = url.searchParams.get("sort") || "created_at";
-    const order = url.searchParams.get("order") === "asc" ? "ASC" : "DESC";
+    const search = (url.searchParams.get("search") || "").trim();
+    const sortCol = SORT_WHITELIST[url.searchParams.get("sort") || "created_at"] ?? "o.created_at";
+    const sortDir = url.searchParams.get("order") === "asc" ? "ASC" : "DESC";
 
-    const allowedSorts: Record<string, string> = {
-      created_at: "created_at",
-      updated_at: "updated_at",
-      total: "total",
-      status: "status",
-      order_number: "order_number",
-    };
-    const sortCol = allowedSorts[sort] || "created_at";
-
-    let query = "SELECT * FROM commerce_orders WHERE 1=1";
+    const where: string[] = [];
     const params: (string | number)[] = [];
-
-    if (status && VALID_STATUSES.includes(status)) {
-      query += " AND status = ?";
+    if (status) {
+      if (!STATUSES.includes(status)) return fail("VALIDATION_ERROR", "Unknown status", 422);
+      where.push("o.order_status = ?");
       params.push(status);
     }
-    if (country) {
-      query += " AND country = ?";
-      params.push(country);
-    }
     if (search) {
-      query +=
-        " AND (customer_name LIKE ? OR company LIKE ? OR email LIKE ? OR order_number LIKE ?)";
-      const s = `%${search}%`;
-      params.push(s, s, s, s);
+      // 防 LIKE 通配符注入：剥离 % 与 _
+      const q = `%${search.replace(/[\\%_]/g, "")}%`;
+      where.push("(o.order_number LIKE ? OR a.phone LIKE ? OR c.email LIKE ?)");
+      params.push(q, q, q);
     }
+    const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
 
-    const countQuery = query.replace("SELECT *", "SELECT COUNT(*) as total");
-    const countRow = params.length
-      ? await db
-          .prepare(countQuery)
-          .bind(...params)
-          .first<{ total: number }>()
-      : await db.prepare(countQuery).first<{ total: number }>();
+    const baseFrom = `FROM orders o
+      LEFT JOIN customers c ON c.id = o.customer_id
+      LEFT JOIN order_addresses a ON a.order_id = o.id AND a.type = 'shipping'`;
+
+    const countRow = await db
+      .prepare(`SELECT COUNT(*) AS total ${baseFrom} ${whereSql}`)
+      .bind(...params)
+      .first<{ total: number }>();
     const total = countRow?.total || 0;
 
-    // Status counts
-    const statusRows = await db
-      .prepare("SELECT status, COUNT(*) AS c FROM commerce_orders GROUP BY status")
-      .all<{ status: string; c: number }>();
-    const statusCounts: Record<string, number> = {};
-    for (const row of statusRows.results) statusCounts[row.status] = row.c;
-
-    query += ` ORDER BY ${sortCol} ${order} LIMIT ? OFFSET ?`;
-    params.push(pageSize, offset);
-    const orders = await db
-      .prepare(query)
-      .bind(...params)
+    const { results } = await db
+      .prepare(
+        `SELECT o.id, o.order_number, o.order_status, o.payment_status, o.fulfillment_status,
+                o.market, o.currency, o.subtotal, o.discount_amount, o.shipping_amount,
+                o.tax_amount, o.total_amount, o.created_at,
+                c.email AS customer_email,
+                a.first_name, a.last_name, a.phone, a.country
+         ${baseFrom} ${whereSql}
+         ORDER BY ${sortCol} ${sortDir} LIMIT ? OFFSET ?`,
+      )
+      .bind(...params, pageSize, offset)
       .all();
 
-    // KPIs
-    const kpis = await db
-      .prepare(
-        "SELECT COUNT(*) as total_orders, COALESCE(SUM(total), 0) as total_revenue, COALESCE(AVG(total), 0) as avg_order_value FROM commerce_orders WHERE status NOT IN ('cancelled')",
-      )
-      .first<{ total_orders: number; total_revenue: number; avg_order_value: number }>();
+    // 状态分布 + KPI（与当前过滤条件无关的全量口径）
+    const [statusRows, kpiRow] = await Promise.all([
+      db
+        .prepare("SELECT order_status AS s, COUNT(*) AS c FROM orders GROUP BY order_status")
+        .all<{ s: string; c: number }>(),
+      db
+        .prepare(
+          `SELECT COUNT(*) AS total_orders, COALESCE(SUM(total_amount),0) AS total_revenue
+           FROM orders WHERE order_status NOT IN ('CANCELLED','REFUNDED')`,
+        )
+        .first<{ total_orders: number; total_revenue: number }>(),
+    ]);
+    const statusCounts: Record<string, number> = {};
+    for (const r of statusRows.results || []) statusCounts[r.s] = r.c;
 
-    return ok(orders.results, {
+    const totalOrders = kpiRow?.total_orders || 0;
+    return ok(results || [], {
       page,
       pageSize,
       total,
       totalPages: Math.ceil(total / pageSize),
       statusCounts,
-      kpis,
+      kpis: {
+        total_orders: totalOrders,
+        total_revenue: kpiRow?.total_revenue || 0, // minor units
+        avg_order_value: totalOrders > 0 ? Math.round((kpiRow?.total_revenue || 0) / totalOrders) : 0,
+      },
     });
   }
 
+  // ---- POST: legal status transition ----
   if (method === "POST") {
     const errEdit = requirePermission(user, "commerce", "edit");
     if (errEdit) return errEdit;
 
-    let body: Record<string, unknown>;
+    let body: { id?: string; status?: string; reason?: string };
     try {
       body = await request.json();
     } catch {
       return fail("VALIDATION_ERROR", "Invalid JSON", 400);
     }
+    const { id, status, reason } = body;
+    if (!id || !status) return fail("VALIDATION_ERROR", "id and status are required", 422);
+    if (!STATUSES.includes(status)) return fail("VALIDATION_ERROR", "Unknown status", 422);
 
-    const orderId = String(body.id || "").trim();
-    if (!orderId) return fail("VALIDATION_ERROR", "Order ID required", 422);
-
-    const order = await db
-      .prepare("SELECT id, status, subtotal, shipping_cost FROM commerce_orders WHERE id = ?")
-      .bind(orderId)
-      .first<{ id: string; status: string; subtotal: number; shipping_cost: number | null }>();
+    const order = await orders.getOrder(id);
     if (!order) return fail("NOT_FOUND", "Order not found", 404);
 
-    const newStatus = String(body.status || "")
-      .trim()
-      .toLowerCase();
-    const shippingCost =
-      body.shipping_cost !== undefined && body.shipping_cost !== null
-        ? Number(body.shipping_cost)
-        : undefined;
-    const adminNote =
-      body.admin_note !== undefined ? String(body.admin_note).trim().slice(0, 2000) : undefined;
-
-    if (!newStatus && shippingCost === undefined && adminNote === undefined)
-      return fail("VALIDATION_ERROR", "Nothing to update", 422);
-    if (newStatus && !VALID_STATUSES.includes(newStatus))
-      return fail("VALIDATION_ERROR", `Invalid status. Valid: ${VALID_STATUSES.join(", ")}`, 422);
-
-    const now = Math.floor(Date.now() / 1000);
-    const updates: string[] = ["updated_at = ?"];
-    const updateParams: (string | number)[] = [now];
-
-    if (newStatus && newStatus !== order.status) {
-      updates.push("status = ?");
-      updateParams.push(newStatus);
-    }
-    if (shippingCost !== undefined && !isNaN(shippingCost) && shippingCost >= 0) {
-      updates.push("shipping_cost = ?");
-      updateParams.push(shippingCost);
-      const newTotal = Math.round((order.subtotal + shippingCost) * 100) / 100;
-      updates.push("total = ?");
-      updateParams.push(newTotal);
-    }
-    if (adminNote !== undefined) {
-      updates.push("admin_note = ?");
-      updateParams.push(adminNote);
+    const to = status as OrderStatus;
+    if (!canTransition(order.order_status as OrderStatus, to)) {
+      return fail(
+        "ILLEGAL_TRANSITION",
+        `Cannot transition ${order.order_status} → ${to}`,
+        409,
+      );
     }
 
-    updateParams.push(orderId);
-    await db
-      .prepare(`UPDATE commerce_orders SET ${updates.join(", ")} WHERE id = ?`)
-      .bind(...updateParams)
-      .run();
+    const result = await orders.updateOrderStatus(id, to, reason, user!.username);
+    if (!result.ok) return fail("TRANSITION_FAILED", result.error || "transition failed", 500);
 
-    // Record status change event
-    if (newStatus && newStatus !== order.status) {
-      const eventId = crypto.randomUUID();
-      const note = String(body.note || "")
-        .trim()
-        .slice(0, 500);
-      await db
-        .prepare(
-          "INSERT INTO commerce_order_events (id, order_id, from_status, to_status, note, created_by, created_at) VALUES (?,?,?,?,?,?,?)",
-        )
-        .bind(
-          eventId,
-          orderId,
-          order.status,
-          newStatus,
-          note || `Status changed to ${newStatus}`,
-          user!.username,
-          now,
-        )
-        .run();
-    }
+    await logAction(env, {
+      actor_type: "human",
+      user_id: user!.id,
+      username: user!.username,
+      action: "order_status_transition",
+      resource_type: "order",
+      resource_id: id,
+      change_summary: `${order.order_status} → ${to}${reason ? `: ${reason}` : ""}`,
+    });
 
-    return ok({ id: orderId, updated: true });
+    const updated = await orders.getOrder(id);
+    return ok({ order: updated });
   }
 
-  return fail("VALIDATION_ERROR", "Method not allowed", 405);
+  return fail("METHOD_NOT_ALLOWED", "Method not allowed", 405);
 };

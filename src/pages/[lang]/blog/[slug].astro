@@ -14,12 +14,10 @@ import { getCollection } from "astro:content";
 import { SITE } from "../../../consts";
 import { getBlogEntryResolved, getBlogPosts } from "../../../lib/content";
 import {
-  relatedProductsForBlog,
   relatedGuidesForBlog,
-  resolveProductsByKeys,
   resolveGuidesByKeys,
   resolvePostsByKeys,
-} from "../../../lib/topic-cluster";
+} from "../../../lib/blog-related";
 import type { GetStaticPaths } from "astro";
 
 export const getStaticPaths = (async () => {
@@ -49,7 +47,7 @@ const { Content, headings } = await entry.render();
 const locale = (Astro.params.lang as Locale) ?? (entry.data.locale as Locale);
 
 const dateFmt = new Intl.DateTimeFormat(
-  locale === "de" ? "de-DE" : locale === "es" ? "es-ES" : "en-US",
+  locale === "ar" ? "ar-SA-u-nu-latn" : "en-US",
   { year: "numeric", month: "long", day: "numeric" },
 );
 const backHref = getRelativeLocaleUrl(locale, "/blog");
@@ -88,21 +86,15 @@ for (const p of [...explicitPosts, ...categoryRelated]) {
 }
 const related = [...relatedByKey.values()].slice(0, 3);
 
-// Build-time internal links: prefer explicit slug hints, else blog-category match.
-const explicitBlogProducts = await resolveProductsByKeys(
-  locale,
-  entry.data.relatedProducts ?? [],
-  3,
-);
+// Build-time internal links: blog → guide cross-links only.
+// V1.0: the products content collection is gone (catalog lives in D1), so
+// blog → product links are removed; explicit relatedGuides + category fallback remain.
 const explicitBlogGuides = await resolveGuidesByKeys(locale, entry.data.relatedGuides ?? [], 3);
-const blogProducts =
-  explicitBlogProducts.length > 0
-    ? explicitBlogProducts
-    : await relatedProductsForBlog(locale, entry.data.category, 3);
 const blogGuides =
   explicitBlogGuides.length > 0
     ? explicitBlogGuides
     : await relatedGuidesForBlog(locale, entry.data.category, 3);
+// Blog → product cross-links retired with the products content collection (legacy).
 
 // D4: buyer FAQ from explicit frontmatter (display + FAQPage JSON-LD).
 const faqItems: { q: string; a: string }[] = entry.data.faq ?? [];
@@ -277,7 +269,7 @@ const fallbackNote: Record<string, string> = {
   </article>
 
   <!-- Internal links: recommended products + related guides -->
-  <BlogInternalLinks locale={locale} products={blogProducts} guides={blogGuides} />
+  <BlogInternalLinks locale={locale} guides={blogGuides} />
 
   <!-- Buyer FAQ (D4) -->
   <FaqSection faqs={faqItems} />

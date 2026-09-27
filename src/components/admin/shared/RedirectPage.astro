@@ -19,7 +19,7 @@ const { target, title = "正在跳转", note = "" } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta http-equiv="refresh" content={`0;url=${target}`} />
-    <title>{title} — Aromiso Admin V2</title>
+    <title>{title} — Jewelry 后台管理</title>
     <script is:inline define:vars={{ target }}>
       window.location.replace(target);
     </script>

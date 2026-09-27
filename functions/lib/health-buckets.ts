@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-//  Aromiso — 健康分「失败信号分桶」诊断器 (V5.69 Automation OS 收口)
+//  Jewelry — 健康分「失败信号分桶」诊断器 (Automation OS 收口)
 //
 //  背景：ai_daily_report.health_score 是全站健康 SSOT（≥85 GREEN / 60–84 YELLOW /
 //  <60 RED）。但当它变 RED 时，owner 过去只能看到一个数字，无法立刻判断「这次红

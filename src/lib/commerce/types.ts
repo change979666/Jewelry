@@ -1,3 +1,7 @@
+// Jewelry Commerce Core — domain types (mirror migrations/0001_jewelry_core.sql)
+
+export type ProductStatus = 'draft' | 'active' | 'archived';
+
 export interface Product {
   id: string;
   slug: string;
@@ -5,9 +9,10 @@ export interface Product {
   title: string;
   short_description: string | null;
   description: string | null;
-  status: 'draft' | 'active' | 'archived';
+  status: ProductStatus;
   product_type: string | null;
   brand: string | null;
+  // Facts
   material: string | null;
   base_material: string | null;
   plating: string | null;
@@ -17,6 +22,7 @@ export interface Product {
   care_instructions: string | null;
   size_info: string | null;
   country_of_origin: string | null;
+  // SEO
   seo_title: string | null;
   seo_description: string | null;
   canonical_url: string | null;
@@ -31,8 +37,8 @@ export interface ProductVariant {
   id: string;
   product_id: string;
   sku: string | null;
-  option_values: string | null; // JSON string
-  price: number;
+  option_values: string | null; // JSON array string
+  price: number; // integer minor units
   compare_at_price: number | null;
   currency: string;
   inventory_quantity: number;
@@ -45,7 +51,7 @@ export interface ProductVariant {
 export interface ProductMedia {
   id: string;
   product_id: string;
-  type: string;
+  type: string; // hero | gallery | detail | model | lifestyle | packaging
   url: string;
   alt: string | null;
   sort_order: number;
@@ -70,6 +76,29 @@ export interface Collection {
   updated_at: string;
 }
 
+export interface Market {
+  id: string;
+  code: string; // KSA | UAE
+  currency: string;
+  locale: string;
+  tax_rate: number; // e.g. 0.15 — config-driven, never hardcoded
+  is_active: number;
+  flat_shipping_rate: number | null; // minor units
+  free_shipping_threshold: number | null; // minor units
+}
+
+export interface Customer {
+  id: string;
+  email: string | null;
+  phone: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  locale: string | null;
+  market: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CartItem {
   id: string;
   cart_id: string;
@@ -89,6 +118,20 @@ export interface Cart {
   updated_at: string;
 }
 
+export type OrderStatus =
+  | 'PENDING_CONFIRMATION'
+  | 'CONFIRMED'
+  | 'PROCESSING'
+  | 'SHIPPED'
+  | 'OUT_FOR_DELIVERY'
+  | 'DELIVERED'
+  | 'DELIVERY_FAILED'
+  | 'NDR'
+  | 'CANCELLED'
+  | 'RTO'
+  | 'RETURNED'
+  | 'REFUNDED';
+
 export interface Order {
   id: string;
   order_number: string;
@@ -98,10 +141,11 @@ export interface Order {
   currency: string;
   subtotal: number;
   discount_amount: number;
+  discount_code: string | null;
   shipping_amount: number;
   tax_amount: number;
   total_amount: number;
-  order_status: string;
+  order_status: OrderStatus | string;
   payment_status: string;
   fulfillment_status: string;
   delivery_status: string;
@@ -163,5 +207,31 @@ export interface Payment {
   amount: number;
   currency: string;
   paid_at: string | null;
+  created_at: string;
+}
+
+export interface Shipment {
+  id: string;
+  order_id: string;
+  provider: string;
+  carrier: string | null;
+  tracking_number: string | null;
+  tracking_url: string | null;
+  status: string;
+  shipped_at: string | null;
+  delivered_at: string | null;
+}
+
+export interface Review {
+  id: string;
+  product_id: string;
+  customer_id: string | null;
+  order_id: string | null;
+  rating: number;
+  title: string | null;
+  content: string;
+  status: 'pending' | 'approved' | 'rejected';
+  verified_purchase: number;
+  locale: string | null;
   created_at: string;
 }

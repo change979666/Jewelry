@@ -1,149 +1,253 @@
 ---
 import BaseLayout from "../../../layouts/BaseLayout.astro";
+import { getCommerce, calcOrderTotals } from "../../../lib/commerce";
+import type { Market } from "../../../lib/commerce";
 import type { Locale } from "../../../i18n";
-import { getCommerce } from "../../../lib/commerce";
+import { t } from "../../../i18n";
 
 const { lang } = Astro.params;
 const locale = lang as Locale;
 
-const sessionId = Astro.cookies.get("session_id")?.value;
-if (!sessionId) return Astro.redirect(`/${lang}/cart`);
-
 const db = Astro.locals.runtime.env.DB;
-const commerce = getCommerce(db);
+if (!db) return new Response("Database unavailable", { status: 503 });
 
-const cartRow = await db.prepare(`SELECT id FROM carts WHERE session_id = ?`).bind(sessionId).first<{id: string}>();
-if (!cartRow) return Astro.redirect(`/${lang}/cart`);
+// Feature flag from site_settings (config, not hardcoded UI state)
+const flagRow = await db.prepare(`SELECT value FROM site_settings WHERE key = 'feature.enable_online_payment'`)
+  .first<{ value: string }>();
+const ENABLE_ONLINE_PAYMENT = flagRow?.value === 'true';
 
-const cartData = await commerce.cart.getCart(cartRow.id);
-if (!cartData || cartData.items.length === 0) return Astro.redirect(`/${lang}/cart`);
+const sessionId = Astro.cookies.get("session_id")?.value;
+const commerce = getCommerce(db, { enableOnlinePayment: ENABLE_ONLINE_PAYMENT });
 
-const items = cartData.items;
-const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.variant.price), 0);
-const currency = items[0].variant.currency;
-const shipping = 1500; // Hardcoded 15 SAR for V1
-const total = subtotal + shipping;
+// ---- Load cart ----
+let cartData = null;
+if (sessionId) {
+  cartData = await commerce.cart.getCartBySessionId(sessionId);
+}
 
-const formattedPrice = (price: number) => {
-  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(price / 100);
-};
+let error: string | null = null;
+let orderId: string | null = null;
 
-// Feature Flags
-const ENABLE_ONLINE_PAYMENT = false;
-
+// ---- POST: server-side transaction entry ----
 if (Astro.request.method === "POST") {
-  const formData = await Astro.request.formData();
-  
-  // Create Order
-  const order = await commerce.orders.createOrder({
-    session_id: sessionId,
-    market: 'KSA',
-    currency,
-    subtotal,
-    shipping_amount: shipping,
-    tax_amount: 0,
-    items: items.map(i => ({
-      product_id: i.product.id,
-      variant_id: i.variant.id,
-      sku: i.variant.sku,
-      title: i.product.title,
-      unit_price: i.variant.price,
-      quantity: i.quantity,
-      product_snapshot: i.product
-    })),
-    shipping_address: {
-      first_name: formData.get("first_name"),
-      last_name: formData.get("last_name"),
-      phone: formData.get("phone"),
-      country: formData.get("country"),
-      city: formData.get("city"),
-      address_line_1: formData.get("address")
-    }
-  });
+  if (!cartData || cartData.items.length === 0) {
+    error = "cart_empty";
+  } else {
+    const formData = await Astro.request.formData();
+    const first = String(formData.get("first_name") || "").trim().slice(0, 100);
+    const last = String(formData.get("last_name") || "").trim().slice(0, 100);
+    const email = String(formData.get("email") || "").trim().slice(0, 200).toLowerCase();
+    const phone = String(formData.get("phone") || "").trim().slice(0, 50);
+    const country = String(formData.get("country") || "").trim();
+    const city = String(formData.get("city") || "").trim().slice(0, 100);
+    const address1 = String(formData.get("address") || "").trim().slice(0, 500);
+    const paymentMethod = String(formData.get("payment_method") || "cod");
 
-  // Handle Payment (COD)
-  const paymentMethod = formData.get("payment_method");
-  if (paymentMethod === "cod") {
-    await commerce.codProvider.createCheckout(order);
-    
-    // Clear cart
-    await db.prepare(`DELETE FROM carts WHERE id = ?`).bind(cartRow.id).run();
-    Astro.cookies.delete("session_id", { path: '/' });
-    
-    return Astro.redirect(`/${lang}/order-confirmation?id=${order.id}`);
+    // Validation
+    if (!first || !last) error = "name_required";
+    else if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) error = "email_invalid";
+    else if (!phone) error = "phone_required";
+    else if (!city || !address1) error = "address_required";
+    else if (paymentMethod !== "cod") error = "payment_unavailable";
+    else {
+      // Market resolution (config-driven tax/shipping)
+      const marketCode = country === 'UAE' ? 'UAE' : 'KSA';
+      const market = await db.prepare(`SELECT * FROM markets WHERE code = ? AND is_active = 1`)
+        .bind(marketCode).first<Market>();
+
+      if (!market) {
+        error = "market_unavailable";
+      } else {
+        // ---- Server recalculation: re-read every variant; client prices are NEVER trusted ----
+        const lines: Array<{ unit_price: number; quantity: number }> = [];
+        const orderItems: Array<{
+          product_id: string; variant_id: string; sku: string | null; title: string;
+          unit_price: number; quantity: number; product_snapshot: unknown;
+        }> = [];
+
+        for (const item of cartData.items) {
+          const fresh = await db.prepare(`
+            SELECT v.id, v.sku, v.price, v.inventory_quantity, v.inventory_policy, v.status AS v_status, p.title, p.status AS p_status
+            FROM product_variants v JOIN products p ON p.id = v.product_id
+            WHERE v.id = ? AND v.product_id = ?
+          `).bind(item.variant_id, item.product_id).first<{
+            id: string; sku: string | null; price: number; inventory_quantity: number;
+            inventory_policy: string; v_status: string; title: string; p_status: string;
+          }>();
+
+          if (!fresh) { error = "item_unavailable"; break; }
+          if (fresh.p_status !== 'active' || fresh.v_status !== 'active') { error = "item_unavailable"; break; }
+          if (fresh.inventory_policy === 'deny' && fresh.inventory_quantity < item.quantity) { error = "out_of_stock"; break; }
+
+          lines.push({ unit_price: fresh.price, quantity: item.quantity });
+          orderItems.push({
+            product_id: item.product_id,
+            variant_id: item.variant_id,
+            sku: fresh.sku,
+            title: fresh.title,
+            unit_price: fresh.price,
+            quantity: item.quantity,
+            product_snapshot: { title: fresh.title, sku: fresh.sku },
+          });
+        }
+
+        if (!error) {
+          // Tax & shipping come from market config — never hardcoded in the page
+          const totals = calcOrderTotals(lines, market);
+
+          const customer = await commerce.customers.findOrCreateGuest({
+            email, phone, first_name: first, last_name: last, locale: lang ?? 'en', market: market.code,
+          });
+
+          const order = await commerce.orders.createOrder({
+            customer_id: customer.id,
+            session_id: sessionId,
+            market: market.code,
+            currency: market.currency,
+            subtotal: totals.subtotal,
+            discount_amount: totals.discount,
+            shipping_amount: totals.shipping,
+            tax_amount: totals.tax,
+            items: orderItems,
+            shipping_address: {
+              first_name: first, last_name: last, phone, country: market.code,
+              city, address_line_1: address1,
+            },
+          });
+
+          // Payment (V1: COD only)
+          if (paymentMethod === 'cod') {
+            await commerce.cod.createCheckout(order);
+          }
+
+          // Decrement inventory for deny-policy variants
+          for (const item of orderItems) {
+            await db.prepare(`
+              UPDATE product_variants SET inventory_quantity = MAX(0, inventory_quantity - ?), updated_at = ?
+              WHERE id = ? AND inventory_policy = 'deny'
+            `).bind(item.quantity, new Date().toISOString(), item.variant_id).run();
+          }
+
+          // Clear cart
+          await commerce.cart.clearCart(cartData.cart.id);
+          Astro.cookies.delete("session_id", { path: '/' });
+
+          orderId = order.id;
+          return Astro.redirect(`/${lang}/order-confirmation?id=${order.id}`);
+        }
+      }
+    }
   }
 }
+
+// ---- GET rendering ----
+const items = cartData?.items ?? [];
+const hasStockIssues = items.some(i => i.variant.status !== 'active' || i.variant.inventory_quantity < i.quantity);
+
+// Preview totals server-side (market defaults to KSA until the form selects one)
+const previewMarket = await db.prepare(`SELECT * FROM markets WHERE code = 'KSA'`).first<Market>();
+const previewTotals = previewMarket
+  ? calcOrderTotals(items.map(i => ({ unit_price: i.variant.price, quantity: i.quantity })), previewMarket)
+  : null;
+const previewCurrency = items[0]?.variant.currency ?? 'SAR';
+
+const formatMoney = (price: number) =>
+  new Intl.NumberFormat(locale, { style: 'currency', currency: previewCurrency }).format(price / 100);
+
+const errKey = error ? `checkout.error_${error}` : "";
 ---
-<BaseLayout locale={locale} title="Checkout" description="Secure Checkout">
+
+<BaseLayout locale={locale} title={t(locale, "checkout.title")} description={t(locale, "checkout.title")}>
   <main class="container-x py-12">
-    <h1 class="text-3xl font-bold mb-8">Checkout</h1>
-    
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-      <form method="POST" id="checkout-form" class="space-y-8">
-        
-        <section>
-          <h2 class="text-xl font-semibold mb-4">Contact Information</h2>
-          <div class="grid gap-4 sm:grid-cols-2">
-            <input type="text" name="first_name" placeholder="First Name" required class="border border-line rounded-lg px-4 py-2 w-full" />
-            <input type="text" name="last_name" placeholder="Last Name" required class="border border-line rounded-lg px-4 py-2 w-full" />
-            <input type="tel" name="phone" placeholder="Phone Number" required class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2" />
-          </div>
-        </section>
+    <h1 class="text-3xl font-bold mb-8">{t(locale, "checkout.title")}</h1>
 
-        <section>
-          <h2 class="text-xl font-semibold mb-4">Shipping Address</h2>
-          <div class="grid gap-4 sm:grid-cols-2">
-            <select name="country" required class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2">
-              <option value="KSA">Saudi Arabia</option>
-              <option value="UAE">United Arab Emirates</option>
-            </select>
-            <input type="text" name="city" placeholder="City" required class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2" />
-            <input type="text" name="address" placeholder="Address Line 1" required class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2" />
-          </div>
-        </section>
+    {error && (
+      <div class="mb-6 border border-red-300 bg-red-50 text-red-700 rounded-lg p-4 text-sm">
+        {t(locale, errKey) !== errKey ? t(locale, errKey) : error}
+      </div>
+    )}
 
-        <section>
-          <h2 class="text-xl font-semibold mb-4">Payment Method</h2>
-          <div class="space-y-3">
-            <label class="flex items-center gap-3 border border-line rounded-lg p-4 cursor-pointer">
-              <input type="radio" name="payment_method" value="cod" required checked class="w-4 h-4 text-accent" />
-              <span class="font-medium">Cash on Delivery (COD)</span>
-            </label>
-            
-            {ENABLE_ONLINE_PAYMENT && (
-              <label class="flex items-center gap-3 border border-line rounded-lg p-4 opacity-50 cursor-not-allowed">
-                <input type="radio" name="payment_method" value="online" disabled class="w-4 h-4" />
-                <span class="font-medium">Online Payment (Coming Soon)</span>
+    {items.length === 0 ? (
+      <div class="text-center py-16 border border-dashed border-line rounded-xl">
+        <p class="text-stone">{t(locale, "cart.empty")}</p>
+        <a href={`/${lang}/`} class="btn btn-primary mt-4 inline-block">{t(locale, "cart.continue")}</a>
+      </div>
+    ) : (
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <form method="POST" id="checkout-form" class="space-y-8">
+          <section>
+            <h2 class="text-xl font-semibold mb-4">{t(locale, "checkout.contact_section")}</h2>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <input type="text" name="first_name" placeholder={t(locale, "checkout.first_name")} required class="border border-line rounded-lg px-4 py-2 w-full" />
+              <input type="text" name="last_name" placeholder={t(locale, "checkout.last_name")} required class="border border-line rounded-lg px-4 py-2 w-full" />
+              <input type="email" name="email" placeholder={t(locale, "checkout.email")} required class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2" />
+              <input type="tel" name="phone" placeholder={t(locale, "checkout.phone")} required class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2" />
+            </div>
+          </section>
+
+          <section>
+            <h2 class="text-xl font-semibold mb-4">{t(locale, "checkout.address_section")}</h2>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <select name="country" id="co-country" required class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2">
+                <option value="KSA">{t(locale, "checkout.country_ksa")}</option>
+                <option value="UAE">{t(locale, "checkout.country_uae")}</option>
+              </select>
+              <input type="text" name="city" placeholder={t(locale, "checkout.city")} required class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2" />
+              <input type="text" name="address" placeholder={t(locale, "checkout.address")} required class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2" />
+            </div>
+          </section>
+
+          <section>
+            <h2 class="text-xl font-semibold mb-4">{t(locale, "checkout.payment_section")}</h2>
+            <div class="space-y-3">
+              <label class="flex items-center gap-3 border border-line rounded-lg p-4 cursor-pointer">
+                <input type="radio" name="payment_method" value="cod" required checked class="w-4 h-4 text-accent" />
+                <span class="font-medium">{t(locale, "checkout.cod")}</span>
               </label>
-            )}
-          </div>
-        </section>
+              {ENABLE_ONLINE_PAYMENT && (
+                <label class="flex items-center gap-3 border border-line rounded-lg p-4 opacity-50 cursor-not-allowed">
+                  <input type="radio" name="payment_method" value="online" disabled class="w-4 h-4" />
+                  <span class="font-medium">{t(locale, "checkout.online")}</span>
+                </label>
+              )}
+            </div>
+          </section>
 
-        <button type="submit" class="btn btn-primary w-full py-4 text-lg">Place Order</button>
-      </form>
+          {hasStockIssues && (
+            <p class="text-sm text-red-600">{t(locale, "checkout.stock_warning")}</p>
+          )}
 
-      <div>
-        <div class="border border-line rounded-xl p-6 bg-beige/30 sticky top-6">
-          <h2 class="text-xl font-semibold mb-4">Order Summary</h2>
-          <div class="space-y-4 mb-4">
-            {items.map(item => (
-              <div class="flex justify-between items-center text-sm">
-                <div class="flex gap-3 items-center">
-                  <span class="w-6 h-6 bg-stone/20 rounded-full flex items-center justify-center text-xs">{item.quantity}</span>
-                  <span class="font-medium">{item.product.title}</span>
+          <button type="submit" class="btn btn-primary w-full py-4 text-lg" disabled={hasStockIssues}>
+            {t(locale, "checkout.place_order")}
+          </button>
+        </form>
+
+        <div>
+          <div class="border border-line rounded-xl p-6 bg-beige/30 sticky top-6">
+            <h2 class="text-xl font-semibold mb-4">{t(locale, "checkout.summary")}</h2>
+            <div class="space-y-4 mb-4">
+              {items.map(item => (
+                <div class="flex justify-between items-center text-sm">
+                  <div class="flex gap-3 items-center">
+                    <span class="w-6 h-6 bg-stone/20 rounded-full flex items-center justify-center text-xs">{item.quantity}</span>
+                    <span class="font-medium">{item.product.title}</span>
+                  </div>
+                  <span>{formatMoney(item.variant.price * item.quantity)}</span>
                 </div>
-                <span>{formattedPrice(item.variant.price * item.quantity)}</span>
-              </div>
-            ))}
+              ))}
+            </div>
+            {previewTotals && (
+              <dl class="space-y-2 text-sm border-t border-line pt-4">
+                <div class="flex justify-between"><dt>{t(locale, "checkout.subtotal")}</dt><dd>{formatMoney(previewTotals.subtotal)}</dd></div>
+                <div class="flex justify-between"><dt>{t(locale, "checkout.shipping")}</dt><dd>{previewTotals.shipping === 0 ? t(locale, "checkout.free") : formatMoney(previewTotals.shipping)}</dd></div>
+                <div class="flex justify-between"><dt>{t(locale, "checkout.vat")}</dt><dd>{formatMoney(previewTotals.tax)}</dd></div>
+                <div class="flex justify-between text-lg font-bold border-t border-line pt-2 mt-2"><dt>{t(locale, "checkout.total")}</dt><dd>{formatMoney(previewTotals.total)}</dd></div>
+              </dl>
+            )}
+            <p class="mt-4 text-xs text-stone" id="co-note">{t(locale, "checkout.totals_note")}</p>
           </div>
-          
-          <dl class="space-y-2 text-sm border-t border-line pt-4">
-            <div class="flex justify-between"><dt>Subtotal</dt><dd>{formattedPrice(subtotal)}</dd></div>
-            <div class="flex justify-between"><dt>Shipping</dt><dd>{formattedPrice(shipping)}</dd></div>
-            <div class="flex justify-between text-lg font-bold border-t border-line pt-2 mt-2"><dt>Total</dt><dd>{formattedPrice(total)}</dd></div>
-          </dl>
         </div>
       </div>
-    </div>
+    )}
   </main>
 </BaseLayout>

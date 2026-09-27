@@ -1,23 +1,25 @@
 // ---------------------------------------------------------------------------
 //  email-template.ts — Branded HTML email template with social buttons
-//  Used by: email-send (admin replies), inquiry auto-reply, notifications
+//  Used by: email-send (admin replies), order notifications, alerts
+//  V1.0: brand values are placeholders until the final brand/domain is set
+//  (mirror site_settings brand keys; TBC — do not treat as final copy).
 // ---------------------------------------------------------------------------
 
 const SOCIAL_LINKS = {
-  facebook: "https://www.facebook.com/profile.php?id=61592517126738",
-  messenger: "https://m.me/1299111856611532",
-  instagram: "https://instagram.com/aromiso979",
+  facebook: "",
+  messenger: "",
+  instagram: "",
 };
 
 const COMPANY_INFO = {
-  name: "Aromiso",
-  tagline: "Premium Home Fragrance OEM/ODM Manufacturer",
-  website: "https://aromiso.com",
-  email: "sales@aromiso.com",
+  name: "Jewelry",
+  tagline: "Everyday fine jewelry, designed for the Gulf.",
+  website: "https://example.com", // TBC: final domain
+  email: "support@example.com", // TBC: final support mailbox
 };
 
 /**
- * Wraps a message body in the branded Aromiso email template.
+ * Wraps a message body in the branded email template.
  * Includes header, social buttons, and footer.
  */
 export function wrapEmailTemplate(bodyHtml: string, opts?: { previewText?: string }): string {
@@ -52,30 +54,31 @@ ${bodyHtml}
 </tr>
 
 <!-- Social Buttons -->
+${Object.values(SOCIAL_LINKS).some(Boolean) ? `
 <tr>
 <td style="padding:0 32px 24px;text-align:center;">
   <p style="margin:0 0 12px;font-size:12px;color:#888;">Connect with us</p>
   <table role="presentation" cellpadding="0" cellspacing="0" align="center">
   <tr>
-    <td style="padding:0 8px;">
+    ${SOCIAL_LINKS.facebook ? `<td style="padding:0 8px;">
       <a href="${SOCIAL_LINKS.facebook}" style="display:inline-block;padding:8px 16px;background-color:#1877F2;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500;">Facebook</a>
-    </td>
-    <td style="padding:0 8px;">
+    </td>` : ""}
+    ${SOCIAL_LINKS.messenger ? `<td style="padding:0 8px;">
       <a href="${SOCIAL_LINKS.messenger}" style="display:inline-block;padding:8px 16px;background-color:#0084FF;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500;">Messenger</a>
-    </td>
-    <td style="padding:0 8px;">
+    </td>` : ""}
+    ${SOCIAL_LINKS.instagram ? `<td style="padding:0 8px;">
       <a href="${SOCIAL_LINKS.instagram}" style="display:inline-block;padding:8px 16px;background-color:#E4405F;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500;">Instagram</a>
-    </td>
+    </td>` : ""}
   </tr>
   </table>
 </td>
-</tr>
+</tr>` : ""}
 
 <!-- Footer -->
 <tr>
 <td style="background-color:#f8f7f4;padding:20px 32px;text-align:center;border-top:1px solid #eee;">
   <p style="margin:0;font-size:12px;color:#999;">&copy; 2026 ${COMPANY_INFO.name} &middot; <a href="${COMPANY_INFO.website}" style="color:#666;">${COMPANY_INFO.website}</a></p>
-  <p style="margin:4px 0 0;font-size:11px;color:#bbb;">You received this email because you contacted us about our fragrance products.</p>
+  <p style="margin:4px 0 0;font-size:11px;color:#bbb;">You received this email because you contacted us about our jewelry products.</p>
 </td>
 </tr>
 
@@ -94,7 +97,7 @@ export function notificationTemplate(title: string, lines: string[]): string {
 <h2 style="margin:0 0 16px;font-size:18px;color:#1a1a1a;">${title}</h2>
 ${lines.map((l) => `<p style="margin:0 0 8px;font-size:14px;color:#333;line-height:1.6;">${l}</p>`).join("\n")}
 <p style="margin:16px 0 0;font-size:13px;color:#666;">
-  <a href="https://aromiso.com/admin" style="color:#7c3aed;">→ 登录后台查看详情</a>
+  <a href="/admin-v2" style="color:#7c3aed;">→ 登录后台查看详情</a>
 </p>`;
   return wrapEmailTemplate(bodyHtml, { previewText: title });
 }

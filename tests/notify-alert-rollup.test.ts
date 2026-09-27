@@ -110,7 +110,7 @@ describe("sendAlert — V5.83 邮件收敛（🟡 汇总 / 🔴 即时）", () =
 
     expect(result).toBe("sent");
     expect(calls).toHaveLength(1); // 高危仍即时送达
-    expect(String(calls[0].payload.subject)).toContain("高危");
+    expect(String(calls[0].payload.subject)).toContain("Jewelry 告警");
 
     const rolled = JSON.parse(String(await kv.get(`notify:rollup:${bjToday()}`))) as {
       code: string;

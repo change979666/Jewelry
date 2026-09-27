@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-//  Aromiso V4 — POST /api/track
+//  Jewelry V4 — POST /api/track
 //
 //  Public endpoint for self-built behavior tracking (no auth required).
 //  Receives events via navigator.sendBeacon from the frontend.

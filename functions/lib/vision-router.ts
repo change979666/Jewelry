@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Aromiso Vision Router — 统一视觉模型入口（0 成本 + 自动切换 + 不影响网站）
+// Jewelry Vision Router — 统一视觉模型入口（0 成本 + 自动切换 + 不影响网站）
 //
 // 所有提供商均为 OpenAI 兼容 chat-completions + image_url 格式。
 // 顺序：Qwen-VL(阿里云新加坡) → Groq → OpenRouter(free) → Gemini。

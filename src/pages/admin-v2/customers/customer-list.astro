@@ -185,8 +185,8 @@ import Toast from "../../../components/admin/shared/Toast.astro";
       const p = data.pagination;
       const infoEl = document.getElementById("pagination-info");
       const controlsEl = document.getElementById("pagination-controls");
-      if (window.AromisoPagination && controlsEl) {
-        window.AromisoPagination.render(infoEl, controlsEl, {
+      if (window.JewelryPagination && controlsEl) {
+        window.JewelryPagination.render(infoEl, controlsEl, {
           total: p.total,
           page: p.page,
           totalPages: p.pages,

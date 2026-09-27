@@ -2,9 +2,9 @@
 // Toast — 全局提示 + 降级横幅（M5/S12 出口）
 //
 // V5.67 关键修复：后台各页面历史上调用 `window.showToast(msg, type)`，但全局只
-// 定义了 `window.AromisoToast`——`showToast` 从未被定义，导致 `if (window.showToast)`
+// 定义了 `window.JewelryToast`——`showToast` 从未被定义，导致 `if (window.showToast)`
 // 与 `window.showToast?.()` 全部成为静默 no-op（用户「点了没反应」的根因之一）。
-// 这里在唯一的共享挂载点把 showToast 桥接到 AromisoToast，一次性恢复全站后台反馈。
+// 这里在唯一的共享挂载点把 showToast 桥接到 JewelryToast，一次性恢复全站后台反馈。
 //
 // 同时提供 degraded 出口：后端返回 degraded / guard_state / state=ERROR /
 // kb_index_state=corrupt 等降级标记时，前端必须有可见提示（持久横幅，非 3s toast）。
@@ -55,7 +55,7 @@
         this.show(msg, "info");
       },
     };
-    window.AromisoToast = toast;
+    window.JewelryToast = toast;
 
     // 桥接：全站后台页面调用的 window.showToast（历史上未定义 → 静默）。
     window.showToast = function (msg, type) {
@@ -100,7 +100,7 @@
      *   degraded:true · guard_state∈{WARNING,CRITICAL,CIRCUIT_OPEN} · mail_degraded:true
      *   state:"ERROR" · kb_index_state∈{corrupt,error} · meta.degraded · error 字段（非空且 success/ok 为假）
      */
-    window.AromisoNotifyDegraded = function (data, label) {
+    window.JewelryNotifyDegraded = function (data, label) {
       if (!data || typeof data !== "object") return false;
       const reasons = [];
       const prefix = label ? label + "：" : "";
@@ -134,7 +134,7 @@
     };
 
     // 便捷别名
-    window.AromisoShowDegraded = showDegradedBanner;
+    window.JewelryShowDegraded = showDegradedBanner;
   })();
 </script>
 

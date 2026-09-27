@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
-//  Aromiso Commerce — Public Reviews API
-//  GET  /api/commerce/reviews?product_id=x  → approved reviews for a product
-//  POST /api/commerce/reviews               → submit a new review (pending)
+//  Jewelry Commerce — Public Reviews API (Jewelry `reviews` table)
+//  GET  /api/commerce/reviews?product_id=x  → approved reviews + rating summary
+//  POST /api/commerce/reviews               → submit a review (pending, rate-limited)
 // ---------------------------------------------------------------------------
 
 import type { Env } from "../../types";
@@ -15,136 +15,104 @@ function json(data: unknown, status = 200): Response {
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const db = env.DB;
-  if (!db) return json({ error: "Database unavailable" }, 500);
+  if (!db) return json({ ok: false, error: "Database unavailable" }, 500);
 
   const url = new URL(request.url);
-  const productId = url.searchParams.get("product_id");
-
-  if (!productId) return json({ error: "product_id is required" }, 400);
+  const productId = (url.searchParams.get("product_id") || "").trim();
+  if (!productId) return json({ ok: false, error: "product_id is required" }, 400);
 
   try {
     const reviews = await db
       .prepare(
-        "SELECT id, product_id, reviewer_name, country, rating, title, content, verified_buyer, created_at FROM commerce_product_reviews WHERE product_id = ? AND status = 'approved' ORDER BY created_at DESC LIMIT 20",
+        `SELECT id, rating, title, content, verified_purchase, locale, created_at
+         FROM reviews WHERE product_id = ? AND status = 'approved'
+         ORDER BY created_at DESC LIMIT 20`,
       )
       .bind(productId)
-      .all<Record<string, unknown>>();
-
+      .all();
     const stats = await db
-      .prepare(
-        "SELECT AVG(rating) as average_rating, COUNT(*) as total FROM commerce_product_reviews WHERE product_id = ? AND status = 'approved'",
-      )
+      .prepare(`SELECT AVG(rating) AS avg_rating, COUNT(*) AS total FROM reviews WHERE product_id = ? AND status = 'approved'`)
       .bind(productId)
-      .first<{ average_rating: number | null; total: number }>();
-
-    const averageRating = stats?.average_rating ? Math.round(stats.average_rating * 10) / 10 : 0;
+      .first<{ avg_rating: number | null; total: number }>();
 
     return json({
       ok: true,
-      reviews: reviews.results,
-      average_rating: averageRating,
+      reviews: reviews.results || [],
+      average_rating: stats?.avg_rating ? Math.round(stats.avg_rating * 10) / 10 : 0,
       total: stats?.total ?? 0,
     });
   } catch (err) {
-    return json({ error: "Internal error", detail: String(err) }, 500);
+    return json({ ok: false, error: "reviews_error", detail: String(err) }, 500);
   }
 };
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const db = env.DB;
-  if (!db) return json({ error: "Database unavailable" }, 500);
+  const kv = env.DRAFTS;
+  if (!db) return json({ ok: false, error: "Database unavailable" }, 500);
 
-  // Parse body
+  // Rate limit: 5 review submissions per IP per hour
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  if (kv) {
+    const rlKey = `rl:review:${ip}`;
+    const count = Number((await kv.get(rlKey)) || "0");
+    if (count >= 5) return json({ ok: false, error: "Too many requests" }, 429);
+    await kv.put(rlKey, String(count + 1), { expirationTtl: 3600 });
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
-    return json({ error: "Invalid JSON" }, 400);
+    return json({ ok: false, error: "Invalid JSON" }, 400);
   }
 
-  // Extract and sanitize fields
   const productId = String(body.product_id || "").trim();
   const orderId = String(body.order_id || "").trim();
-  const reviewerName = String(body.reviewer_name || "")
-    .trim()
-    .slice(0, 200);
-  const reviewerEmail = String(body.reviewer_email || "")
-    .trim()
-    .slice(0, 200);
-  const country = String(body.country || "")
-    .trim()
-    .slice(0, 100);
+  const reviewerName = String(body.reviewer_name || "").trim().slice(0, 200);
+  const reviewerEmail = String(body.reviewer_email || "").trim().slice(0, 200).toLowerCase();
   const rating = Math.floor(Number(body.rating) || 0);
-  const title = String(body.title || "")
-    .trim()
-    .slice(0, 300);
-  const content = String(body.content || "")
-    .trim()
-    .slice(0, 5000);
+  const title = String(body.title || "").trim().slice(0, 300);
+  const content = String(body.content || "").trim().slice(0, 5000);
+  const locale = String(body.locale || "").trim().slice(0, 10) || null;
 
-  // Validation
-  if (!productId) return json({ error: "product_id is required" }, 422);
-  if (rating < 1 || rating > 5) return json({ error: "rating must be between 1 and 5" }, 422);
-  if (content.length < 10) return json({ error: "content must be at least 10 characters" }, 422);
+  if (!productId) return json({ ok: false, error: "product_id is required" }, 422);
+  if (rating < 1 || rating > 5) return json({ ok: false, error: "rating must be 1-5" }, 422);
+  if (content.length < 10) return json({ ok: false, error: "content too short" }, 422);
   if (!reviewerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reviewerEmail))
-    return json({ error: "Valid reviewer_email is required" }, 422);
+    return json({ ok: false, error: "Valid reviewer_email is required" }, 422);
 
   try {
-    // S37：product 必须真实存在——杜绝孤儿评论（指向不存在商品的评论）。
-    const product = await db
-      .prepare("SELECT id FROM commerce_products WHERE id = ?")
-      .bind(productId)
-      .first<{ id: string }>();
-    if (!product) {
-      return json({ error: "product_id does not reference an existing product" }, 422);
-    }
+    const product = await db.prepare(`SELECT id FROM products WHERE id = ?`).bind(productId).first();
+    if (!product) return json({ ok: false, error: "Unknown product" }, 422);
 
-    // S37：verified_buyer 必须基于真实购买——订单已完成、属于该评论者（邮箱匹配）、
-    // 且确实包含该商品。仅凭「任意已完成订单 id」不得授予 verified 徽章（防伪）。
-    let verifiedBuyer = 0;
+    // verified_purchase only when the reviewer email owns a delivered order containing the product
+    let verified = 0;
     if (orderId) {
-      const order = await db
-        .prepare("SELECT id, email FROM commerce_orders WHERE id = ? AND status = 'completed'")
-        .bind(orderId)
-        .first<{ id: string; email: string | null }>();
-      const belongsToReviewer =
-        !!order && (order.email || "").toLowerCase() === reviewerEmail.toLowerCase();
-      if (belongsToReviewer) {
-        const item = await db
-          .prepare(
-            "SELECT 1 AS ok FROM commerce_order_items WHERE order_id = ? AND product_id = ? LIMIT 1",
-          )
-          .bind(orderId, productId)
-          .first<{ ok: number }>();
-        if (item) verifiedBuyer = 1;
-      }
+      const row = await db
+        .prepare(
+          `SELECT 1 AS ok FROM orders o
+           JOIN customers c ON c.id = o.customer_id
+           JOIN order_items oi ON oi.order_id = o.id AND oi.product_id = ?
+           WHERE o.id = ? AND lower(c.email) = ? AND o.order_status = 'DELIVERED'
+           LIMIT 1`,
+        )
+        .bind(productId, orderId, reviewerEmail)
+        .first();
+      if (row) verified = 1;
     }
 
     const id = crypto.randomUUID();
-    const now = Math.floor(Date.now() / 1000);
-
     await db
       .prepare(
-        `INSERT INTO commerce_product_reviews (id, product_id, order_id, reviewer_name, reviewer_email, country, rating, title, content, status, verified_buyer, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
+        `INSERT INTO reviews (id, product_id, order_id, rating, title, content, status, verified_purchase, locale)
+         VALUES (?,?,?,?,?,?, 'pending', ?, ?)`,
       )
-      .bind(
-        id,
-        productId,
-        orderId || null,
-        reviewerName,
-        reviewerEmail,
-        country,
-        rating,
-        title,
-        content,
-        verifiedBuyer,
-        now,
-      )
+      .bind(id, productId, orderId || null, rating, title || null, content, verified, locale)
       .run();
 
-    return json({ ok: true, id }, 201);
+    return json({ ok: true, id, status: "pending" }, 201);
   } catch (err) {
-    return json({ error: "Failed to create review", detail: String(err) }, 500);
+    return json({ ok: false, error: "review_create_failed", detail: String(err) }, 500);
   }
 };

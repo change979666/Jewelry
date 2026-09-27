@@ -1,6 +1,6 @@
 /// <reference types="@cloudflare/workers-types" />
 // ---------------------------------------------------------------------------
-//  Aromiso — Cloudflare Pages Functions shared types
+//  Jewelry — Cloudflare Pages Functions shared types
 //
 //  Single source of truth for environment bindings & secrets. Every Pages
 //  Function handler must be typed as `PagesFunction<Env>` (destructure
@@ -18,7 +18,7 @@ export interface Env {
   DB?: D1Database;
   /** R2 bucket: commerce product images. */
   IMAGES?: R2Bucket;
-  /** R2 bucket: unified AI knowledge base (aromiso-kb, V5.30). */
+  /** R2 bucket: legacy AI knowledge base (not wired in V1.0). */
   KB?: R2Bucket;
 
   // ---- Secrets / plain vars (Cloudflare dashboard) ----
@@ -32,11 +32,11 @@ export interface Env {
   TURNSTILE_SECRET_KEY?: string;
 
   // ---- V4: Google API (GSC + GA4 data pull) ----
-  /** Service Account email for JWT auth (e.g. xxx@aromiso-dashboard.iam.gserviceaccount.com) */
+  /** Service Account email for JWT auth (e.g. xxx@project-id.iam.gserviceaccount.com) */
   GSC_CLIENT_EMAIL?: string;
   /** Service Account private key (PEM, RS256). Store as Cloudflare Secret. */
   GSC_PRIVATE_KEY?: string;
-  /** GSC property URL, e.g. sc-domain:aromiso.com */
+  /** GSC property URL, e.g. sc-domain:example.com */
   GSC_SITE_URL?: string;
   /** GA4 numeric Property ID (e.g. 511595717) */
   GA_PROPERTY_ID?: string;
@@ -68,7 +68,7 @@ export interface Env {
    * 因此草稿本身零风险。此开关只控制「是否让 cron 每天自动调用生成器」：
    *   未设或非 "on" → 生成器只能人工/管理端手动触发（观察期默认态，避免无人值守的每日 AI 消耗）；
    *   置 "on"       → 允许 os-pipeline 定时档每天生成草稿。
-   * 无论开关如何，发布（上线到 aromiso.com）永远是人工在 CMS 点发布（save.ts ghPut），
+   * 无论开关如何，发布上线永远是人工在 CMS 点发布，
    * 本开关不解锁任何发布能力。月度 AI 预算硬顶 MONTHLY_CAP_CNY(¥30) 仍然生效。
    */
   CONTENT_FACTORY_LIVE?: string;

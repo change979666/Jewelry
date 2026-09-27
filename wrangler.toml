@@ -1,9 +1,8 @@
 # ============================================================================
-#  Jewelry DTC â€?Cloudflare Pages configuration (V1.0)
+#  Jewelry DTC ï¿½?Cloudflare Pages configuration (V1.0)
 #  Completely isolated from the legacy Jewelry project: new D1 / R2 / KV.
 #
-#  STATUS: local template only. Before deploying, create the resources below
-#  (Free plan) and replace every REPLACE_WITH_* placeholder.
+#  STATUS: resources created (Free plan) and ids wired in below.
 #
 #  Create resources (run once, after `wrangler login`):
 #    wrangler d1 create jewelry-db
@@ -21,16 +20,16 @@ compatibility_date = "2024-11-01"
 # KV namespace for CMS drafts (create: wrangler kv namespace create DRAFTS)
 [[kv_namespaces]]
 binding = "DRAFTS"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "ff88490bc647479ab03290014c971056"
 
-# D1 database â€?Jewelry Commerce Core (create: wrangler d1 create jewelry-db)
+# D1 database ï¿½?Jewelry Commerce Core (create: wrangler d1 create jewelry-db)
 [[d1_databases]]
 binding = "DB"
 database_name = "jewelry-db"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "a820e393-3744-478e-9a1b-9e9fb1e80363"
 migrations_dir = "migrations"
 
-# R2 bucket â€?product & media images (create: wrangler r2 bucket create jewelry-images)
+# R2 bucket ï¿½?product & media images (create: wrangler r2 bucket create jewelry-images)
 [[r2_buckets]]
 binding = "IMAGES"
 bucket_name = "jewelry-images"

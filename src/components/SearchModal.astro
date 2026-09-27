@@ -1,14 +1,14 @@
 ---
 // ---------------------------------------------------------------------------
-//  Aromiso — Global search modal
+//  Jewelry — Global search modal
 //  Included once via Header. Fetches the build-time /search-index.json once,
 //  then matches fully client-side.
 //
 //  Lead-gen focused result cards:
 //    · type badge (Product / Article / FAQ) + thumbnail so buyers know at a
 //      glance what they're looking at
-//    · product rows carry MOQ + OEM/ODM meta and a "Get Quote" CTA that
-//      deep-links to the contact form with the product prefilled
+//    · product rows carry price/inventory meta and a CTA that deep-links to
+//      the product page
 //    · article rows carry reading time + publish year
 //  Grouped by type with live match counts, ranked by type weight
 //  (products > blog > FAQ, title hits boosted). Also: popular-search chips,
@@ -49,36 +49,16 @@ const labels = {
 };
 
 const popular =
-  locale === "es"
-    ? [
-        "Aceite esencial",
-        "Vela de soja",
-        "OEM",
-        "Private Label",
-        "Difusor",
-        "Caja de regalo",
-        "MOQ",
-      ]
-    : locale === "de"
-      ? [
-          "Ätherisches Öl",
-          "Sojawachs-Kerze",
-          "OEM",
-          "Private Label",
-          "Diffuser",
-          "Geschenkbox",
-          "MOQ",
-        ]
-      : ["Essential Oil", "Soy Candle", "OEM", "Private Label", "Diffuser", "Gift Box", "MOQ"];
+  locale === "ar"
+    ? ["خاتم ذهب", "عقد", "أقراط", "سوار", "طقم هدايا", "مجوهرات يومية"]
+    : ["Gold Ring", "Necklace", "Earrings", "Bracelet", "Gift Set", "Everyday Jewelry"];
 
 // WhatsApp deep link for the empty-state CTA
 const waNumber = settings.social.whatsapp || SITE.whatsapp;
 const waMsg = encodeURIComponent(
-  locale === "es"
-    ? "Hola Aromiso, quisiera consultar sobre su fabricación de aromas."
-    : locale === "de"
-      ? "Hallo Aromiso, ich hätte eine Frage zu Ihrer Aroma-Herstellung."
-      : "Hi Aromiso, I'd like to inquire about your aroma manufacturing.",
+  locale === "ar"
+    ? "مرحباً، لدي استفسار عن منتجات المجوهرات لديكم."
+    : "Hi, I'd like to ask about your jewelry products.",
 );
 const waHref = waNumber
   ? waNumber.startsWith("http")

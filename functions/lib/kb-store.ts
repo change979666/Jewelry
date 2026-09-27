@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
-//  Aromiso V5.30 — Unified Knowledge Base Store (R2-backed)
+//  Jewelry V5.30 — Unified Knowledge Base Store (R2-backed)
 //
-//  Bucket: `aromiso-kb` (binding: env.KB). One index object `kb-index.json`
+//  Bucket: legacy knowledge-base bucket name (binding: env.KB, not wired in V1.0). One index object `kb-index.json`
 //  holds the whole entry array — reads are a single GET (fast admin page),
 //  writes are read-modify-write (fine: writers are cron jobs / admin UI,
 //  low concurrency; the admin "同步" button reconciles any lost write).

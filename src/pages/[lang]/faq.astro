@@ -4,7 +4,6 @@ import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import CtaBand from "../../components/CtaBand.astro";
 import Icon from "../../components/Icon.astro";
 import { t, localeStaticPaths } from "../../i18n";
-import { c } from "../../i18n-content";
 import type { Locale } from "../../i18n";
 import { getRelativeLocaleUrl } from "astro:i18n";
 
@@ -12,7 +11,63 @@ export const getStaticPaths = localeStaticPaths;
 
 const locale = (Astro.props.locale as Locale) ?? "en";
 const href = (p: string) => getRelativeLocaleUrl(locale, p);
-const faq = c(locale, "faq") as { q: string; a: string }[];
+
+// V1.0: jewelry-store FAQ, hand-written per locale (no machine translation).
+const FAQ: Record<Locale, { q: string; a: string }[]> = {
+  en: [
+    {
+      q: "Which countries do you ship to?",
+      a: "We currently ship within Saudi Arabia and the United Arab Emirates. Delivery typically takes 2–5 business days for KSA and 3–7 business days for UAE.",
+    },
+    {
+      q: "What payment methods do you accept?",
+      a: "Cash on Delivery (COD) is available for all orders. Online card payment will be enabled soon.",
+    },
+    {
+      q: "How much is shipping?",
+      a: "Shipping is a flat SAR 15 in KSA and AED 20 in UAE. Orders over SAR 300 (KSA) or AED 300 (UAE) ship free.",
+    },
+    {
+      q: "Can I return or exchange an item?",
+      a: "Yes. Unworn items in original packaging can be returned within 14 days of delivery. Contact our support team with your order number to start a return.",
+    },
+    {
+      q: "Are your pieces real gold and silver?",
+      a: "Gold pieces are 18K gold; silver pieces are 925 sterling silver. Each piece is stamped and ships with a certificate of authenticity.",
+    },
+    {
+      q: "How do I track my order?",
+      a: "You will receive a confirmation with your order number at checkout. Our team shares tracking details by SMS or email once the order ships.",
+    },
+  ],
+  ar: [
+    {
+      q: "إلى أي دول تشحنون؟",
+      a: "نشحن حاليًا داخل المملكة العربية السعودية ودولة الإمارات. تستغرق التوصيل عادة من ٢ إلى ٥ أيام عمل في السعودية ومن ٣ إلى ٧ أيام عمل في الإمارات.",
+    },
+    {
+      q: "ما وسائل الدفع المتاحة؟",
+      a: "الدفع عند الاستلام متاح لجميع الطلبات. سيتم قريبًا تفعيل الدفع الإلكتروني بالبطاقات.",
+    },
+    {
+      q: "كم تكلفة الشحن؟",
+      a: "الشحن بسعر ثابت: ١٥ ريالًا في السعودية و٢٠ درهمًا في الإمارات. الشحن مجاني للطلبات فوق ٣٠٠ ريال (السعودية) أو ٣٠٠ درهم (الإمارات).",
+    },
+    {
+      q: "هل يمكنني الإرجاع أو الاستبدال؟",
+      a: "نعم. يمكن إرجاع القطع غير المستخدمة في تغليفها الأصلي خلال ١٤ يومًا من التوصيل. تواصل مع فريق الدعم مع رقم طلبك لبدء الإرجاع.",
+    },
+    {
+      q: "هل المجوهرات ذهب وفضة حقيقية؟",
+      a: "قطع الذهب من عيار ١٨، وقطع الفضة من الفضة الإسترلينية ٩٢٥. كل قطعة مختومة وتُشحن مع شهادة أصالة.",
+    },
+    {
+      q: "كيف أتتبع طلبي؟",
+      a: "ستتلقى رقم طلبك عند إتمام الشراء. يرسل فريقنا تفاصيل التتبع عبر الرسائل النصية أو البريد الإلكتروني فور شحن الطلب.",
+    },
+  ],
+};
+const faq = FAQ[locale] ?? FAQ.en;
 
 const faqLd = {
   "@context": "https://schema.org",
@@ -24,69 +79,61 @@ const faqLd = {
   })),
 };
 
-// V5.27: where-to-next cross-links (FAQ is a high-exit page — route visitors deeper)
+// Where-to-next cross-links (FAQ is a high-exit page — route visitors deeper)
 const nextLinks: {
   icon: string;
   href: string;
   label: string;
-  desc: Record<Locale, string>;
+  desc: string;
 }[] = [
   {
     icon: "truck",
-    href: "/shop/?rts=1",
-    label: t(locale, "shop.rts_label"),
-    desc: {
-      en: "Browse in-stock products with 48-hour dispatch.",
-      es: "Explore productos en stock con envío en 48 horas.",
-      de: "Lagerware mit 48-Stunden-Versand entdecken.",
-    },
+    href: "/collection/everyday",
+    label: locale === "ar" ? "تسوق المجوهرات" : "Shop Jewelry",
+    desc:
+      locale === "ar"
+        ? "تصفح القطع المتوفرة مع شحن سريع خلال أيام."
+        : "Browse in-stock pieces with fast dispatch.",
   },
   {
-    icon: "palette",
-    href: "/oem",
-    label: t(locale, "nav.oem"),
-    desc: {
-      en: "Private label and custom manufacturing from ~100 units.",
-      es: "Marca blanca y fabricación a medida desde ~100 unidades.",
-      de: "Private Label und Custom-Fertigung ab ca. 100 Einheiten.",
-    },
+    icon: "gift",
+    href: "/collection/gift",
+    label: locale === "ar" ? "الهدايا" : "Gifts",
+    desc:
+      locale === "ar"
+        ? "قطع هدايا مختارة بعناية لكل مناسبة."
+        : "Hand-picked gift pieces for every occasion.",
   },
   {
-    icon: "download",
-    href: "/downloads",
-    label: t(locale, "nav.solutions_downloads"),
-    desc: {
-      en: "SDS/MSDS, transport reports and compliance documents.",
-      es: "SDS/MSDS, informes de transporte y documentos de cumplimiento.",
-      de: "SDS/MSDS, Transportberichte und Konformitätsdokumente.",
-    },
+    icon: "leaf",
+    href: "/collection/new-arrivals",
+    label: locale === "ar" ? "وصل حديثًا" : "New Arrivals",
+    desc:
+      locale === "ar"
+        ? "أحدث القطع وصولًا إلى المجموعة."
+        : "The latest pieces to land in the collection.",
   },
   {
     icon: "globe",
-    href: "/sourcing",
-    label: t(locale, "nav.sourcing"),
-    desc: {
-      en: "Consolidated sourcing across 8 partner factories.",
-      es: "Abastecimiento consolidado en 8 fábricas asociadas.",
-      de: "Konsolidierte Beschaffung über 8 Partnerfabriken.",
-    },
+    href: "/contact",
+    label: locale === "ar" ? "اتصل بنا" : "Contact Us",
+    desc:
+      locale === "ar"
+        ? "فريقنا جاهز للإجابة عن استفساراتك."
+        : "Our team is ready to answer your questions.",
   },
 ];
-const nextTitle: Record<Locale, string> = {
-  en: "Where to Next?",
-  es: "¿A Dónde Ir Ahora?",
-  de: "Wie Geht Es Weiter?",
-};
+const nextTitle = locale === "ar" ? "إلى أين بعد ذلك؟" : "Where to Next?";
 ---
 
 <BaseLayout
   locale={locale}
   title={t(locale, "nav.faq")}
-  description={locale === "de"
-    ? "Häufige Fragen zu MOQ, Lieferzeit, OEM/ODM, Private Label, Versand und Zertifikaten."
-    : locale === "es"
-      ? "Preguntas frecuentes sobre MOQ, tiempos de entrega, OEM/ODM, private label, envíos y certificados."
-      : "Frequently asked questions about MOQ, lead time, OEM/ODM, private label, shipping and certificates."}
+  description={
+    locale === "ar"
+      ? "الأسئلة الشائعة حول الشحن والدفع عند الاستلام والإرجاع والمواد."
+      : "Frequently asked questions about shipping, cash on delivery, returns and materials."
+  }
 >
   <Breadcrumbs
     locale={locale}
@@ -100,21 +147,13 @@ const nextTitle: Record<Locale, string> = {
     <div class="mx-auto max-w-2xl text-center reveal">
       <p class="eyebrow">{t(locale, "nav.faq")}</p>
       <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
-        {
-          locale === "de"
-            ? "Häufig gestellte Fragen"
-            : locale === "es"
-              ? "Preguntas Frecuentes"
-              : "Frequently Asked Questions"
-        }
+        {locale === "ar" ? "الأسئلة الشائعة" : "Frequently Asked Questions"}
       </h1>
       <p class="mt-4 text-lg leading-relaxed text-stone">
         {
-          locale === "de"
-            ? "Antworten auf die wichtigsten Fragen zu Fertigung, MOQ und Versand."
-            : locale === "es"
-              ? "Respuestas a las preguntas clave sobre fabricación, MOQ y envíos."
-              : "Answers to the key questions about manufacturing, MOQ and shipping."
+          locale === "ar"
+            ? "إجابات عن أهم الأسئلة حول الطلب والشحن والدفع."
+            : "Answers to the key questions about ordering, shipping and payment."
         }
       </p>
     </div>
@@ -141,9 +180,9 @@ const nextTitle: Record<Locale, string> = {
     </div>
   </section>
 
-  <!-- Where to next (V5.27) -->
+  <!-- Where to next -->
   <section class="container-x pb-16">
-    <h2 class="mb-8 text-center text-2xl font-semibold">{nextTitle[locale]}</h2>
+    <h2 class="mb-8 text-center text-2xl font-semibold">{nextTitle}</h2>
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {
         nextLinks.map((l) => (
@@ -157,7 +196,7 @@ const nextTitle: Record<Locale, string> = {
             <h3 class="mt-3 text-sm font-semibold group-hover:text-accent transition-colors">
               {l.label}
             </h3>
-            <p class="mt-1.5 text-xs leading-relaxed text-stone">{l.desc[locale]}</p>
+            <p class="mt-1.5 text-xs leading-relaxed text-stone">{l.desc}</p>
           </a>
         ))
       }

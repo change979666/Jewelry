@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-//  Aromiso V5.4 — AI Notification & Heartbeat Layer（AI 通知与心跳层）
+//  Jewelry V5.4 — AI Notification & Heartbeat Layer（AI 通知与心跳层）
 //
 //  目标：owner 不打开后台，每天一封中文邮件即可知道——
 //    系统今天有没有正常运行？做了什么？明天准备做什么？有没有异常？
@@ -15,9 +15,9 @@
 //       「⚠️ 需要关注」板块统一呈现（同 code 日内去重，发送后消费清空）。
 //    🟡 报表异常（REPORT_DEGRADED）：日报主表缺失/生成失败时仍即时单独发信
 //       （V5.415 起日报失败绝不发「运行正常」）——这是「日报本身坏了」的兜底，
-//       不能等一封可能发不出来的日报。标题【Aromiso AI 报表异常】XXX。
+//       不能等一封可能发不出来的日报。标题【Jewelry AI 报表异常】XXX。
 //    🔴 高危提醒：真实性闸拦截 / 同类连续失败≥3 次，仍即时发信（6h 冷却去重），
-//       同时落一份到日内汇总供日报留档。标题【Aromiso AI 高危】XXX。
+//       同时落一份到日内汇总供日报留档。标题【Jewelry AI 高危】XXX。
 //
 //  铁律一：通知层永远不阻断主流程——所有逻辑 try/catch 吞错。
 //  铁律二：Agent 自己不决定「给老板发邮件」——只由系统根据结构化日志
@@ -84,7 +84,7 @@ async function sendSystemEmail(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: env.RESEND_FROM || "Aromiso AI <sales@aromiso.com>",
+        from: env.RESEND_FROM || "Jewelry <support@example.com>",
         to,
         subject,
         html: wrapEmailTemplate(bodyHtml, { previewText: subject }),
@@ -230,7 +230,7 @@ export async function sendAlert(
     if (await checkCooldown(env, key)) return "cooled";
     const bj = beijing();
     const tag = "🔴 高危";
-    const subject = `【Aromiso AI 高危】${a.title}｜${bj.label}`;
+    const subject = `【Jewelry 告警】${a.title}｜${bj.label}`;
     const rows = a.lines
       .map(
         (l) =>
@@ -244,7 +244,7 @@ ${rows}
 </div>
 <p style="margin:0 0 4px;font-size:13px;color:#666;">发生时间：${bj.dateStr} ${bj.timeLabel}（北京时间）</p>
 <p style="margin:0 0 4px;font-size:13px;color:#666;">是否需要人工介入：${a.needHuman ? "<strong style='color:#dc2626;'>是</strong>" : "否（系统继续运行 / 已按预案处理）"}</p>
-<p style="margin:12px 0 0;font-size:12px;color:#999;">本邮件由 Aromiso AI 心跳层自动生成（同类高危 6 小时内不重复发送）。🟡 一般警告自 V5.83 起已并入每日日报统一呈现，不再单独发信。详情：后台 /admin/command-center</p>`;
+<p style="margin:12px 0 0;font-size:12px;color:#999;">本邮件由 Jewelry 心跳层自动生成（同类高危 6 小时内不重复发送）。🟡 一般警告自 V5.83 起已并入每日日报统一呈现，不再单独发信。详情：后台 /admin/command-center</p>`;
     const r = await sendSystemEmail(env, subject, html);
     if (!r.ok) return "skipped"; // 发送失败不消耗冷却额度，下次触发可重试
     await commitCooldown(env, key, ttl);
@@ -335,7 +335,7 @@ export async function evaluatePipelineAlerts(
                 const bj = beijing();
                 const rr = await sendSystemEmail(
                   env,
-                  `【Aromiso AI 恢复】${type} 已恢复正常｜${bj.label}`,
+                  `【Jewelry 恢复】${type} 已恢复正常｜${bj.label}`,
                   `
 <p style="margin:0 0 12px;font-size:14px;color:#333;"><strong>之前告警的异常模块已恢复。</strong></p>
 <div style="margin:0 0 12px;padding:10px 14px;background:#f0fdf4;border-left:4px solid #16a34a;border-radius:4px;">
@@ -344,7 +344,7 @@ export async function evaluatePipelineAlerts(
   <div style="font-size:14px;color:#333;line-height:1.6;">· 无需 owner 操作</div>
 </div>
 <p style="margin:0 0 4px;font-size:13px;color:#666;">恢复确认时间：${bj.dateStr} ${bj.timeLabel}（北京时间）</p>
-<p style="margin:12px 0 0;font-size:12px;color:#999;">本邮件由 Aromiso AI 心跳层自动生成（每类恢复通知 24 小时内只发一次）。详情：后台 /admin/command-center</p>`,
+<p style="margin:12px 0 0;font-size:12px;color:#999;">本邮件由 Jewelry 心跳层自动生成（每类恢复通知 24 小时内只发一次）。详情：后台 /admin/command-center</p>`,
                 );
                 if (rr.ok) {
                   await commitCooldown(env, recKey, 24 * 3600);
@@ -546,7 +546,7 @@ export async function wasDigestSent(env: Env, dateStr: string): Promise<boolean>
  * V5.415（P1-2B）邮件三态：
  *   🟢 SYSTEM_HEALTHY  —— 日报主表存在，正常发送日报；
  *   🟡 REPORT_DEGRADED —— 日报主表缺失 / generateDailyReport 失败（genState.reportOk=false）：
- *                         只发【Aromiso AI 报表异常】，绝不发「运行正常」；
+ *                         只发【Jewelry AI 报表异常】，绝不发「运行正常」；
  *   🔴 SYSTEM_ALERT    —— 真实性拦截 / blocked≥3 等事件级异常（由 evaluatePipelineAlerts 负责）。
  * genState 由调用方（os-daily auditor / cron-pull 兜底）传入报告生成的真实结果。
  */
@@ -594,7 +594,7 @@ export async function sendDailyDigest(
           ? String(genState.reportErr).slice(0, 300)
           : `ai_daily_report 中不存在 ${dateStr} 的报告行`
         : String(genState?.contextErr || "unknown").slice(0, 300);
-      const subject = `【Aromiso AI 报表异常】${bj.label}｜${reportFailed ? "日报生成失败" : "上下文聚合失败"}（REPORT_DEGRADED）`;
+      const subject = `【Jewelry AI 报表异常】${bj.label}｜${reportFailed ? "日报生成失败" : "上下文聚合失败"}（REPORT_DEGRADED）`;
       const html = `
 <p style="margin:0 0 12px;font-size:14px;color:#333;"><strong>系统状态：🟡 REPORT_DEGRADED（报表降级）</strong></p>
 <div style="margin:0 0 12px;padding:10px 14px;background:#fff7ed;border-left:4px solid #d97706;border-radius:4px;">
@@ -760,7 +760,7 @@ export async function sendDailyDigest(
           if (!g) continue;
           const cl = Number(r.clicks || 0);
           const q = String(r.key || "");
-          if (!/aromiso/i.test(q)) g.nonBrand += cl;
+          if (!/jewelry/i.test(q)) g.nonBrand += cl; // TBC: brand-term filter, revisit with final brand name
           if (classifyIntent(q) === "commercial") g.commercial += cl;
         }
         const iRows = (
@@ -918,7 +918,7 @@ export async function sendDailyDigest(
         ${row("商业意图点击（B2B 采购词）", cur.commercial.toLocaleString(), changeHtml(cur.commercial, base ? base.commercial : null))}
         ${row("询盘 Search→Inquiry（近7天）★", String(inqCur), changeHtml(inqCur, inqBase), true)}
       </table>
-      <div style="font-size:12px;color:#888;margin-top:6px;">★ 最高优先级指标：让潜在客户找到 Aromiso 并发出询盘。</div>
+      <div style="font-size:12px;color:#888;margin-top:6px;">★ 最高优先级指标：让潜在客户找到 Jewelry 并下单。</div>
       ${queryDimZero ? `<div style="font-size:12px;color:#d97706;margin-top:4px;">⚠ 口径标注：非品牌/商业点击按 query 维度拆分——低流量下 Google 对 query 维度 clicks 有隐私阈值（QUERY_DIMENSION_LIMITATION），0 是「无数据 NO_DATA」而非「真实的 0」；全站真实点击以 page 维度「点击 Clicks」行为准。</div>` : ""}
       ${staleDays > 4 ? `<div style="font-size:12px;color:#d97706;margin-top:4px;">⚠ GSC 数据延迟（PENDING）：最新数据日 ${esc(latestGscDate)} 落后报告日 ${staleDays} 天，以上数字为旧数据，非今日实况。</div>` : ""}`;
     })();
@@ -935,7 +935,7 @@ export async function sendDailyDigest(
       statusTag = "🟡 有轻微波动";
       statusColor = "#d97706";
     }
-    const subject = `【Aromiso AI日报】${bj.label}｜${statusTag.replace(/^[^\s]+\s/, "")}｜完成 ${completed} 项任务`;
+    const subject = `【Jewelry AI日报】${bj.label}｜${statusTag.replace(/^[^\s]+\s/, "")}｜完成 ${completed} 项任务`;
 
     // ---- HTML 拼装 ----
     const kvRow = (k: string, v: string, color?: string) =>

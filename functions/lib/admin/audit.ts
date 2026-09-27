@@ -18,7 +18,12 @@ export interface AuditEntry {
     | "reject_ai"
     | "login"
     | "logout"
-    | "rollback";
+    | "rollback"
+    | "bootstrap_owner_created"
+    | "order_status_transition"
+    | "product_archived"
+    | "product_created"
+    | "product_updated";
   resource_type: string;
   resource_id?: string | null;
   resource_title?: string | null;

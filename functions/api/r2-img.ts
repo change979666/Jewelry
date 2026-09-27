@@ -10,7 +10,7 @@ import type { Env } from "../types";
 // other prefix (staging/, test/, audit/, email/, internal/, knowledge/, ...) is
 // non-public and must never be readable through this anonymous proxy.
 // NOTE: the live front-end serves product images from the public bucket domain
-// (images.aromiso.com), NOT from this endpoint, so restricting the proxy does
+// (images on the image CDN domain), NOT from this endpoint, so restricting the proxy does
 // not affect front-end image loading.
 const PUBLIC_KEY_PREFIXES = ["commerce/", "products/", "catalogs/"] as const;
 

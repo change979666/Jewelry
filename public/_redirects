@@ -1,11 +1,3 @@
 # Admin V1 retired — all legacy dashboard URLs use the unified Admin V2.
 /admin /admin-v2 302
 /admin/* /admin-v2 302
-
-# Shop listing page must NOT be rewritten to the product shell.
-/en/shop/ /en/shop/ 200
-/ar/shop/ /ar/shop/ 200
-
-# Product detail pages — serve the product shell; JS reads the slug from the URL.
-/en/shop/* /en/shop/product/ 200
-/ar/shop/* /ar/shop/product/ 200

@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// POST /api/ai/vision — Aromiso 统一视觉模型入口（Vision Router）
+// POST /api/ai/vision — Jewelry 统一视觉模型入口（Vision Router）
 //
 // Body: { image: string (url), prompt?: string }
 // 返回: { success, data: { provider, parsed, raw } | null, error, meta }

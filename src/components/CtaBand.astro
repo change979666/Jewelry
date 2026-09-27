@@ -1,5 +1,4 @@
 ---
-import { c } from "../i18n-content";
 import type { Locale } from "../i18n";
 import { getRelativeLocaleUrl } from "astro:i18n";
 
@@ -12,10 +11,27 @@ interface Props {
   context?: string;
 }
 const { locale = "en", href, from, context } = Astro.props;
-const data = c(locale, "ctaBand");
+
+const copy = {
+  en: {
+    eyebrow: "Everyday luxury",
+    title: "Fine jewelry, made for every day",
+    text: "Hand-finished pieces in gold, silver and pearls — shipped across the Gulf with cash on delivery.",
+    button: "Shop the collection",
+    note: "Free shipping on orders over SAR 300 · KSA & UAE",
+  },
+  ar: {
+    eyebrow: "فخامة يومية",
+    title: "مجوهرات راقية لكل يوم",
+    text: "قطع مصنوعة يدويًا من الذهب والفضة واللؤلؤ — مع الشحن إلى جميع دول الخليج والدفع عند الاستلام.",
+    button: "تسوق المجموعة",
+    note: "شحن مجاني للطلبات فوق 300 ريال · السعودية والإمارات",
+  },
+};
+const data = copy[locale] ?? copy.en;
 
 // Build the CTA link: explicit href wins; otherwise default /contact with optional query params
-let link = href ?? getRelativeLocaleUrl(locale, "/contact");
+let link = href ?? getRelativeLocaleUrl(locale, "/collection/everyday");
 if (!href && (from || context)) {
   const parts: string[] = [];
   if (from) parts.push(`from=${encodeURIComponent(from)}`);

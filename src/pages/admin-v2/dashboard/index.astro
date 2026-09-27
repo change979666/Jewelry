@@ -4,17 +4,11 @@
 import DashboardView from "../../../components/admin/views/DashboardView.astro";
 import { getCollection } from "astro:content";
 
-const [blogC, prodC, guideC, caseC] = await Promise.all([
-  getCollection("blog"),
-  getCollection("products"),
-  getCollection("guides"),
-  getCollection("caseStudies"),
-]);
+// 只统计真实存在的内容集合（products / caseStudies 集合已移除）
+const [blogC, guideC] = await Promise.all([getCollection("blog"), getCollection("guides")]);
 const contentStats = {
   blog: blogC.length,
-  products: prodC.length,
   guides: guideC.length,
-  cases: caseC.length,
 };
 ---
 
@@ -24,7 +18,7 @@ const contentStats = {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>总览 — Aromiso 后台管理系统</title>
+    <title>总览 — Jewelry 后台管理</title>
     <script is:inline>
       (function () {
         fetch("/api/admin/v2/auth/me", { credentials: "same-origin" })

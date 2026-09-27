@@ -400,7 +400,7 @@ export async function pollBuildStatus(
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/vnd.github+json",
-          "User-Agent": "Aromiso-CMS",
+          "User-Agent": "Jewelry-CMS",
         },
       },
     );
@@ -539,7 +539,7 @@ export async function rollbackContent(
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/vnd.github+json",
-          "User-Agent": "Aromiso-CMS",
+          "User-Agent": "Jewelry-CMS",
         },
       },
     );

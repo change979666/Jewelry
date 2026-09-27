@@ -76,6 +76,62 @@ const RL_WINDOW_MS = 5 * 60 * 1000;
 const RL_MAX_ATTEMPTS = 5;
 const RL_TTL_SECONDS = 900;
 
+// ---- Bootstrap: 首次启动用 env.ADMIN_PASSWORD 创建 Owner ---------------------
+// 仅当 admin_users 中不存在任何 active Owner 时允许。创建成功后该路径永久关闭
+// （再次进入时 COUNT > 0，直接返回 null 走普通失败流程）。
+// 并发安全：INSERT 依赖 username 唯一约束；失败时回读行，绝不为同一 username
+// 创建两个账号。
+
+async function tryBootstrapOwner(
+  env: AdminEnv,
+  username: string,
+  password: string,
+): Promise<{ id: string; password_hash: string; status: string } | null> {
+  if (!env.DB || !env.ADMIN_PASSWORD) return null;
+  // 密码必须与 env.ADMIN_PASSWORD 完全一致（常量时间比较 HMAC 摘要）。
+  const envDigest = await hmacHex(env.ADMIN_PASSWORD, env.ADMIN_PASSWORD);
+  const givenDigest = await hmacHex(env.ADMIN_PASSWORD, password);
+  if (!timingSafeEqual(envDigest, givenDigest)) return null;
+
+  try {
+    const cnt = await env.DB.prepare(
+      "SELECT COUNT(*) AS cnt FROM admin_users WHERE role_id = 'role_owner' AND status = 'active'",
+    ).first<{ cnt: number }>();
+    if ((cnt?.cnt ?? 0) > 0) return null;
+
+    const id = crypto.randomUUID();
+    const passwordHash = await hmacHex(env.ADMIN_PASSWORD, password);
+    await env.DB.prepare(
+      "INSERT INTO admin_users (id, username, password_hash, role_id, status) VALUES (?,?,?,?, 'active')",
+    )
+      .bind(id, username, passwordHash, "role_owner")
+      .run();
+
+    await logAction(env, {
+      actor_type: "human",
+      user_id: id,
+      username,
+      action: "bootstrap_owner_created",
+      resource_type: "auth",
+      change_summary: "first-boot Owner created from ADMIN_PASSWORD",
+    });
+    return { id, password_hash: passwordHash, status: "active" };
+  } catch {
+    // 并发创建冲突或唯一约束命中 → 回读已有行；仍不存在则视为失败。
+    try {
+      return (
+        (await env.DB.prepare(
+          "SELECT id, password_hash, status FROM admin_users WHERE username = ?",
+        )
+          .bind(username)
+          .first<{ id: string; password_hash: string; status: string }>()) ?? null
+      );
+    } catch {
+      return null;
+    }
+  }
+}
+
 // ---- V2 Login Handler --------------------------------------------------------
 
 export async function onRequest(context: { request: Request; env: AdminEnv }) {
@@ -153,6 +209,11 @@ export async function onRequest(context: { request: Request; env: AdminEnv }) {
         .first<{ id: string; password_hash: string; status: string }>()) ?? null;
   } catch (_) {
     row = null; // DB failure → fail closed
+  }
+
+  // 首启 Bootstrap：用户不存在 → 尝试用 ADMIN_PASSWORD 创建 Owner（仅无 Owner 时）。
+  if (!row) {
+    row = await tryBootstrapOwner(env, username, password);
   }
   // Compare ALWAYS runs (dummy target when user missing) — no timing/enumeration leak.
   const ok =

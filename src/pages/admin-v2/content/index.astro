@@ -79,7 +79,7 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
 
 <script>
   const API = "/api/admin/v2/content";
-  const toast = (window as any).AromisoToast;
+  const toast = (window as any).JewelryToast;
 
   let currentType = "";
   let currentSearch = "";
@@ -159,7 +159,7 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
     params.set("page", String(currentPage));
     params.set("pageSize", String(currentPageSize));
 
-    (window as any).AromisoBusy?.("content-grid", true);
+    (window as any).JewelryBusy?.("content-grid", true);
     try {
       const res = await fetch(`${API}?${params}`);
       if (res.status === 401) {
@@ -179,7 +179,7 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
     } catch {
       toast?.show?.("网络错误", "error");
     } finally {
-      (window as any).AromisoBusy?.("content-grid", false);
+      (window as any).JewelryBusy?.("content-grid", false);
     }
   }
 
@@ -270,8 +270,8 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
   function renderPagination(total: number, page: number, pages: number) {
     const info = document.getElementById("pagination-info");
     const controls = document.getElementById("pagination-controls");
-    if (window.AromisoPagination && controls) {
-      window.AromisoPagination.render(info, controls, {
+    if (window.JewelryPagination && controls) {
+      window.JewelryPagination.render(info, controls, {
         total,
         page,
         totalPages: pages,
@@ -352,11 +352,11 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
         currentSort = field;
         currentOrder = "desc";
       }
-      window.AromisoSort?.mark(document, currentSort, currentOrder);
+      window.JewelrySort?.mark(document, currentSort, currentOrder);
       loadContent();
     });
   });
-  window.AromisoSort?.mark(document, currentSort, currentOrder);
+  window.JewelrySort?.mark(document, currentSort, currentOrder);
 
   // Select all
   document.getElementById("select-all")?.addEventListener("change", (e) => {

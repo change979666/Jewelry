@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-//  Aromiso V5.1 — AI Provider Abstraction
+//  Jewelry V5.1 — AI Provider Abstraction
 //
 //  functions/lib/ai-provider.ts
 //

@@ -1,28 +1,154 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import type { Locale } from "../../i18n";
 import { getCommerce } from "../../lib/commerce";
+import { PAGE, SITE_CFG } from "../../consts";
+import type { Locale } from "../../i18n";
+import { t } from "../../i18n";
+import { getCollection } from "astro:content";
 
 const { lang } = Astro.params;
 const locale = lang as Locale;
 
 const db = Astro.locals.runtime.env.DB;
-const commerce = getCommerce(db);
-const products = await commerce.products.listProducts();
+const commerce = db ? getCommerce(db) : null;
+
+// Real data only — sections render empty states when there is nothing to show.
+const collections = commerce ? await commerce.collections.listCollections() : [];
+const newArrivals = commerce
+  ? (await commerce.products.listProducts({ limit: 8, sort: 'newest' })).products
+  : [];
+
+async function byCollection(slug: string, limit = 4) {
+  if (!commerce) return { products: [] as any[], total: 0 };
+  const col = await commerce.collections.getBySlug(slug);
+  if (!col) return { products: [] as any[], total: 0 };
+  return commerce.collections.listProducts({ collectionId: col.id, limit });
+}
+const [everyday, gulf, gift] = await Promise.all([
+  byCollection('everyday'),
+  byCollection('gulf-design'),
+  byCollection('gift'),
+]);
+
+// Editorial: latest published blog posts for this locale (fallback en handled by content layer)
+const posts = (await getCollection("blog", ({ data }) => !data.draft && data.locale === locale))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+  .slice(0, 3);
+
+const formatMoney = (price: number, currency: string) =>
+  new Intl.NumberFormat(locale, { style: 'currency', currency }).format(price / 100);
 ---
 
-<BaseLayout locale={locale} title="Jewelry V1" description="Welcome to Jewelry">
-  <main class="container-x py-12">
-    <h1 class="text-4xl font-bold text-center mb-12">Welcome to Jewelry</h1>
-    
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-      {products.map(p => (
-        <a href={`/${lang}/product/${p.slug}`} class="block border border-line rounded-xl p-4 hover:shadow-lg transition">
-          <div class="aspect-square bg-beige rounded-lg mb-4"></div>
-          <h2 class="font-semibold">{p.title}</h2>
-          <p class="text-accent mt-1">View Details</p>
-        </a>
-      ))}
-    </div>
+<BaseLayout locale={locale} title={t(locale, "home.hero_title")} description={t(locale, "site.description")}>
+  <main>
+    <!-- Hero -->
+    <section class="relative overflow-hidden">
+      <img src={PAGE.heroImage} alt="" class="absolute inset-0 w-full h-full object-cover" loading="eager" />
+      <div class="absolute inset-0 bg-black/40"></div>
+      <div class="relative container-x py-24 md:py-36 text-center text-white">
+        <h1 class="text-4xl md:text-5xl font-bold">{t(locale, "home.hero_title")}</h1>
+        <p class="mt-4 text-lg opacity-90 max-w-xl mx-auto">{t(locale, "home.hero_subtitle")}</p>
+        <div class="mt-8 flex justify-center gap-4">
+          <a href={`/${lang}/collection/everyday`} class="btn btn-primary">{t(locale, "home.shop_everyday")}</a>
+          <a href={`/${lang}/collection/gift`} class="btn btn-secondary">{t(locale, "home.shop_gifts")}</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Collections -->
+    {collections.length > 0 && (
+      <section class="container-x py-16">
+        <h2 class="text-2xl font-bold text-center mb-10">{t(locale, "home.collections_title")}</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {collections.map(c => (
+            <a href={`/${lang}/collection/${c.slug}`} class="block text-center group">
+              <div class="aspect-square rounded-xl bg-beige flex items-center justify-center text-stone group-hover:bg-accent/10 transition">
+                <span class="text-lg font-semibold">{c.name}</span>
+              </div>
+              <p class="mt-2 text-sm font-medium">{c.name}</p>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- New arrivals -->
+    {newArrivals.length > 0 && (
+      <section class="container-x py-8">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold">{t(locale, "home.new_arrivals")}</h2>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {newArrivals.map(p => (
+            <a href={`/${lang}/product/${p.slug}`} class="block border border-line rounded-xl p-4 hover:shadow-lg transition">
+              <div class="aspect-square bg-beige rounded-lg mb-4"></div>
+              <h3 class="font-semibold text-sm">{p.title}</h3>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- Everyday / Gulf Design / Gift rows -->
+    {[
+      { key: 'everyday', title: t(locale, "home.section_everyday"), data: everyday },
+      { key: 'gulf', title: t(locale, "home.section_gulf"), data: gulf },
+      { key: 'gift', title: t(locale, "home.section_gift"), data: gift },
+    ].filter(s => s.data.products.length > 0).map(section => (
+      <section class="container-x py-8">
+        <h2 class="text-2xl font-bold mb-6">{section.title}</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {section.data.products.map((p: any) => (
+            <a href={`/${lang}/product/${p.slug}`} class="block border border-line rounded-xl p-4 hover:shadow-lg transition">
+              <div class="aspect-square bg-beige rounded-lg mb-4"></div>
+              <h3 class="font-semibold text-sm">{p.title}</h3>
+            </a>
+          ))}
+        </div>
+      </section>
+    ))}
+
+    <!-- Editorial -->
+    {posts.length > 0 && (
+      <section class="container-x py-16">
+        <h2 class="text-2xl font-bold text-center mb-10">{t(locale, "home.editorial_title")}</h2>
+        <div class="grid md:grid-cols-3 gap-8">
+          {posts.map(post => (
+            <a href={`/${lang}/blog/${post.slug}`} class="block border border-line rounded-xl overflow-hidden hover:shadow-lg transition">
+              <div class="aspect-video bg-beige"></div>
+              <div class="p-5">
+                <h3 class="font-semibold">{post.data.title}</h3>
+                <p class="mt-2 text-sm text-stone line-clamp-2">{post.data.excerpt}</p>
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- Empty state: no catalog yet -->
+    {newArrivals.length === 0 && collections.length === 0 && (
+      <section class="container-x py-24 text-center">
+        <p class="text-stone text-lg">{t(locale, "home.empty_catalog")}</p>
+      </section>
+    )}
+
+    <!-- Trust / service band -->
+    <section class="border-t border-line mt-8">
+      <div class="container-x py-12 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+        <div>
+          <h3 class="font-semibold">{t(locale, "home.trust_cod_title")}</h3>
+          <p class="mt-1 text-sm text-stone">{t(locale, "home.trust_cod_text")}</p>
+        </div>
+        <div>
+          <h3 class="font-semibold">{t(locale, "home.trust_shipping_title")}</h3>
+          <p class="mt-1 text-sm text-stone">{t(locale, "home.trust_shipping_text")}</p>
+        </div>
+        <div>
+          <h3 class="font-semibold">{t(locale, "home.trust_returns_title")}</h3>
+          <p class="mt-1 text-sm text-stone">{t(locale, "home.trust_returns_text")}</p>
+        </div>
+      </div>
+    </section>
   </main>
 </BaseLayout>

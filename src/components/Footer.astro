@@ -7,7 +7,7 @@ import { getRelativeLocaleUrl } from "astro:i18n";
 import Icon from "./Icon.astro";
 import SocialContactButtons from "./SocialContactButtons.astro";
 import settings from "../data/settings.json";
-import { getProducts, getBlogPosts } from "../lib/content";
+import { getBlogPosts } from "../lib/content";
 
 const _l = (Astro.props.locale as Locale) ?? (Astro.currentLocale as Locale) ?? "en";
 const locale = (LOCALE_LIST.includes(_l) ? _l : "en") as Locale;
@@ -28,14 +28,19 @@ const footerLinks = NAV.filter((item) => item.href).map((item) => ({
   labelKey: `nav.${item.key}`,
 }));
 
-// SEO internal-link columns. Popular products = featured-first; popular
-// articles = most recent. Categories link to the three product lines.
-const popularProducts = (await getProducts(locale)).slice(0, 4);
+// SEO internal-link columns. Popular articles = most recent. Shop column links
+// to the seeded D1 collections (see migrations/0008 seed).
 const popularArticles = (await getBlogPosts(locale)).slice(0, 4);
+const shopLinks = [
+  { href: "/collection/everyday", label: locale === "ar" ? "المجوهرات اليومية" : "Everyday" },
+  { href: "/collection/new-arrivals", label: locale === "ar" ? "وصل حديثًا" : "New Arrivals" },
+  { href: "/collection/best-sellers", label: locale === "ar" ? "الأكثر مبيعًا" : "Best Sellers" },
+  { href: "/collection/gift", label: locale === "ar" ? "الهدايا" : "Gifts" },
+];
 const categoryLinks = [
-  { href: "/products/essential-oils", labelKey: "products.essential-oils" },
-  { href: "/products/candles", labelKey: "products.candles" },
-  { href: "/products/reed-diffusers", labelKey: "products.reed-diffusers" },
+  { href: "/collection/gold", label: locale === "ar" ? "الذهب" : "Gold" },
+  { href: "/collection/silver", label: locale === "ar" ? "الفضة" : "Silver" },
+  { href: "/collection/pearls", label: locale === "ar" ? "اللؤلؤ" : "Pearls" },
 ];
 
 // Build social links list from settings (only show platforms with URLs).
@@ -142,7 +147,7 @@ const _socialLinks = [
           categoryLinks.map((c) => (
             <li>
               <a href={href(c.href)} class="text-sm text-stone transition-colors hover:text-ink">
-                {t(locale, c.labelKey)}
+                {c.label}
               </a>
             </li>
           ))
@@ -150,18 +155,18 @@ const _socialLinks = [
       </ul>
     </div>
 
-    <!-- Popular Products -->
+    <!-- Shop -->
     <div>
       <h4 class="text-sm font-semibold">{t(locale, "footer.popular_products")}</h4>
       <ul class="mt-4 space-y-2.5">
         {
-          popularProducts.map((p) => (
+          shopLinks.map((s) => (
             <li>
               <a
-                href={href(`/products/${p.data.key}`)}
+                href={href(s.href)}
                 class="text-sm text-stone transition-colors hover:text-ink"
               >
-                {p.data.title}
+                {s.label}
               </a>
             </li>
           ))

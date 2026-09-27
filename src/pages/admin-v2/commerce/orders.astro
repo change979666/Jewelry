@@ -1,5 +1,7 @@
 ---
-// Phase 5 — V2 Commerce Order Center
+// Jewelry V1.0 — 订单中心（Jewelry schema + 状态机）
+// 状态内部值为 PENDING_CONFIRMATION/...（见 src/lib/commerce/order.service.ts），
+// 本页是唯一 UI 中文映射处；状态变更只能走合法迁移（服务端强制，409 兜底）。
 import "../../../styles/admin-v2.css";
 import AdminShell from "../../../components/admin/layout/AdminShell.astro";
 import Sidebar from "../../../components/admin/layout/Sidebar.astro";
@@ -18,48 +20,42 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
   <Toast />
 
   <div class="admin-flex-col" style="gap:var(--sp-5);">
-    <!-- Page Header -->
     <div class="admin-page-header">
       <h1 class="admin-page-title">订单中心</h1>
-      <p class="admin-page-desc">查看和管理所有客户订单</p>
+      <p class="admin-page-desc">查看和管理所有客户订单（状态机强制合法迁移）</p>
     </div>
 
     <!-- KPI Bar -->
-    <section
-      style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--sp-3);"
-    >
+    <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--sp-3);">
       <div class="admin-kpi-card">
         <div class="admin-kpi-label">总订单</div>
         <div class="admin-kpi-value" id="kpi-total">—</div>
       </div>
       <div class="admin-kpi-card">
-        <div class="admin-kpi-label">总收入</div>
-        <div class="admin-kpi-value" id="kpi-revenue">—</div>
+        <div class="admin-kpi-label">总收入（分币种）</div>
+        <div class="admin-kpi-value" id="kpi-revenue" style="font-size:var(--fs-lg);">—</div>
       </div>
       <div class="admin-kpi-card">
         <div class="admin-kpi-label">平均订单</div>
-        <div class="admin-kpi-value" id="kpi-avg">—</div>
+        <div class="admin-kpi-value" id="kpi-avg" style="font-size:var(--fs-lg);">—</div>
       </div>
       <div class="admin-kpi-card">
-        <div class="admin-kpi-label">待处理</div>
+        <div class="admin-kpi-label">待确认</div>
         <div class="admin-kpi-value" id="kpi-pending">—</div>
       </div>
     </section>
 
     <!-- Status Tabs -->
-    <section
-      class="admin-flex admin-items-center admin-justify-between"
-      style="flex-wrap:wrap;gap:var(--sp-3);"
-    >
+    <section class="admin-flex admin-items-center admin-justify-between" style="flex-wrap:wrap;gap:var(--sp-3);">
       <div class="admin-flex" style="gap:var(--sp-1);flex-wrap:wrap;" id="status-tabs">
         <button class="admin-tab active" data-status="">全部</button>
-        <button class="admin-tab" data-status="new">新订单</button>
-        <button class="admin-tab" data-status="reviewing">审核中</button>
-        <button class="admin-tab" data-status="paid">已付款</button>
-        <button class="admin-tab" data-status="processing">处理中</button>
-        <button class="admin-tab" data-status="shipped">已发货</button>
-        <button class="admin-tab" data-status="completed">已完成</button>
-        <button class="admin-tab" data-status="cancelled">已取消</button>
+        <button class="admin-tab" data-status="PENDING_CONFIRMATION">待确认</button>
+        <button class="admin-tab" data-status="CONFIRMED">已确认</button>
+        <button class="admin-tab" data-status="PROCESSING">处理中</button>
+        <button class="admin-tab" data-status="SHIPPED">已发货</button>
+        <button class="admin-tab" data-status="OUT_FOR_DELIVERY">派送中</button>
+        <button class="admin-tab" data-status="DELIVERED">已送达</button>
+        <button class="admin-tab" data-status="CANCELLED">已取消</button>
       </div>
     </section>
 
@@ -68,7 +64,7 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
       <input
         type="text"
         id="search-input"
-        placeholder="搜索客户/公司/邮箱/订单号..."
+        placeholder="搜索订单号/邮箱/电话..."
         class="admin-input"
         style="max-width:320px;"
       />
@@ -82,26 +78,20 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
             <tr>
               <th data-sort="order_number" class="sortable">订单号</th>
               <th>客户</th>
-              <th>公司</th>
-              <th>国家</th>
-              <th data-sort="total" class="sortable">金额</th>
-              <th data-sort="status" class="sortable">状态</th>
+              <th>市场</th>
+              <th data-sort="total_amount" class="sortable">金额</th>
+              <th data-sort="order_status" class="sortable">状态</th>
               <th data-sort="created_at" class="sortable">创建时间</th>
               <th style="width:100px;">操作</th>
             </tr>
           </thead>
           <tbody id="orders-tbody">
-            <tr><td colspan="8"><Skeleton lines={5} height="32px" /></td></tr>
+            <tr><td colspan="7"><Skeleton lines={5} height="32px" /></td></tr>
           </tbody>
         </table>
       </div>
-      <div
-        class="admin-flex admin-items-center admin-justify-between"
-        style="margin-top:var(--sp-3);"
-      >
-        <div id="pagination-info" class="admin-text-sm admin-text-muted">
-          <span class="admin-skeleton-text"></span>
-        </div>
+      <div class="admin-flex admin-items-center admin-justify-between" style="margin-top:var(--sp-3);">
+        <div id="pagination-info" class="admin-text-sm admin-text-muted"></div>
         <div class="admin-flex" style="gap:var(--sp-1);" id="pagination-controls"></div>
       </div>
     </section>
@@ -111,20 +101,9 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
     <div id="order-drawer" class="admin-drawer" style="display:none;">
       <div class="admin-drawer-header">
         <span>订单详情</span>
-        <button class="admin-btn admin-btn-ghost admin-btn-sm" id="btn-close-drawer"
-          ><svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"
-            ></line></svg
-          ></button
-        >
+        <button class="admin-btn admin-btn-ghost admin-btn-sm" id="btn-close-drawer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
       </div>
       <div class="admin-drawer-body" id="drawer-content"></div>
     </div>
@@ -133,14 +112,43 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
 
 <script>
   const API = "/api/admin/v2/commerce/orders";
-  const toast = (window as any).AromisoToast;
+  const toast = (msg: string, type: string) => (window as any).showToast?.(msg, type);
+
+  const STATUS_LABELS: Record<string, string> = {
+    PENDING_CONFIRMATION: "待确认",
+    CONFIRMED: "已确认",
+    PROCESSING: "处理中",
+    SHIPPED: "已发货",
+    OUT_FOR_DELIVERY: "派送中",
+    DELIVERED: "已送达",
+    CANCELLED: "已取消",
+    DELIVERY_FAILED: "派送失败",
+    NDR: "问题件",
+    RTO: "退回在途",
+    RETURNED: "已退货",
+    REFUNDED: "已退款",
+  };
+  const BADGE_TONE: Record<string, string> = {
+    PENDING_CONFIRMATION: "admin-badge-draft",
+    CONFIRMED: "admin-badge-active",
+    PROCESSING: "admin-badge-active",
+    SHIPPED: "admin-badge-active",
+    OUT_FOR_DELIVERY: "admin-badge-active",
+    DELIVERED: "admin-badge-published",
+    CANCELLED: "admin-badge-archived",
+    DELIVERY_FAILED: "admin-badge-archived",
+    NDR: "admin-badge-draft",
+    RTO: "admin-badge-draft",
+    RETURNED: "admin-badge-archived",
+    REFUNDED: "admin-badge-archived",
+  };
 
   let currentStatus = "";
   let currentSearch = "";
   let currentSort = "created_at";
   let currentOrder = "desc";
   let currentPage = 1;
-  let currentPageSize = 20;
+  const currentPageSize = 20;
 
   function esc(s: unknown): string {
     if (s == null) return "";
@@ -150,30 +158,19 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
   }
-
   function statusBadge(status: string | null): string {
     if (!status) return '<span class="admin-badge">—</span>';
-    const cls: Record<string, string> = {
-      new: "admin-badge admin-badge-new",
-      reviewing: "admin-badge admin-badge-draft",
-      quoted: "admin-badge admin-badge-active",
-      paid: "admin-badge admin-badge-published",
-      processing: "admin-badge admin-badge-active",
-      shipped: "admin-badge admin-badge-active",
-      completed: "admin-badge admin-badge-published",
-      cancelled: "admin-badge admin-badge-archived",
-    };
-    const labels: Record<string, string> = {
-      new: "新订单",
-      reviewing: "审核中",
-      quoted: "已报价",
-      paid: "已付款",
-      processing: "处理中",
-      shipped: "已发货",
-      completed: "已完成",
-      cancelled: "已取消",
-    };
-    return `<span class="${cls[status] || "admin-badge admin-badge-archived"}">${labels[status] ?? status}</span>`;
+    return `<span class="admin-badge ${BADGE_TONE[status] || "admin-badge"}">${esc(STATUS_LABELS[status] ?? status)}</span>`;
+  }
+  // minor units → 主单位
+  function money(minor: number | null | undefined, currency: string): string {
+    if (minor == null) return "—";
+    return `${esc(currency)} ${(minor / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+  }
+  function fmtDate(iso: string | null | undefined): string {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    return isNaN(d.getTime()) ? "—" : d.toLocaleString("zh-CN");
   }
 
   async function loadOrders() {
@@ -193,27 +190,30 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
       }
       const json = (await res.json()) as any;
       if (!json.success) {
-        toast?.show?.("加载失败", "error");
+        toast("加载失败", "error");
         return;
       }
-
       const { data, meta } = json;
-      renderTable(data);
+      renderTable(data || []);
       if (meta) {
         renderPagination(meta.total, meta.page, meta.totalPages);
         if (meta.kpis) {
           document.getElementById("kpi-total")!.textContent = String(meta.kpis.total_orders || 0);
           document.getElementById("kpi-revenue")!.textContent =
-            `$${(meta.kpis.total_revenue || 0).toLocaleString()}`;
+            meta.kpis.total_revenue > 0
+              ? money(meta.kpis.total_revenue, "SAR")
+              : "—";
           document.getElementById("kpi-avg")!.textContent =
-            `$${(meta.kpis.avg_order_value || 0).toFixed(2)}`;
+            meta.kpis.avg_order_value > 0
+              ? money(meta.kpis.avg_order_value, "SAR")
+              : "—";
         }
         document.getElementById("kpi-pending")!.textContent = String(
-          (meta.statusCounts?.new || 0) + (meta.statusCounts?.reviewing || 0),
+          meta.statusCounts?.PENDING_CONFIRMATION || 0,
         );
       }
     } catch {
-      toast?.show?.("网络错误", "error");
+      toast("网络错误", "error");
     }
   }
 
@@ -221,51 +221,33 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
     const tbody = document.getElementById("orders-tbody")!;
     if (!orders.length) {
       tbody.innerHTML =
-        '<tr><td colspan="8" class="admin-empty"><div class="admin-empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></div><div class="admin-empty-title">暂无订单</div></td></tr>';
+        '<tr><td colspan="7" class="admin-empty"><div class="admin-empty-title">暂无订单</div></td></tr>';
       return;
     }
     tbody.innerHTML = orders
       .map(
         (o) => `
       <tr data-id="${esc(o.id)}">
-        <td class="admin-font-semibold">${esc(o.order_number || o.id?.slice(0, 8))}</td>
-        <td>${esc(o.customer_name || "—")}</td>
-        <td>${esc(o.company || "—")}</td>
-        <td>${esc(o.country || "—")}</td>
-        <td class="admin-font-semibold text-nowrap">$${(o.total || 0).toFixed(2)}</td>
-        <td>${statusBadge(o.status)}</td>
-        <td class="admin-text-muted text-nowrap">${o.created_at ? new Date(o.created_at * 1000).toLocaleDateString("zh-CN") : "—"}</td>
+        <td class="admin-font-semibold">${esc(o.order_number)}</td>
+        <td>${esc([o.first_name, o.last_name].filter(Boolean).join(" ") || o.customer_email || "访客")}</td>
+        <td>${esc(o.market || "—")}</td>
+        <td class="admin-font-semibold text-nowrap">${money(o.total_amount, o.currency)}</td>
+        <td>${statusBadge(o.order_status)}</td>
+        <td class="admin-text-muted text-nowrap">${fmtDate(o.created_at)}</td>
         <td><button class="admin-btn admin-btn-secondary admin-btn-sm btn-detail" data-id="${esc(o.id)}">详情</button></td>
       </tr>
     `,
       )
       .join("");
-
     tbody
       .querySelectorAll(".btn-detail")
-      .forEach((b) =>
-        b.addEventListener("click", () => openDrawer((b as HTMLElement).dataset.id!)),
-      );
+      .forEach((b) => b.addEventListener("click", () => openDrawer((b as HTMLElement).dataset.id!)));
   }
 
   function renderPagination(total: number, page: number, totalPages: number) {
     const info = document.getElementById("pagination-info");
     const controls = document.getElementById("pagination-controls");
-    if (window.AromisoPagination && controls) {
-      window.AromisoPagination.render(info, controls, {
-        total,
-        page,
-        totalPages,
-        pageSize: currentPageSize,
-        onChange: ({ page: p, pageSize: ps }) => {
-          currentPage = p;
-          if (ps) currentPageSize = ps;
-          loadOrders();
-        },
-      });
-      return;
-    }
-    if (info) info.textContent = `共 ${total} 条，第 ${page}/${totalPages} 页`;
+    if (info) info.textContent = `共 ${total} 条，第 ${page}/${totalPages || 1} 页`;
     if (!controls) return;
     let html = "";
     if (page > 1)
@@ -291,89 +273,83 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
       const res = await fetch(`${API}?id=${id}`);
       const json = (await res.json()) as any;
       if (!json.success) {
-        toast?.show?.("加载失败", "error");
+        toast("加载失败", "error");
         return;
       }
-      const { order, items, events } = json.data;
+      const { order, items, events, address, legalTransitions } = json.data;
       const drawer = document.getElementById("order-drawer")!;
       const overlay = document.getElementById("order-drawer-overlay")!;
       const content = document.getElementById("drawer-content")!;
       drawer.style.display = "flex";
       overlay.style.display = "block";
+      const cur = order.order_status as string;
 
       content.innerHTML = `
         <div class="admin-flex-col" style="gap:var(--sp-4);">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3);">
-            <div class="admin-form-group">
-              <span class="admin-label">订单号</span>
-              <div class="admin-font-semibold">${esc(order.order_number || order.id?.slice(0, 8))}</div>
-            </div>
-            <div class="admin-form-group">
-              <span class="admin-label">状态</span>
-              <div>${statusBadge(order.status)}</div>
-            </div>
-            <div class="admin-form-group">
-              <span class="admin-label">客户</span>
-              <div>${esc(order.customer_name || "—")}</div>
-            </div>
-            <div class="admin-form-group">
-              <span class="admin-label">公司</span>
-              <div>${esc(order.company || "—")}</div>
-            </div>
-            <div class="admin-form-group">
-              <span class="admin-label">邮箱</span>
-              <div>${esc(order.email || "—")}</div>
-            </div>
-            <div class="admin-form-group">
-              <span class="admin-label">国家</span>
-              <div>${esc(order.country || "—")}</div>
-            </div>
+            <div class="admin-form-group"><span class="admin-label">订单号</span><div class="admin-font-semibold">${esc(order.order_number)}</div></div>
+            <div class="admin-form-group"><span class="admin-label">状态</span><div>${statusBadge(cur)}</div></div>
+            <div class="admin-form-group"><span class="admin-label">市场 / 币种</span><div>${esc(order.market || "—")} / ${esc(order.currency || "—")}</div></div>
+            <div class="admin-form-group"><span class="admin-label">支付</span><div>${esc(order.payment_status || "—")}</div></div>
+            <div class="admin-form-group"><span class="admin-label">客户</span><div>${esc(address ? [address.first_name, address.last_name].filter(Boolean).join(" ") : "") || "访客"}</div></div>
+            <div class="admin-form-group"><span class="admin-label">电话</span><div>${esc(address?.phone || "—")}</div></div>
+            <div class="admin-form-group" style="grid-column:1/-1;"><span class="admin-label">地址</span><div>${esc([address?.address_line_1, address?.district, address?.city, address?.region, address?.country].filter(Boolean).join(", ") || "—")}</div></div>
           </div>
           <hr class="admin-divider" />
           <div>
-            <div class="admin-flex admin-justify-between" style="margin-bottom:var(--sp-1);"><span class="admin-text-muted">小计</span><span>$${(order.subtotal || 0).toFixed(2)}</span></div>
-            <div class="admin-flex admin-justify-between" style="margin-bottom:var(--sp-1);"><span class="admin-text-muted">运费</span><span>$${(order.shipping_cost || 0).toFixed(2)}</span></div>
-            <div class="admin-flex admin-justify-between admin-font-bold" style="font-size:var(--fs-lg);"><span>总计</span><span>$${(order.total || 0).toFixed(2)}</span></div>
+            <div class="admin-flex admin-justify-between" style="margin-bottom:var(--sp-1);"><span class="admin-text-muted">小计</span><span>${money(order.subtotal, order.currency)}</span></div>
+            ${order.discount_amount > 0 ? `<div class="admin-flex admin-justify-between" style="margin-bottom:var(--sp-1);"><span class="admin-text-muted">折扣${order.discount_code ? ` (${esc(order.discount_code)})` : ""}</span><span>- ${money(order.discount_amount, order.currency)}</span></div>` : ""}
+            <div class="admin-flex admin-justify-between" style="margin-bottom:var(--sp-1);"><span class="admin-text-muted">运费</span><span>${money(order.shipping_amount, order.currency)}</span></div>
+            <div class="admin-flex admin-justify-between" style="margin-bottom:var(--sp-1);"><span class="admin-text-muted">税费</span><span>${money(order.tax_amount, order.currency)}</span></div>
+            <div class="admin-flex admin-justify-between admin-font-bold" style="font-size:var(--fs-lg);"><span>总计</span><span>${money(order.total_amount, order.currency)}</span></div>
           </div>
-          ${items.length ? `<div><hr class="admin-divider" /><h4 class="admin-section-title">商品 (${items.length})</h4>${items.map((it: any) => `<div class="admin-flex admin-justify-between" style="padding:var(--sp-2) 0;border-bottom:1px solid var(--line);font-size:var(--fs-base);"><span>${esc(it.product_name || it.product_title_snapshot || "—")} × ${it.quantity || 1}</span><span>$${(it.subtotal || (it.unit_price || 0) * (it.quantity || 1)).toFixed(2)}</span></div>`).join("")}</div>` : ""}
-          ${events.length ? `<div><hr class="admin-divider" /><h4 class="admin-section-title">时间线</h4>${events.map((ev: any) => `<div class="admin-flex" style="gap:var(--sp-2);padding:var(--sp-2) 0;font-size:var(--fs-base);"><span class="admin-text-muted" style="white-space:nowrap;">${ev.created_at ? new Date(ev.created_at * 1000).toLocaleString("zh-CN") : ""}</span><span>${esc(ev.note || `${ev.from_status} → ${ev.to_status}`)}</span></div>`).join("")}</div>` : ""}
+          ${items.length ? `<div><hr class="admin-divider" /><h4 class="admin-section-title">商品 (${items.length})</h4>${items.map((it: any) => `<div class="admin-flex admin-justify-between" style="padding:var(--sp-2) 0;border-bottom:1px solid var(--line);font-size:var(--fs-base);"><span>${esc(it.title)}${it.sku ? ` <span class="admin-text-muted">(${esc(it.sku)})</span>` : ""} × ${it.quantity}</span><span>${money(it.line_total, order.currency)}</span></div>`).join("")}</div>` : ""}
+          ${events.length ? `<div><hr class="admin-divider" /><h4 class="admin-section-title">时间线</h4>${events.map((ev: any) => `<div class="admin-flex" style="gap:var(--sp-2);padding:var(--sp-2) 0;font-size:var(--fs-base);"><span class="admin-text-muted" style="white-space:nowrap;">${fmtDate(ev.created_at)}</span><span>${esc(ev.description || STATUS_LABELS[ev.status] || ev.status)}</span></div>`).join("")}</div>` : ""}
           <hr class="admin-divider" />
           <div>
-            <h4 class="admin-section-title">更新状态</h4>
+            <h4 class="admin-section-title">状态迁移（仅合法路径）</h4>
+            ${legalTransitions.length ? `
             <div class="admin-flex" style="gap:var(--sp-2);">
               <select id="drawer-status" class="admin-select" style="flex:1;">
-                ${["new", "reviewing", "quoted", "paid", "processing", "shipped", "completed", "cancelled"].map((s) => `<option value="${s}" ${s === order.status ? "selected" : ""}>${{ new: "新订单", reviewing: "审核中", quoted: "已报价", paid: "已付款", processing: "处理中", shipped: "已发货", completed: "已完成", cancelled: "已取消" }[s] || s}</option>`).join("")}
+                <option value="" selected disabled>选择目标状态…</option>
+                ${legalTransitions.map((s: string) => `<option value="${s}">${esc(STATUS_LABELS[s] ?? s)}</option>`).join("")}
               </select>
-              <button class="admin-btn admin-btn-primary" id="btn-update-status">更新</button>
+              <button class="admin-btn admin-btn-primary" id="btn-update-status">迁移</button>
             </div>
+            <input id="drawer-reason" class="admin-input" style="width:100%;margin-top:var(--sp-2);" placeholder="备注（可选）" />
+            ` : '<div class="admin-text-muted admin-text-sm">该状态为终态，无可用迁移。</div>'}
           </div>
         </div>
       `;
 
       document.getElementById("btn-update-status")?.addEventListener("click", async () => {
-        const newStatus = (document.getElementById("drawer-status") as unknown as HTMLSelectElement)
-          .value;
-        if (newStatus === order.status) return;
+        const sel = document.getElementById("drawer-status") as unknown as HTMLSelectElement;
+        const newStatus = sel?.value;
+        if (!newStatus) {
+          toast("请选择目标状态", "warning");
+          return;
+        }
+        const reason = (document.getElementById("drawer-reason") as unknown as HTMLInputElement)?.value?.trim();
         try {
           const res = await fetch(API, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id, status: newStatus }),
+            body: JSON.stringify({ id, status: newStatus, reason }),
           });
           const j = (await res.json()) as any;
           if (j.success) {
-            toast?.show?.("已更新", "success");
+            toast("已迁移", "success");
             closeDrawer();
             loadOrders();
           } else {
-            toast?.show?.(j.error?.message || "更新失败", "error");
+            toast(j.error?.message || "迁移失败", "error");
           }
         } catch {
-          toast?.show?.("网络错误", "error");
+          toast("网络错误", "error");
         }
       });
     } catch {
-      toast?.show?.("网络错误", "error");
+      toast("网络错误", "error");
     }
   }
 
@@ -383,9 +359,7 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
   document.getElementById("status-tabs")?.addEventListener("click", (e) => {
     const btn = (e.target as HTMLElement).closest("button");
     if (!btn) return;
-    document
-      .querySelectorAll("#status-tabs .admin-tab")
-      .forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll("#status-tabs .admin-tab").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
     currentStatus = btn.dataset.status || "";
     currentPage = 1;
@@ -404,17 +378,15 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
 
   document.querySelectorAll(".sortable").forEach((th) => {
     th.addEventListener("click", () => {
-      const col = (th as HTMLElement).dataset.sort;
+      const col = (th as HTMLElement).dataset.sort!;
       if (currentSort === col) currentOrder = currentOrder === "desc" ? "asc" : "desc";
       else {
-        currentSort = col!;
+        currentSort = col;
         currentOrder = "desc";
       }
-      window.AromisoSort?.mark(document, currentSort, currentOrder);
       loadOrders();
     });
   });
-  window.AromisoSort?.mark(document, currentSort, currentOrder);
 
   loadOrders();
 </script>

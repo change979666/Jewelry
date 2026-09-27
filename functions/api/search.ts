@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-//  Aromiso — Runtime Search API
+//  Jewelry — Runtime Search API
 //  GET /api/search?q=lavender&type=all&limit=20
 //  Searches commerce products in D1 at runtime. Static content (guides, blog)
 //  is still handled client-side via /search-index.json (build-time).

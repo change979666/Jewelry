@@ -12,7 +12,7 @@ const locale = (Astro.props.locale as Locale) ?? "en";
 const posts = await getBlogPosts(locale);
 
 const dateFmt = new Intl.DateTimeFormat(
-  locale === "de" ? "de-DE" : locale === "es" ? "es-ES" : "en-US",
+  locale === "ar" ? "ar-SA-u-nu-latn" : "en-US",
   { year: "numeric", month: "short", day: "numeric" },
 );
 const postHref = (key: string) => getRelativeLocaleUrl(locale, `/blog/${key}`);
