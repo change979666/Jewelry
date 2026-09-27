@@ -12,10 +12,7 @@
 import { getCollection } from "astro:content";
 
 export async function GET() {
-  const [blogAll, guidesAll] = await Promise.all([
-    getCollection("blog"),
-    getCollection("guides"),
-  ]);
+  const [blogAll, guidesAll] = await Promise.all([getCollection("blog"), getCollection("guides")]);
 
   const blog = blogAll.map((e) => ({
     key: e.data.key,
@@ -44,8 +41,7 @@ export async function GET() {
 
   // TODO(commerce): products are managed in D1 via /admin-v2/commerce/products,
   // not markdown. caseStudies are not part of the Jewelry model.
-  return new Response(
-    JSON.stringify({ blog, products: [], guides, caseStudies: [] }),
-    { headers: { "Content-Type": "application/json" } },
-  );
+  return new Response(JSON.stringify({ blog, products: [], guides, caseStudies: [] }), {
+    headers: { "Content-Type": "application/json" },
+  });
 }

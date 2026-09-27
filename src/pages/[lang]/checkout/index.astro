@@ -14,9 +14,10 @@ const db = Astro.locals.runtime.env.DB;
 if (!db) return new Response("Database unavailable", { status: 503 });
 
 // Feature flag from site_settings (config, not hardcoded UI state)
-const flagRow = await db.prepare(`SELECT value FROM site_settings WHERE key = 'feature.enable_online_payment'`)
+const flagRow = await db
+  .prepare(`SELECT value FROM site_settings WHERE key = 'feature.enable_online_payment'`)
   .first<{ value: string }>();
-const ENABLE_ONLINE_PAYMENT = flagRow?.value === 'true';
+const ENABLE_ONLINE_PAYMENT = flagRow?.value === "true";
 
 const sessionId = Astro.cookies.get("session_id")?.value;
 const commerce = getCommerce(db, { enableOnlinePayment: ENABLE_ONLINE_PAYMENT });
@@ -42,13 +43,26 @@ if (Astro.request.method === "POST") {
     error = "cart_empty";
   } else {
     const formData = await Astro.request.formData();
-    const first = String(formData.get("first_name") || "").trim().slice(0, 100);
-    const last = String(formData.get("last_name") || "").trim().slice(0, 100);
-    const email = String(formData.get("email") || "").trim().slice(0, 200).toLowerCase();
-    const phone = String(formData.get("phone") || "").trim().slice(0, 50);
+    const first = String(formData.get("first_name") || "")
+      .trim()
+      .slice(0, 100);
+    const last = String(formData.get("last_name") || "")
+      .trim()
+      .slice(0, 100);
+    const email = String(formData.get("email") || "")
+      .trim()
+      .slice(0, 200)
+      .toLowerCase();
+    const phone = String(formData.get("phone") || "")
+      .trim()
+      .slice(0, 50);
     const country = String(formData.get("country") || "").trim();
-    const city = String(formData.get("city") || "").trim().slice(0, 100);
-    const address1 = String(formData.get("address") || "").trim().slice(0, 500);
+    const city = String(formData.get("city") || "")
+      .trim()
+      .slice(0, 100);
+    const address1 = String(formData.get("address") || "")
+      .trim()
+      .slice(0, 500);
     const paymentMethod = String(formData.get("payment_method") || "cod");
 
     // Validation
@@ -59,9 +73,11 @@ if (Astro.request.method === "POST") {
     else if (paymentMethod !== "cod") error = "payment_unavailable";
     else {
       // Market resolution (config-driven tax/shipping)
-      const marketCode = country === 'UAE' ? 'UAE' : 'KSA';
-      const market = await db.prepare(`SELECT * FROM markets WHERE code = ? AND is_active = 1`)
-        .bind(marketCode).first<Market>();
+      const marketCode = country === "UAE" ? "UAE" : "KSA";
+      const market = await db
+        .prepare(`SELECT * FROM markets WHERE code = ? AND is_active = 1`)
+        .bind(marketCode)
+        .first<Market>();
 
       if (!market) {
         error = "market_unavailable";
@@ -69,23 +85,48 @@ if (Astro.request.method === "POST") {
         // ---- Step 1: server recalculation (client prices are NEVER trusted) ----
         const lines: Array<{ unit_price: number; quantity: number }> = [];
         const orderItems: Array<{
-          product_id: string; variant_id: string; sku: string | null; title: string;
-          unit_price: number; quantity: number; product_snapshot: unknown;
+          product_id: string;
+          variant_id: string;
+          sku: string | null;
+          title: string;
+          unit_price: number;
+          quantity: number;
+          product_snapshot: unknown;
         }> = [];
 
         for (const item of cartData.items) {
-          const fresh = await db.prepare(`
+          const fresh = await db
+            .prepare(
+              `
             SELECT v.id, v.sku, v.price, v.inventory_quantity, v.inventory_policy, v.status AS v_status, p.title, p.status AS p_status
             FROM product_variants v JOIN products p ON p.id = v.product_id
             WHERE v.id = ? AND v.product_id = ?
-          `).bind(item.variant_id, item.product_id).first<{
-            id: string; sku: string | null; price: number; inventory_quantity: number;
-            inventory_policy: string; v_status: string; title: string; p_status: string;
-          }>();
+          `,
+            )
+            .bind(item.variant_id, item.product_id)
+            .first<{
+              id: string;
+              sku: string | null;
+              price: number;
+              inventory_quantity: number;
+              inventory_policy: string;
+              v_status: string;
+              title: string;
+              p_status: string;
+            }>();
 
-          if (!fresh) { error = "item_unavailable"; break; }
-          if (fresh.p_status !== 'active' || fresh.v_status !== 'active') { error = "item_unavailable"; break; }
-          if (fresh.inventory_policy === 'deny' && fresh.inventory_quantity < item.quantity) { error = "out_of_stock"; break; }
+          if (!fresh) {
+            error = "item_unavailable";
+            break;
+          }
+          if (fresh.p_status !== "active" || fresh.v_status !== "active") {
+            error = "item_unavailable";
+            break;
+          }
+          if (fresh.inventory_policy === "deny" && fresh.inventory_quantity < item.quantity) {
+            error = "out_of_stock";
+            break;
+          }
 
           lines.push({ unit_price: fresh.price, quantity: item.quantity });
           orderItems.push({
@@ -119,7 +160,12 @@ if (Astro.request.method === "POST") {
               // Tax & shipping come from market config — never hardcoded in the page
               const totals = calcOrderTotals(lines, market);
               const customer = await commerce.customers.findOrCreateGuest({
-                email, phone, first_name: first, last_name: last, locale: lang ?? 'en', market: market.code,
+                email,
+                phone,
+                first_name: first,
+                last_name: last,
+                locale: lang ?? "en",
+                market: market.code,
               });
 
               // ---- Step 4: create the order (compensate 2 + 3 on failure) ----
@@ -136,13 +182,17 @@ if (Astro.request.method === "POST") {
                   tax_amount: totals.tax,
                   items: orderItems,
                   shipping_address: {
-                    first_name: first, last_name: last, phone, country: market.code,
-                    city, address_line_1: address1,
+                    first_name: first,
+                    last_name: last,
+                    phone,
+                    country: market.code,
+                    city,
+                    address_line_1: address1,
                   },
                 });
 
                 // Payment (V1: COD only)
-                if (paymentMethod === 'cod') {
+                if (paymentMethod === "cod") {
                   await commerce.cod.createCheckout(order);
                 }
               } catch (err) {
@@ -156,7 +206,7 @@ if (Astro.request.method === "POST") {
               } else {
                 // Order + stock + payment are settled; retire the cart.
                 await commerce.cart.clearCart(cartId);
-                Astro.cookies.delete("session_id", { path: '/' });
+                Astro.cookies.delete("session_id", { path: "/" });
 
                 orderId = order.id;
                 return Astro.redirect(`/${lang}/order-confirmation?id=${order.id}`);
@@ -171,112 +221,207 @@ if (Astro.request.method === "POST") {
 
 // ---- GET rendering ----
 const items = cartData?.items ?? [];
-const hasStockIssues = items.some(i => i.variant.status !== 'active' || i.variant.inventory_quantity < i.quantity);
+const hasStockIssues = items.some(
+  (i) => i.variant.status !== "active" || i.variant.inventory_quantity < i.quantity,
+);
 
 // Preview totals server-side (market defaults to KSA until the form selects one)
 const previewMarket = await db.prepare(`SELECT * FROM markets WHERE code = 'KSA'`).first<Market>();
 const previewTotals = previewMarket
-  ? calcOrderTotals(items.map(i => ({ unit_price: i.variant.price, quantity: i.quantity })), previewMarket)
+  ? calcOrderTotals(
+      items.map((i) => ({ unit_price: i.variant.price, quantity: i.quantity })),
+      previewMarket,
+    )
   : null;
-const previewCurrency = items[0]?.variant.currency ?? 'SAR';
+const previewCurrency = items[0]?.variant.currency ?? "SAR";
 
 const formatMoney = (price: number) =>
-  new Intl.NumberFormat(locale, { style: 'currency', currency: previewCurrency }).format(price / 100);
+  new Intl.NumberFormat(locale, { style: "currency", currency: previewCurrency }).format(
+    price / 100,
+  );
 
 const errKey = error ? `checkout.error_${error}` : "";
 ---
 
-<BaseLayout locale={locale} title={t(locale, "checkout.title")} description={t(locale, "checkout.title")}>
+<BaseLayout
+  locale={locale}
+  title={t(locale, "checkout.title")}
+  description={t(locale, "checkout.title")}
+>
   <main class="container-x py-12">
     <h1 class="text-3xl font-bold mb-8">{t(locale, "checkout.title")}</h1>
 
-    {error && (
-      <div class="mb-6 border border-red-300 bg-red-50 text-red-700 rounded-lg p-4 text-sm">
-        {t(locale, errKey) !== errKey ? t(locale, errKey) : error}
-      </div>
-    )}
+    {
+      error && (
+        <div class="mb-6 border border-red-300 bg-red-50 text-red-700 rounded-lg p-4 text-sm">
+          {t(locale, errKey) !== errKey ? t(locale, errKey) : error}
+        </div>
+      )
+    }
 
-    {items.length === 0 ? (
-      <div class="text-center py-16 border border-dashed border-line rounded-xl">
-        <p class="text-stone">{t(locale, "cart.empty")}</p>
-        <a href={`/${lang}/`} class="btn btn-primary mt-4 inline-block">{t(locale, "cart.continue")}</a>
-      </div>
-    ) : (
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        <form method="POST" id="checkout-form" class="space-y-8">
-          <section>
-            <h2 class="text-xl font-semibold mb-4">{t(locale, "checkout.contact_section")}</h2>
-            <div class="grid gap-4 sm:grid-cols-2">
-              <input type="text" name="first_name" placeholder={t(locale, "checkout.first_name")} required class="border border-line rounded-lg px-4 py-2 w-full" />
-              <input type="text" name="last_name" placeholder={t(locale, "checkout.last_name")} required class="border border-line rounded-lg px-4 py-2 w-full" />
-              <input type="email" name="email" placeholder={t(locale, "checkout.email")} required class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2" />
-              <input type="tel" name="phone" placeholder={t(locale, "checkout.phone")} required class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2" />
-            </div>
-          </section>
+    {
+      items.length === 0 ? (
+        <div class="text-center py-16 border border-dashed border-line rounded-xl">
+          <p class="text-stone">{t(locale, "cart.empty")}</p>
+          <a href={`/${lang}/`} class="btn btn-primary mt-4 inline-block">
+            {t(locale, "cart.continue")}
+          </a>
+        </div>
+      ) : (
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          <form method="POST" id="checkout-form" class="space-y-8">
+            <section>
+              <h2 class="text-xl font-semibold mb-4">{t(locale, "checkout.contact_section")}</h2>
+              <div class="grid gap-4 sm:grid-cols-2">
+                <input
+                  type="text"
+                  name="first_name"
+                  placeholder={t(locale, "checkout.first_name")}
+                  required
+                  class="border border-line rounded-lg px-4 py-2 w-full"
+                />
+                <input
+                  type="text"
+                  name="last_name"
+                  placeholder={t(locale, "checkout.last_name")}
+                  required
+                  class="border border-line rounded-lg px-4 py-2 w-full"
+                />
+                <input
+                  type="email"
+                  name="email"
+                  placeholder={t(locale, "checkout.email")}
+                  required
+                  class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2"
+                />
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder={t(locale, "checkout.phone")}
+                  required
+                  class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2"
+                />
+              </div>
+            </section>
 
-          <section>
-            <h2 class="text-xl font-semibold mb-4">{t(locale, "checkout.address_section")}</h2>
-            <div class="grid gap-4 sm:grid-cols-2">
-              <select name="country" id="co-country" required class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2">
-                <option value="KSA">{t(locale, "checkout.country_ksa")}</option>
-                <option value="UAE">{t(locale, "checkout.country_uae")}</option>
-              </select>
-              <input type="text" name="city" placeholder={t(locale, "checkout.city")} required class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2" />
-              <input type="text" name="address" placeholder={t(locale, "checkout.address")} required class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2" />
-            </div>
-          </section>
+            <section>
+              <h2 class="text-xl font-semibold mb-4">{t(locale, "checkout.address_section")}</h2>
+              <div class="grid gap-4 sm:grid-cols-2">
+                <select
+                  name="country"
+                  id="co-country"
+                  required
+                  class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2"
+                >
+                  <option value="KSA">{t(locale, "checkout.country_ksa")}</option>
+                  <option value="UAE">{t(locale, "checkout.country_uae")}</option>
+                </select>
+                <input
+                  type="text"
+                  name="city"
+                  placeholder={t(locale, "checkout.city")}
+                  required
+                  class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2"
+                />
+                <input
+                  type="text"
+                  name="address"
+                  placeholder={t(locale, "checkout.address")}
+                  required
+                  class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2"
+                />
+              </div>
+            </section>
 
-          <section>
-            <h2 class="text-xl font-semibold mb-4">{t(locale, "checkout.payment_section")}</h2>
-            <div class="space-y-3">
-              <label class="flex items-center gap-3 border border-line rounded-lg p-4 cursor-pointer">
-                <input type="radio" name="payment_method" value="cod" required checked class="w-4 h-4 text-accent" />
-                <span class="font-medium">{t(locale, "checkout.cod")}</span>
-              </label>
-              {ENABLE_ONLINE_PAYMENT && (
-                <label class="flex items-center gap-3 border border-line rounded-lg p-4 opacity-50 cursor-not-allowed">
-                  <input type="radio" name="payment_method" value="online" disabled class="w-4 h-4" />
-                  <span class="font-medium">{t(locale, "checkout.online")}</span>
+            <section>
+              <h2 class="text-xl font-semibold mb-4">{t(locale, "checkout.payment_section")}</h2>
+              <div class="space-y-3">
+                <label class="flex items-center gap-3 border border-line rounded-lg p-4 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="payment_method"
+                    value="cod"
+                    required
+                    checked
+                    class="w-4 h-4 text-accent"
+                  />
+                  <span class="font-medium">{t(locale, "checkout.cod")}</span>
                 </label>
-              )}
-            </div>
-          </section>
+                {ENABLE_ONLINE_PAYMENT && (
+                  <label class="flex items-center gap-3 border border-line rounded-lg p-4 opacity-50 cursor-not-allowed">
+                    <input
+                      type="radio"
+                      name="payment_method"
+                      value="online"
+                      disabled
+                      class="w-4 h-4"
+                    />
+                    <span class="font-medium">{t(locale, "checkout.online")}</span>
+                  </label>
+                )}
+              </div>
+            </section>
 
-          {hasStockIssues && (
-            <p class="text-sm text-red-600">{t(locale, "checkout.stock_warning")}</p>
-          )}
-
-          <button type="submit" class="btn btn-primary w-full py-4 text-lg" disabled={hasStockIssues}>
-            {t(locale, "checkout.place_order")}
-          </button>
-        </form>
-
-        <div>
-          <div class="border border-line rounded-xl p-6 bg-beige/30 sticky top-6">
-            <h2 class="text-xl font-semibold mb-4">{t(locale, "checkout.summary")}</h2>
-            <div class="space-y-4 mb-4">
-              {items.map(item => (
-                <div class="flex justify-between items-center text-sm">
-                  <div class="flex gap-3 items-center">
-                    <span class="w-6 h-6 bg-stone/20 rounded-full flex items-center justify-center text-xs">{item.quantity}</span>
-                    <span class="font-medium">{item.product.title}</span>
-                  </div>
-                  <span>{formatMoney(item.variant.price * item.quantity)}</span>
-                </div>
-              ))}
-            </div>
-            {previewTotals && (
-              <dl class="space-y-2 text-sm border-t border-line pt-4">
-                <div class="flex justify-between"><dt>{t(locale, "checkout.subtotal")}</dt><dd>{formatMoney(previewTotals.subtotal)}</dd></div>
-                <div class="flex justify-between"><dt>{t(locale, "checkout.shipping")}</dt><dd>{previewTotals.shipping === 0 ? t(locale, "checkout.free") : formatMoney(previewTotals.shipping)}</dd></div>
-                <div class="flex justify-between"><dt>{t(locale, "checkout.vat")}</dt><dd>{formatMoney(previewTotals.tax)}</dd></div>
-                <div class="flex justify-between text-lg font-bold border-t border-line pt-2 mt-2"><dt>{t(locale, "checkout.total")}</dt><dd>{formatMoney(previewTotals.total)}</dd></div>
-              </dl>
+            {hasStockIssues && (
+              <p class="text-sm text-red-600">{t(locale, "checkout.stock_warning")}</p>
             )}
-            <p class="mt-4 text-xs text-stone" id="co-note">{t(locale, "checkout.totals_note")}</p>
+
+            <button
+              type="submit"
+              class="btn btn-primary w-full py-4 text-lg"
+              disabled={hasStockIssues}
+            >
+              {t(locale, "checkout.place_order")}
+            </button>
+          </form>
+
+          <div>
+            <div class="border border-line rounded-xl p-6 bg-beige/30 sticky top-6">
+              <h2 class="text-xl font-semibold mb-4">{t(locale, "checkout.summary")}</h2>
+              <div class="space-y-4 mb-4">
+                {items.map((item) => (
+                  <div class="flex justify-between items-center text-sm">
+                    <div class="flex gap-3 items-center">
+                      <span class="w-6 h-6 bg-stone/20 rounded-full flex items-center justify-center text-xs">
+                        {item.quantity}
+                      </span>
+                      <span class="font-medium">{item.product.title}</span>
+                    </div>
+                    <span>{formatMoney(item.variant.price * item.quantity)}</span>
+                  </div>
+                ))}
+              </div>
+              {previewTotals && (
+                <dl class="space-y-2 text-sm border-t border-line pt-4">
+                  <div class="flex justify-between">
+                    <dt>{t(locale, "checkout.subtotal")}</dt>
+                    <dd>{formatMoney(previewTotals.subtotal)}</dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt>{t(locale, "checkout.shipping")}</dt>
+                    <dd>
+                      {previewTotals.shipping === 0
+                        ? t(locale, "checkout.free")
+                        : formatMoney(previewTotals.shipping)}
+                    </dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt>{t(locale, "checkout.vat")}</dt>
+                    <dd>{formatMoney(previewTotals.tax)}</dd>
+                  </div>
+                  <div class="flex justify-between text-lg font-bold border-t border-line pt-2 mt-2">
+                    <dt>{t(locale, "checkout.total")}</dt>
+                    <dd>{formatMoney(previewTotals.total)}</dd>
+                  </div>
+                </dl>
+              )}
+              <p class="mt-4 text-xs text-stone" id="co-note">
+                {t(locale, "checkout.totals_note")}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      )
+    }
   </main>
 </BaseLayout>

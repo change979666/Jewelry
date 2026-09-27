@@ -33,10 +33,11 @@ if (!resolved) return new Response("Not Found", { status: 404 });
 const { entry, isFallback } = resolved;
 const { Content, headings } = await entry.render();
 
-const dateFmt = new Intl.DateTimeFormat(
-  locale === "ar" ? "ar-SA-u-nu-latn" : "en-US",
-  { year: "numeric", month: "long", day: "numeric" },
-);
+const dateFmt = new Intl.DateTimeFormat(locale === "ar" ? "ar-SA-u-nu-latn" : "en-US", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+});
 const backHref = localizedUrl(locale, "/blog");
 const ctaHref = localizedUrl(locale, "/contact");
 const absUrl = new URL(Astro.url.pathname, SITE.url).href;

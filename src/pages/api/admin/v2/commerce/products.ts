@@ -82,7 +82,12 @@ async function handlerAll({ request, env }: PagesCtx): Promise<Response> {
              GROUP BY product_id`,
           )
           .bind(...rows.map((r) => r.id))
-          .all<{ product_id: string; min_price: number | null; max_price: number | null; total_inventory: number | null }>()
+          .all<{
+            product_id: string;
+            min_price: number | null;
+            max_price: number | null;
+            total_inventory: number | null;
+          }>()
       : { results: [] as never[] };
     const priceMap = new Map((priceRows.results || []).map((r) => [r.product_id, r]));
 
@@ -154,10 +159,14 @@ async function handlerAll({ request, env }: PagesCtx): Promise<Response> {
                 sku: (body.sku as string) || undefined,
                 price,
                 compare_at_price:
-                  body.compare_at_price != null ? Math.round(Number(body.compare_at_price)) : undefined,
+                  body.compare_at_price != null
+                    ? Math.round(Number(body.compare_at_price))
+                    : undefined,
                 currency: (body.currency as string) || "SAR",
                 inventory_quantity:
-                  body.inventory_quantity != null ? Math.max(0, Math.round(Number(body.inventory_quantity))) : 0,
+                  body.inventory_quantity != null
+                    ? Math.max(0, Math.round(Number(body.inventory_quantity)))
+                    : 0,
               },
             }
           : {}),
@@ -185,10 +194,25 @@ async function handlerAll({ request, env }: PagesCtx): Promise<Response> {
 
     const scalarFields: Record<string, unknown> = {};
     for (const f of [
-      "slug", "sku", "title", "short_description", "description", "status",
-      "product_type", "brand", "material", "base_material", "plating", "color",
-      "dimensions", "weight", "care_instructions", "size_info", "country_of_origin",
-      "seo_title", "seo_description",
+      "slug",
+      "sku",
+      "title",
+      "short_description",
+      "description",
+      "status",
+      "product_type",
+      "brand",
+      "material",
+      "base_material",
+      "plating",
+      "color",
+      "dimensions",
+      "weight",
+      "care_instructions",
+      "size_info",
+      "country_of_origin",
+      "seo_title",
+      "seo_description",
     ] as const) {
       if (f in body) scalarFields[f] = body[f];
     }
@@ -235,7 +259,13 @@ async function handlerAll({ request, env }: PagesCtx): Promise<Response> {
     if (Array.isArray(body.media)) {
       await products.saveMedia(
         id,
-        body.media as Array<{ id?: string; type?: string; url: string; alt?: string; sort_order?: number }>,
+        body.media as Array<{
+          id?: string;
+          type?: string;
+          url: string;
+          alt?: string;
+          sort_order?: number;
+        }>,
       );
     }
     if (Array.isArray(body.collectionIds)) {
@@ -282,7 +312,7 @@ async function handlerAll({ request, env }: PagesCtx): Promise<Response> {
   }
 
   return fail("METHOD_NOT_ALLOWED", "Method not allowed", 405);
-};
+}
 
 // ---- Astro endpoint exports (migrated from Pages Functions) ----
 export const ALL = endpoint(handlerAll);

@@ -4,7 +4,7 @@ import {
   getGuardState,
   isDailyExhaustion,
   recordQuotaFailure,
-} from "../functions/lib/d1-guard";
+} from "../src/lib/d1-guard";
 import { MockD1, MockKV, mockEnv } from "./helpers";
 
 describe("D1 guard recovery", () => {

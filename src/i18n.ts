@@ -163,9 +163,11 @@ const dict: Record<string, any> = {
       error_email_invalid: "Please enter a valid email address.",
       error_phone_required: "Please enter a mobile number so we can reach you about delivery.",
       error_address_required: "Please enter your city and street address.",
-      error_payment_unavailable: "This payment method is not available yet. Please choose cash on delivery.",
+      error_payment_unavailable:
+        "This payment method is not available yet. Please choose cash on delivery.",
       error_market_unavailable: "Delivery to this country is not available yet.",
-      error_item_unavailable: "An item in your cart is no longer available. Please review your cart.",
+      error_item_unavailable:
+        "An item in your cart is no longer available. Please review your cart.",
       error_out_of_stock: "An item sold out while you were checking out. Please review your cart.",
       error_duplicate_submission: "This order was already placed. Check your confirmation email.",
       error_unknown: "Something went wrong while placing your order. Please try again.",
@@ -202,7 +204,8 @@ const dict: Record<string, any> = {
       did_you_mean: "Did you mean",
       popular: "Popular searches",
       empty_title: "Can't find what you need?",
-      empty_text: "Browse the collection or message us on WhatsApp — we usually reply the same day.",
+      empty_text:
+        "Browse the collection or message us on WhatsApp — we usually reply the same day.",
       posts: "Journal",
       guides: "Guides",
       browse: "Browse the collection",
@@ -396,7 +399,8 @@ const dict: Record<string, any> = {
       error_email_invalid: "يرجى إدخال بريد إلكتروني صحيح.",
       error_phone_required: "يرجى إدخال رقم الجوال للتواصل بشأن التوصيل.",
       error_address_required: "يرجى إدخال المدينة والعنوان التفصيلي.",
-      error_payment_unavailable: "طريقة الدفع هذه غير متاحة حاليًا. يرجى اختيار الدفع عند الاستلام.",
+      error_payment_unavailable:
+        "طريقة الدفع هذه غير متاحة حاليًا. يرجى اختيار الدفع عند الاستلام.",
       error_market_unavailable: "التوصيل إلى هذا البلد غير متاح حاليًا.",
       error_item_unavailable: "إحدى القطع في سلتك لم تعد متاحة. يرجى مراجعة السلة.",
       error_out_of_stock: "نفدت إحدى القطع أثناء إتمام الشراء. يرجى مراجعة السلة.",

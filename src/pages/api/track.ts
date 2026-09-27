@@ -125,7 +125,7 @@ async function handlerPost({ request, env }: PagesCtx): Promise<Response> {
   }
 
   return new Response(null, { status: 204 });
-};
+}
 
 // ---- Astro endpoint exports (migrated from Pages Functions) ----
 export const POST = endpoint(handlerPost);

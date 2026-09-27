@@ -59,7 +59,7 @@ async function handlerPost({ request, env }: PagesCtx): Promise<Response> {
   // Served URL: strip the leading "public/" (web root).
   const url = "/" + normalized.slice("public/".length);
   return json({ ok: true, url, path: normalized });
-};
+}
 
 // ---- Astro endpoint exports (migrated from Pages Functions) ----
 export const POST = endpoint(handlerPost);

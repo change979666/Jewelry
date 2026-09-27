@@ -1,6 +1,6 @@
 // Jewelry Commerce Core — domain types (mirror migrations/0001_jewelry_core.sql)
 
-export type ProductStatus = 'draft' | 'active' | 'archived';
+export type ProductStatus = "draft" | "active" | "archived";
 
 export interface Product {
   id: string;
@@ -42,8 +42,8 @@ export interface ProductVariant {
   compare_at_price: number | null;
   currency: string;
   inventory_quantity: number;
-  inventory_policy: 'deny' | 'continue';
-  status: 'active' | 'draft' | 'archived';
+  inventory_policy: "deny" | "continue";
+  status: "active" | "draft" | "archived";
   created_at: string;
   updated_at: string;
 }
@@ -68,7 +68,7 @@ export interface Collection {
   slug: string;
   name: string;
   description: string | null;
-  status: 'active' | 'draft' | 'archived';
+  status: "active" | "draft" | "archived";
   sort_order: number;
   seo_title: string | null;
   seo_description: string | null;
@@ -119,18 +119,18 @@ export interface Cart {
 }
 
 export type OrderStatus =
-  | 'PENDING_CONFIRMATION'
-  | 'CONFIRMED'
-  | 'PROCESSING'
-  | 'SHIPPED'
-  | 'OUT_FOR_DELIVERY'
-  | 'DELIVERED'
-  | 'DELIVERY_FAILED'
-  | 'NDR'
-  | 'CANCELLED'
-  | 'RTO'
-  | 'RETURNED'
-  | 'REFUNDED';
+  | "PENDING_CONFIRMATION"
+  | "CONFIRMED"
+  | "PROCESSING"
+  | "SHIPPED"
+  | "OUT_FOR_DELIVERY"
+  | "DELIVERED"
+  | "DELIVERY_FAILED"
+  | "NDR"
+  | "CANCELLED"
+  | "RTO"
+  | "RETURNED"
+  | "REFUNDED";
 
 export interface Order {
   id: string;
@@ -230,7 +230,7 @@ export interface Review {
   rating: number;
   title: string | null;
   content: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: "pending" | "approved" | "rejected";
   verified_purchase: number;
   locale: string | null;
   created_at: string;

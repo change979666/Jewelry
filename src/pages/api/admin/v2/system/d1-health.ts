@@ -12,11 +12,7 @@
 // 鉴权：人审会话或 CRON_SECRET。
 // ============================================================================
 
-import {
-  authenticateRequest,
-  checkPermission,
-  cronSecretAuthorized,
-} from "@/lib/admin/rbac";
+import { authenticateRequest, checkPermission, cronSecretAuthorized } from "@/lib/admin/rbac";
 import { getGuardState, d1HealthCheck, secondsUntilUtcMidnight } from "@/lib/d1-guard";
 import { endpoint, type PagesCtx } from "@/pages/api/_lib/ctx";
 

@@ -19,7 +19,11 @@ interface Props {
 const rawLocale = (Astro.props.locale as Locale) ?? localeFromPath(Astro.url.pathname);
 const locale: Locale = (LOCALE_LIST.includes(rawLocale) ? rawLocale : "en") as Locale;
 
-const { title, description = t(locale, "site.description"), image = "/images/hero.jpg" } = Astro.props;
+const {
+  title,
+  description = t(locale, "site.description"),
+  image = "/images/hero.jpg",
+} = Astro.props;
 const fullTitle = title ? `${title} · ${SITE.name}` : `${t(locale, "hero.title")} · ${SITE.name}`;
 const canonical = new URL(Astro.url.pathname, SITE.url).href;
 

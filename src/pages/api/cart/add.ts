@@ -18,7 +18,8 @@ async function handlerPost({ request, env }: PagesCtx): Promise<Response> {
   const variantId = String(body.variant_id || "").trim();
   const quantity = Math.floor(Number(body.quantity) || 1);
 
-  if (!productId || !variantId) return json({ ok: false, error: "product_id and variant_id are required" }, 422);
+  if (!productId || !variantId)
+    return json({ ok: false, error: "product_id and variant_id are required" }, 422);
   if (quantity < 1 || quantity > 999) return json({ ok: false, error: "Invalid quantity" }, 422);
 
   let sessionId = getSessionId(request);
@@ -29,16 +30,17 @@ async function handlerPost({ request, env }: PagesCtx): Promise<Response> {
   const { cart } = await commerce.cart.getCartBySessionId(sessionId);
   const result = await commerce.cart.addItem(cart.id, productId, variantId, quantity);
   if (!result.ok) {
-    const status = result.error === 'variant_not_found' ? 404 : 422;
+    const status = result.error === "variant_not_found" ? 404 : 422;
     return json({ ok: false, error: result.error }, status);
   }
 
   const headers: Record<string, string> = {};
   if (isNewSession) {
-    headers["Set-Cookie"] = `${SESSION_COOKIE}=${encodeURIComponent(sessionId)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${60 * 60 * 24 * 30}`;
+    headers["Set-Cookie"] =
+      `${SESSION_COOKIE}=${encodeURIComponent(sessionId)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${60 * 60 * 24 * 30}`;
   }
   return json({ ok: true, cart_id: cart.id }, 200, headers);
-};
+}
 
 // ---- Astro endpoint exports (migrated from Pages Functions) ----
 export const POST = endpoint(handlerPost);

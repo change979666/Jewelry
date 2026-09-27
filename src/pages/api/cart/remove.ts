@@ -19,14 +19,16 @@ async function handlerPost({ request, env }: PagesCtx): Promise<Response> {
 
   const sessionId = getSessionId(request);
   const row = await db
-    .prepare(`SELECT ci.id FROM cart_items ci JOIN carts c ON c.id = ci.cart_id WHERE ci.id = ? AND c.session_id = ?`)
+    .prepare(
+      `SELECT ci.id FROM cart_items ci JOIN carts c ON c.id = ci.cart_id WHERE ci.id = ? AND c.session_id = ?`,
+    )
     .bind(itemId, sessionId ?? "")
     .first();
   if (!row) return json({ ok: false, error: "Not found" }, 404);
 
   await getCommerce(db).cart.removeItem(itemId);
   return json({ ok: true });
-};
+}
 
 // ---- Astro endpoint exports (migrated from Pages Functions) ----
 export const POST = endpoint(handlerPost);

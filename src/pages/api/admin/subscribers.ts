@@ -126,7 +126,7 @@ async function handlerAll({ request, env }: PagesCtx): Promise<Response> {
   }
 
   return json({ error: "Method not allowed" }, 405);
-};
+}
 
 // ---- Astro endpoint exports (migrated from Pages Functions) ----
 export const ALL = endpoint(handlerAll);

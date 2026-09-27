@@ -10,10 +10,11 @@ if (_locale instanceof Response) return _locale;
 const locale = _locale;
 const posts = await getBlogPosts(locale);
 
-const dateFmt = new Intl.DateTimeFormat(
-  locale === "ar" ? "ar-SA-u-nu-latn" : "en-US",
-  { year: "numeric", month: "short", day: "numeric" },
-);
+const dateFmt = new Intl.DateTimeFormat(locale === "ar" ? "ar-SA-u-nu-latn" : "en-US", {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+});
 const postHref = (key: string) => localizedUrl(locale, `/blog/${key}`);
 
 // Latest post becomes the hero; the rest fill the filterable grid.

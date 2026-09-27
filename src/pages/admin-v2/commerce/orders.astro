@@ -26,7 +26,9 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
     </div>
 
     <!-- KPI Bar -->
-    <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--sp-3);">
+    <section
+      style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--sp-3);"
+    >
       <div class="admin-kpi-card">
         <div class="admin-kpi-label">总订单</div>
         <div class="admin-kpi-value" id="kpi-total">—</div>
@@ -46,7 +48,10 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
     </section>
 
     <!-- Status Tabs -->
-    <section class="admin-flex admin-items-center admin-justify-between" style="flex-wrap:wrap;gap:var(--sp-3);">
+    <section
+      class="admin-flex admin-items-center admin-justify-between"
+      style="flex-wrap:wrap;gap:var(--sp-3);"
+    >
       <div class="admin-flex" style="gap:var(--sp-1);flex-wrap:wrap;" id="status-tabs">
         <button class="admin-tab active" data-status="">全部</button>
         <button class="admin-tab" data-status="PENDING_CONFIRMATION">待确认</button>
@@ -90,7 +95,10 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
           </tbody>
         </table>
       </div>
-      <div class="admin-flex admin-items-center admin-justify-between" style="margin-top:var(--sp-3);">
+      <div
+        class="admin-flex admin-items-center admin-justify-between"
+        style="margin-top:var(--sp-3);"
+      >
         <div id="pagination-info" class="admin-text-sm admin-text-muted"></div>
         <div class="admin-flex" style="gap:var(--sp-1);" id="pagination-controls"></div>
       </div>
@@ -102,7 +110,18 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
       <div class="admin-drawer-header">
         <span>订单详情</span>
         <button class="admin-btn admin-btn-ghost admin-btn-sm" id="btn-close-drawer">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"
+            ></line></svg
+          >
         </button>
       </div>
       <div class="admin-drawer-body" id="drawer-content"></div>
@@ -200,13 +219,9 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
         if (meta.kpis) {
           document.getElementById("kpi-total")!.textContent = String(meta.kpis.total_orders || 0);
           document.getElementById("kpi-revenue")!.textContent =
-            meta.kpis.total_revenue > 0
-              ? money(meta.kpis.total_revenue, "SAR")
-              : "—";
+            meta.kpis.total_revenue > 0 ? money(meta.kpis.total_revenue, "SAR") : "—";
           document.getElementById("kpi-avg")!.textContent =
-            meta.kpis.avg_order_value > 0
-              ? money(meta.kpis.avg_order_value, "SAR")
-              : "—";
+            meta.kpis.avg_order_value > 0 ? money(meta.kpis.avg_order_value, "SAR") : "—";
         }
         document.getElementById("kpi-pending")!.textContent = String(
           meta.statusCounts?.PENDING_CONFIRMATION || 0,
@@ -241,7 +256,9 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
       .join("");
     tbody
       .querySelectorAll(".btn-detail")
-      .forEach((b) => b.addEventListener("click", () => openDrawer((b as HTMLElement).dataset.id!)));
+      .forEach((b) =>
+        b.addEventListener("click", () => openDrawer((b as HTMLElement).dataset.id!)),
+      );
   }
 
   function renderPagination(total: number, page: number, totalPages: number) {
@@ -308,7 +325,9 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
           <hr class="admin-divider" />
           <div>
             <h4 class="admin-section-title">状态迁移（仅合法路径）</h4>
-            ${legalTransitions.length ? `
+            ${
+              legalTransitions.length
+                ? `
             <div class="admin-flex" style="gap:var(--sp-2);">
               <select id="drawer-status" class="admin-select" style="flex:1;">
                 <option value="" selected disabled>选择目标状态…</option>
@@ -317,7 +336,9 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
               <button class="admin-btn admin-btn-primary" id="btn-update-status">迁移</button>
             </div>
             <input id="drawer-reason" class="admin-input" style="width:100%;margin-top:var(--sp-2);" placeholder="备注（可选）" />
-            ` : '<div class="admin-text-muted admin-text-sm">该状态为终态，无可用迁移。</div>'}
+            `
+                : '<div class="admin-text-muted admin-text-sm">该状态为终态，无可用迁移。</div>'
+            }
           </div>
         </div>
       `;
@@ -329,7 +350,9 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
           toast("请选择目标状态", "warning");
           return;
         }
-        const reason = (document.getElementById("drawer-reason") as unknown as HTMLInputElement)?.value?.trim();
+        const reason = (
+          document.getElementById("drawer-reason") as unknown as HTMLInputElement
+        )?.value?.trim();
         try {
           const res = await fetch(API, {
             method: "POST",
@@ -359,7 +382,9 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
   document.getElementById("status-tabs")?.addEventListener("click", (e) => {
     const btn = (e.target as HTMLElement).closest("button");
     if (!btn) return;
-    document.querySelectorAll("#status-tabs .admin-tab").forEach((b) => b.classList.remove("active"));
+    document
+      .querySelectorAll("#status-tabs .admin-tab")
+      .forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
     currentStatus = btn.dataset.status || "";
     currentPage = 1;

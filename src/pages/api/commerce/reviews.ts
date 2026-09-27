@@ -31,7 +31,9 @@ async function handlerGet({ request, env }: PagesCtx): Promise<Response> {
       .bind(productId)
       .all();
     const stats = await db
-      .prepare(`SELECT AVG(rating) AS avg_rating, COUNT(*) AS total FROM reviews WHERE product_id = ? AND status = 'approved'`)
+      .prepare(
+        `SELECT AVG(rating) AS avg_rating, COUNT(*) AS total FROM reviews WHERE product_id = ? AND status = 'approved'`,
+      )
       .bind(productId)
       .first<{ avg_rating: number | null; total: number }>();
 
@@ -44,7 +46,7 @@ async function handlerGet({ request, env }: PagesCtx): Promise<Response> {
   } catch (err) {
     return json({ ok: false, error: "reviews_error", detail: String(err) }, 500);
   }
-};
+}
 
 async function handlerPost({ request, env }: PagesCtx): Promise<Response> {
   const db = env.DB;
@@ -69,12 +71,24 @@ async function handlerPost({ request, env }: PagesCtx): Promise<Response> {
 
   const productId = String(body.product_id || "").trim();
   const orderId = String(body.order_id || "").trim();
-  const reviewerName = String(body.reviewer_name || "").trim().slice(0, 200);
-  const reviewerEmail = String(body.reviewer_email || "").trim().slice(0, 200).toLowerCase();
+  const reviewerName = String(body.reviewer_name || "")
+    .trim()
+    .slice(0, 200);
+  const reviewerEmail = String(body.reviewer_email || "")
+    .trim()
+    .slice(0, 200)
+    .toLowerCase();
   const rating = Math.floor(Number(body.rating) || 0);
-  const title = String(body.title || "").trim().slice(0, 300);
-  const content = String(body.content || "").trim().slice(0, 5000);
-  const locale = String(body.locale || "").trim().slice(0, 10) || null;
+  const title = String(body.title || "")
+    .trim()
+    .slice(0, 300);
+  const content = String(body.content || "")
+    .trim()
+    .slice(0, 5000);
+  const locale =
+    String(body.locale || "")
+      .trim()
+      .slice(0, 10) || null;
 
   if (!productId) return json({ ok: false, error: "product_id is required" }, 422);
   if (rating < 1 || rating > 5) return json({ ok: false, error: "rating must be 1-5" }, 422);
@@ -83,7 +97,10 @@ async function handlerPost({ request, env }: PagesCtx): Promise<Response> {
     return json({ ok: false, error: "Valid reviewer_email is required" }, 422);
 
   try {
-    const product = await db.prepare(`SELECT id FROM products WHERE id = ?`).bind(productId).first();
+    const product = await db
+      .prepare(`SELECT id FROM products WHERE id = ?`)
+      .bind(productId)
+      .first();
     if (!product) return json({ ok: false, error: "Unknown product" }, 422);
 
     // verified_purchase only when the reviewer email owns a delivered order containing the product
@@ -115,7 +132,7 @@ async function handlerPost({ request, env }: PagesCtx): Promise<Response> {
   } catch (err) {
     return json({ ok: false, error: "review_create_failed", detail: String(err) }, 500);
   }
-};
+}
 
 // ---- Astro endpoint exports (migrated from Pages Functions) ----
 export const GET = endpoint(handlerGet);

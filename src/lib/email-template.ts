@@ -58,25 +58,41 @@ ${bodyHtml}
 </tr>
 
 <!-- Social Buttons -->
-${Object.values(SOCIAL_LINKS).some(Boolean) ? `
+${
+  Object.values(SOCIAL_LINKS).some(Boolean)
+    ? `
 <tr>
 <td style="padding:0 32px 24px;text-align:center;">
   <p style="margin:0 0 12px;font-size:12px;color:#888;">Connect with us</p>
   <table role="presentation" cellpadding="0" cellspacing="0" align="center">
   <tr>
-    ${SOCIAL_LINKS.facebook ? `<td style="padding:0 8px;">
+    ${
+      SOCIAL_LINKS.facebook
+        ? `<td style="padding:0 8px;">
       <a href="${SOCIAL_LINKS.facebook}" style="display:inline-block;padding:8px 16px;background-color:#1877F2;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500;">Facebook</a>
-    </td>` : ""}
-    ${SOCIAL_LINKS.messenger ? `<td style="padding:0 8px;">
+    </td>`
+        : ""
+    }
+    ${
+      SOCIAL_LINKS.messenger
+        ? `<td style="padding:0 8px;">
       <a href="${SOCIAL_LINKS.messenger}" style="display:inline-block;padding:8px 16px;background-color:#0084FF;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500;">Messenger</a>
-    </td>` : ""}
-    ${SOCIAL_LINKS.instagram ? `<td style="padding:0 8px;">
+    </td>`
+        : ""
+    }
+    ${
+      SOCIAL_LINKS.instagram
+        ? `<td style="padding:0 8px;">
       <a href="${SOCIAL_LINKS.instagram}" style="display:inline-block;padding:8px 16px;background-color:#E4405F;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500;">Instagram</a>
-    </td>` : ""}
+    </td>`
+        : ""
+    }
   </tr>
   </table>
 </td>
-</tr>` : ""}
+</tr>`
+    : ""
+}
 
 <!-- Footer -->
 <tr>

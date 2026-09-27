@@ -16,7 +16,7 @@
 // is set with `WHERE checked_out_at IS NULL`, so exactly one of N concurrent
 // submits from the same cart wins; the others get `false` and are rejected.
 
-import type { D1Database } from '@cloudflare/workers-types';
+import type { D1Database } from "@cloudflare/workers-types";
 
 export interface ReservationLine {
   variant_id: string;
@@ -73,7 +73,7 @@ export class InventoryService {
           .prepare(`SELECT inventory_policy, status FROM product_variants WHERE id = ?`)
           .bind(line.variant_id)
           .first<{ inventory_policy: string; status: string }>();
-        if (exists && exists.status === 'active' && exists.inventory_policy === 'continue') {
+        if (exists && exists.status === "active" && exists.inventory_policy === "continue") {
           continue; // backorder allowed — nothing to reserve
         }
         await this.release(reserved);

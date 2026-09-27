@@ -129,7 +129,10 @@ function statusBadge(status: string | null | undefined): string {
 // minor units → 主单位（SAR/AED 均为 2 位小数）
 function money(minor: number | null | undefined, currency: string): string {
   if (minor == null) return "—";
-  const v = (minor / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const v = (minor / 100).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
   return `${esc(currency)} ${v}`;
 }
 function fmtDate(iso: string | null | undefined): string {
@@ -183,14 +186,28 @@ function renderPulse(kpi: KpiData | null) {
     return;
   }
   const monthRevenue = kpi.revenueThisMonthByMarket.length
-    ? kpi.revenueThisMonthByMarket.map((m) => `${esc(m.currency)} ${(m.revenue / 100).toLocaleString("en-US")}`).join(" / ")
+    ? kpi.revenueThisMonthByMarket
+        .map((m) => `${esc(m.currency)} ${(m.revenue / 100).toLocaleString("en-US")}`)
+        .join(" / ")
     : "—";
   el.innerHTML = [
     pulseCard("今日订单", String(kpi.ordersToday), undefined, "/admin-v2/commerce/orders"),
-    pulseCard("今日收入", kpi.revenueTodayByMarket.length ? kpi.revenueTodayByMarket.map((m) => `${esc(m.currency)} ${(m.revenue / 100).toLocaleString("en-US")}`).join(" / ") : "—"),
+    pulseCard(
+      "今日收入",
+      kpi.revenueTodayByMarket.length
+        ? kpi.revenueTodayByMarket
+            .map((m) => `${esc(m.currency)} ${(m.revenue / 100).toLocaleString("en-US")}`)
+            .join(" / ")
+        : "—",
+    ),
     pulseCard("本月订单", String(kpi.ordersThisMonth), undefined, "/admin-v2/commerce/orders"),
     pulseCard("本月收入", monthRevenue),
-    pulseCard("待确认订单", String(kpi.pendingConfirmation), undefined, "/admin-v2/commerce/orders"),
+    pulseCard(
+      "待确认订单",
+      String(kpi.pendingConfirmation),
+      undefined,
+      "/admin-v2/commerce/orders",
+    ),
     pulseCard("在售商品", String(kpi.activeProducts), undefined, "/admin-v2/commerce/products"),
     pulseCard("低库存商品", String(kpi.lowStock), "总库存 < 5", "/admin-v2/commerce/products"),
     pulseCard("客户总数", String(kpi.totalCustomers), undefined, "/admin-v2/customers/list"),
@@ -264,16 +281,20 @@ function renderLowStock(products: AdminProductRow[] | null, kpi: KpiData | null)
     el.innerHTML = '<div class="admin-empty-state">库存健康，无低库存商品</div>';
     return;
   }
-  el.innerHTML = low
-    .slice(0, 6)
-    .map(
-      (p) =>
-        `<div class="admin-flex admin-items-center admin-justify-between" style="padding:var(--sp-2) 0;border-bottom:1px solid var(--line);">` +
-        `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(p.title)}</span>` +
-        `<span class="admin-badge admin-badge-draft">余 ${p.total_inventory}</span>` +
-        `</div>`,
-    )
-    .join("") + (low.length > 6 ? `<div class="admin-text-sm admin-text-muted" style="margin-top:var(--sp-2);">另有 ${low.length - 6} 件，请到商品管理查看</div>` : "");
+  el.innerHTML =
+    low
+      .slice(0, 6)
+      .map(
+        (p) =>
+          `<div class="admin-flex admin-items-center admin-justify-between" style="padding:var(--sp-2) 0;border-bottom:1px solid var(--line);">` +
+          `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(p.title)}</span>` +
+          `<span class="admin-badge admin-badge-draft">余 ${p.total_inventory}</span>` +
+          `</div>`,
+      )
+      .join("") +
+    (low.length > 6
+      ? `<div class="admin-text-sm admin-text-muted" style="margin-top:var(--sp-2);">另有 ${low.length - 6} 件，请到商品管理查看</div>`
+      : "");
 }
 
 // ---- ⑤ 内容总览 ----
@@ -290,7 +311,12 @@ function renderOps(kpi: KpiData | null) {
   opsEl.innerHTML =
     pulseCard("博客文章", n(cs.blog), undefined, "/admin-v2/content") +
     pulseCard("指南", n(cs.guides), undefined, "/admin-v2/content") +
-    pulseCard("在售商品", kpi ? String(kpi.activeProducts) : "—", undefined, "/admin-v2/commerce/products");
+    pulseCard(
+      "在售商品",
+      kpi ? String(kpi.activeProducts) : "—",
+      undefined,
+      "/admin-v2/commerce/products",
+    );
 }
 
 // ---- 启动 ----

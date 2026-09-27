@@ -6,19 +6,32 @@ import Topbar from "../../../components/admin/layout/Topbar.astro";
 
 const db = Astro.locals.runtime.env.DB;
 
-const totalOrders = await db.prepare("SELECT count(*) as count FROM orders").first<{count: number}>();
-const totalRevenue = await db.prepare("SELECT sum(total_amount) as sum FROM orders").first<{sum: number}>();
-const pendingOrders = await db.prepare("SELECT count(*) as count FROM orders WHERE order_status = 'PENDING_CONFIRMATION'").first<{count: number}>();
-
+const totalOrders = await db
+  .prepare("SELECT count(*) as count FROM orders")
+  .first<{ count: number }>();
+const totalRevenue = await db
+  .prepare("SELECT sum(total_amount) as sum FROM orders")
+  .first<{ sum: number }>();
+const pendingOrders = await db
+  .prepare("SELECT count(*) as count FROM orders WHERE order_status = 'PENDING_CONFIRMATION'")
+  .first<{ count: number }>();
 ---
 
 <AdminShell title="Dashboard" activeModule="commerce">
   <Sidebar slot="sidebar" activeModule="commerce" />
-  <Topbar slot="topbar-left" title="Dashboard" breadcrumbs={[{ label: "Home", href: "/admin-v2" }, { label: "Commerce" }, { label: "Dashboard" }]} />
+  <Topbar
+    slot="topbar-left"
+    title="Dashboard"
+    breadcrumbs={[
+      { label: "Home", href: "/admin-v2" },
+      { label: "Commerce" },
+      { label: "Dashboard" },
+    ]}
+  />
 
   <div class="p-6">
     <h1 class="text-2xl font-bold mb-6">Dashboard</h1>
-    
+
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div class="border border-line rounded-lg p-6 bg-white shadow-sm">
         <h3 class="text-sm font-medium text-gray-500 uppercase">Total Orders</h3>
@@ -26,7 +39,9 @@ const pendingOrders = await db.prepare("SELECT count(*) as count FROM orders WHE
       </div>
       <div class="border border-line rounded-lg p-6 bg-white shadow-sm">
         <h3 class="text-sm font-medium text-gray-500 uppercase">Total Revenue</h3>
-        <p class="text-3xl font-bold mt-2 text-green-600">SAR {((totalRevenue?.sum || 0) / 100).toFixed(2)}</p>
+        <p class="text-3xl font-bold mt-2 text-green-600">
+          SAR {((totalRevenue?.sum || 0) / 100).toFixed(2)}
+        </p>
       </div>
       <div class="border border-line rounded-lg p-6 bg-white shadow-sm">
         <h3 class="text-sm font-medium text-gray-500 uppercase">Pending Confirmation</h3>

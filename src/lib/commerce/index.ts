@@ -1,11 +1,11 @@
-import type { D1Database } from '@cloudflare/workers-types';
-import { ProductService } from './product.service';
-import { CollectionService } from './collection.service';
-import { CartService } from './cart.service';
-import { OrderService } from './order.service';
-import { CustomerService } from './customer.service';
-import { InventoryService } from './inventory.service';
-import { CODProvider, HostedCheckoutProvider } from './providers/payment';
+import type { D1Database } from "@cloudflare/workers-types";
+import { ProductService } from "./product.service";
+import { CollectionService } from "./collection.service";
+import { CartService } from "./cart.service";
+import { OrderService } from "./order.service";
+import { CustomerService } from "./customer.service";
+import { InventoryService } from "./inventory.service";
+import { CODProvider, HostedCheckoutProvider } from "./providers/payment";
 
 export class CommerceCore {
   public products: ProductService;
@@ -29,11 +29,14 @@ export class CommerceCore {
   }
 }
 
-export function getCommerce(db: D1Database, options?: { enableOnlinePayment?: boolean }): CommerceCore {
+export function getCommerce(
+  db: D1Database,
+  options?: { enableOnlinePayment?: boolean },
+): CommerceCore {
   return new CommerceCore(db, options);
 }
 
-export * from './types';
-export * from './pricing';
-export * from './order.service';
-export * from './inventory.service';
+export * from "./types";
+export * from "./pricing";
+export * from "./order.service";
+export * from "./inventory.service";

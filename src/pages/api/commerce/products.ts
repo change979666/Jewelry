@@ -64,11 +64,15 @@ async function handlerGet({ request, env }: PagesCtx): Promise<Response> {
       if (!product) return json({ ok: false, error: "Product not found" }, 404);
 
       const variants = await db
-        .prepare(`SELECT id, sku, option_values, price, compare_at_price, currency, inventory_quantity, inventory_policy, status FROM product_variants WHERE product_id = ? AND status = 'active' ORDER BY created_at ASC`)
+        .prepare(
+          `SELECT id, sku, option_values, price, compare_at_price, currency, inventory_quantity, inventory_policy, status FROM product_variants WHERE product_id = ? AND status = 'active' ORDER BY created_at ASC`,
+        )
         .bind(product.id as string)
         .all();
       const media = await db
-        .prepare(`SELECT id, type, url, alt, sort_order FROM product_media WHERE product_id = ? ORDER BY sort_order ASC, created_at ASC`)
+        .prepare(
+          `SELECT id, type, url, alt, sort_order FROM product_media WHERE product_id = ? ORDER BY sort_order ASC, created_at ASC`,
+        )
         .bind(product.id as string)
         .all();
 
@@ -130,14 +134,17 @@ async function handlerGet({ request, env }: PagesCtx): Promise<Response> {
 
     return json({
       ok: true,
-      products: (products.results || []).map((p) => ({ ...p, cover: covers[p.id as string] ?? null })),
+      products: (products.results || []).map((p) => ({
+        ...p,
+        cover: covers[p.id as string] ?? null,
+      })),
       total: totalRow?.c ?? 0,
       meta: { limit, offset },
     });
   } catch (err) {
     return json({ ok: false, error: "catalog_error", detail: String(err) }, 500);
   }
-};
+}
 
 // ---- Astro endpoint exports (migrated from Pages Functions) ----
 export const GET = endpoint(handlerGet);

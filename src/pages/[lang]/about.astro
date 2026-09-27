@@ -16,10 +16,26 @@ const locale = _locale;
 const href = (p: string) => localizedUrl(locale, p);
 
 const values = [
-  { icon: "sparkle", title: "Everyday design", desc: "Pieces made to be worn daily, with a modern Gulf sensibility." },
-  { icon: "check", title: "Thoughtful quality", desc: "Honest materials and finishes, with clear care guidance." },
-  { icon: "box", title: "Gift-ready", desc: "Beautiful packaging for gifting moments, big and small." },
-  { icon: "chat", title: "Here for you", desc: "Cash on delivery, easy exchanges and friendly support." },
+  {
+    icon: "sparkle",
+    title: "Everyday design",
+    desc: "Pieces made to be worn daily, with a modern Gulf sensibility.",
+  },
+  {
+    icon: "check",
+    title: "Thoughtful quality",
+    desc: "Honest materials and finishes, with clear care guidance.",
+  },
+  {
+    icon: "box",
+    title: "Gift-ready",
+    desc: "Beautiful packaging for gifting moments, big and small.",
+  },
+  {
+    icon: "chat",
+    title: "Here for you",
+    desc: "Cash on delivery, easy exchanges and friendly support.",
+  },
 ];
 ---
 
@@ -58,8 +74,12 @@ const values = [
   <section class="container-x py-20">
     <div class="reveal card-surface rounded-2xl bg-ink p-12 text-center text-paper">
       <h2 class="text-2xl font-semibold">Have a question?</h2>
-      <p class="mt-3 text-paper/70">We're happy to help with sizing, materials, orders and gifting.</p>
-      <a href={href("/contact")} class="btn mt-8 inline-flex bg-white text-ink hover:bg-beige">Contact us</a>
+      <p class="mt-3 text-paper/70">
+        We're happy to help with sizing, materials, orders and gifting.
+      </p>
+      <a href={href("/contact")} class="btn mt-8 inline-flex bg-white text-ink hover:bg-beige"
+        >Contact us</a
+      >
     </div>
   </section>
 </BaseLayout>

@@ -9,11 +9,7 @@
 // 在业务链路中禁止。
 
 import { authenticateRequest, requirePermission } from "@/lib/admin/rbac";
-import {
-  OrderService,
-  canTransition,
-  ORDER_TRANSITIONS,
-} from "@/lib/commerce/order.service";
+import { OrderService, canTransition, ORDER_TRANSITIONS } from "@/lib/commerce/order.service";
 import type { OrderStatus } from "@/lib/commerce/types";
 import { logAction } from "@/lib/admin/audit";
 import { endpoint, type PagesCtx } from "@/pages/api/_lib/ctx";
@@ -146,7 +142,8 @@ async function handlerAll({ request, env }: PagesCtx): Promise<Response> {
       kpis: {
         total_orders: totalOrders,
         total_revenue: kpiRow?.total_revenue || 0, // minor units
-        avg_order_value: totalOrders > 0 ? Math.round((kpiRow?.total_revenue || 0) / totalOrders) : 0,
+        avg_order_value:
+          totalOrders > 0 ? Math.round((kpiRow?.total_revenue || 0) / totalOrders) : 0,
       },
     });
   }
@@ -171,11 +168,7 @@ async function handlerAll({ request, env }: PagesCtx): Promise<Response> {
 
     const to = status as OrderStatus;
     if (!canTransition(order.order_status as OrderStatus, to)) {
-      return fail(
-        "ILLEGAL_TRANSITION",
-        `Cannot transition ${order.order_status} → ${to}`,
-        409,
-      );
+      return fail("ILLEGAL_TRANSITION", `Cannot transition ${order.order_status} → ${to}`, 409);
     }
 
     const result = await orders.updateOrderStatus(id, to, reason, user!.username);
@@ -196,7 +189,7 @@ async function handlerAll({ request, env }: PagesCtx): Promise<Response> {
   }
 
   return fail("METHOD_NOT_ALLOWED", "Method not allowed", 405);
-};
+}
 
 // ---- Astro endpoint exports (migrated from Pages Functions) ----
 export const ALL = endpoint(handlerAll);

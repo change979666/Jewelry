@@ -115,7 +115,7 @@ async function handlerPost(context: PagesCtx): Promise<Response> {
       { status: 500 },
     );
   }
-};
+}
 
 // Reject anything that isn't a POST.
 async function handlerAll(context: PagesCtx): Promise<Response> {
@@ -123,7 +123,7 @@ async function handlerAll(context: PagesCtx): Promise<Response> {
     return new Response("Method Not Allowed", { status: 405 });
   }
   return handlerPost(context);
-};
+}
 
 // ---- Astro endpoint exports (migrated from Pages Functions) ----
 export const ALL = endpoint(handlerAll);

@@ -2,7 +2,7 @@
 //  Test helpers — mock KV, Env, and Request factories for Pages Function tests.
 // ---------------------------------------------------------------------------
 
-import type { Env } from "../functions/types";
+import type { Env } from "../src/lib/env";
 
 /**
  * In-memory KV mock that implements the subset of KVNamespace used by the

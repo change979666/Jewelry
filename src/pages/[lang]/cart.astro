@@ -20,56 +20,96 @@ if (sessionId) {
 }
 
 const formattedPrice = (price: number, currency: string) => {
-  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(price / 100);
+  return new Intl.NumberFormat(locale, { style: "currency", currency }).format(price / 100);
 };
 
 const items = cartData?.items || [];
-const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.variant.price), 0);
-const currency = items.length > 0 ? items[0].variant.currency : 'SAR';
-
+const subtotal = items.reduce((acc, item) => acc + item.quantity * item.variant.price, 0);
+const currency = items.length > 0 ? items[0].variant.currency : "SAR";
 ---
+
 <BaseLayout locale={locale} title={t(locale, "cart.title")} description={t(locale, "cart.title")}>
   <main class="container-x py-12">
     <h1 class="text-3xl font-bold">{t(locale, "cart.title")}</h1>
 
-    {items.length === 0 ? (
-      <div class="mt-8 text-center py-12 border border-dashed border-line rounded-xl">
-        <p class="text-stone">{t(locale, "cart.empty")}</p>
-        <a href={`/${lang}/`} class="btn btn-primary mt-4 inline-block">{t(locale, "cart.continue")}</a>
-      </div>
-    ) : (
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 mt-8">
-        <div class="lg:col-span-2 space-y-6">
-          {items.map(item => (
-            <div class="flex items-center gap-4 border border-line p-4 rounded-xl">
-              <div class="flex-1">
-                <h3 class="font-semibold"><a href={`/${lang}/product/${item.product.slug}`} class="hover:underline">{item.product.title}</a></h3>
-                <p class="text-sm text-stone mt-1">{formattedPrice(item.variant.price, item.variant.currency)}</p>
-              </div>
-              <div class="flex items-center gap-2">
-                <input type="number" value={item.quantity} min="0" max="99"
-                  class="border border-line rounded w-16 px-2 py-1 cart-qty"
-                  data-item-id={item.id} aria-label={t(locale, "cart.quantity")} />
-              </div>
-              <div class="font-semibold w-24 text-right">
-                {formattedPrice(item.variant.price * item.quantity, item.variant.currency)}
-              </div>
-              <button type="button" class="text-red-500 hover:text-red-700 p-2 cart-remove" data-item-id={item.id} aria-label={t(locale, "cart.remove")}>&times;</button>
-            </div>
-          ))}
+    {
+      items.length === 0 ? (
+        <div class="mt-8 text-center py-12 border border-dashed border-line rounded-xl">
+          <p class="text-stone">{t(locale, "cart.empty")}</p>
+          <a href={`/${lang}/`} class="btn btn-primary mt-4 inline-block">
+            {t(locale, "cart.continue")}
+          </a>
         </div>
+      ) : (
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 mt-8">
+          <div class="lg:col-span-2 space-y-6">
+            {items.map((item) => (
+              <div class="flex items-center gap-4 border border-line p-4 rounded-xl">
+                <div class="flex-1">
+                  <h3 class="font-semibold">
+                    <a href={`/${lang}/product/${item.product.slug}`} class="hover:underline">
+                      {item.product.title}
+                    </a>
+                  </h3>
+                  <p class="text-sm text-stone mt-1">
+                    {formattedPrice(item.variant.price, item.variant.currency)}
+                  </p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={item.quantity}
+                    min="0"
+                    max="99"
+                    class="border border-line rounded w-16 px-2 py-1 cart-qty"
+                    data-item-id={item.id}
+                    aria-label={t(locale, "cart.quantity")}
+                  />
+                </div>
+                <div class="font-semibold w-24 text-right">
+                  {formattedPrice(item.variant.price * item.quantity, item.variant.currency)}
+                </div>
+                <button
+                  type="button"
+                  class="text-red-500 hover:text-red-700 p-2 cart-remove"
+                  data-item-id={item.id}
+                  aria-label={t(locale, "cart.remove")}
+                >
+                  &times;
+                </button>
+              </div>
+            ))}
+          </div>
 
-        <div class="border border-line p-6 rounded-xl self-start">
-          <h3 class="text-lg font-semibold">{t(locale, "checkout.summary")}</h3>
-          <dl class="mt-4 space-y-2 text-sm">
-            <div class="flex justify-between"><dt>{t(locale, "cart.subtotal")}</dt><dd>{formattedPrice(subtotal, currency)}</dd></div>
-            <div class="flex justify-between text-stone"><dt>{t(locale, "checkout.shipping")}</dt><dd>{t(locale, "checkout.totals_note")}</dd></div>
-            <div class="flex justify-between font-semibold text-lg border-t border-line pt-2 mt-2"><dt>{t(locale, "cart.total")}</dt><dd>{formattedPrice(subtotal, currency)}</dd></div>
-          </dl>
-          <a href={`/${lang}/checkout`} class="btn btn-primary w-full mt-6 text-center block">{t(locale, "cart.checkout")}</a>
+          <div class="border border-line p-6 rounded-xl self-start">
+            <h3 class="text-lg font-semibold">{t(locale, "checkout.summary")}</h3>
+            <dl class="mt-4 space-y-2 text-sm">
+              <div class="flex justify-between">
+                <>
+                  <dt>{t(locale, "cart.subtotal")}</dt>
+                  <dd>{formattedPrice(subtotal, currency)}</dd>
+                </>
+              </div>
+              <div class="flex justify-between text-stone">
+                <>
+                  <dt>{t(locale, "checkout.shipping")}</dt>
+                  <dd>{t(locale, "checkout.totals_note")}</dd>
+                </>
+              </div>
+              <div class="flex justify-between font-semibold text-lg border-t border-line pt-2 mt-2">
+                <>
+                  <dt>{t(locale, "cart.total")}</dt>
+                  <dd>{formattedPrice(subtotal, currency)}</dd>
+                </>
+              </div>
+            </dl>
+            <a href={`/${lang}/checkout`} class="btn btn-primary w-full mt-6 text-center block">
+              {t(locale, "cart.checkout")}
+            </a>
+          </div>
         </div>
-      </div>
-    )}
+      )
+    }
   </main>
 </BaseLayout>
 
@@ -77,22 +117,22 @@ const currency = items.length > 0 ? items[0].variant.currency : 'SAR';
   // Cart mutations against the unified /api/cart JSON API.
   async function post(url: string, payload: unknown): Promise<boolean> {
     const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
     return res.ok;
   }
-  document.querySelectorAll<HTMLInputElement>('.cart-qty').forEach((input) => {
-    input.addEventListener('change', async () => {
+  document.querySelectorAll<HTMLInputElement>(".cart-qty").forEach((input) => {
+    input.addEventListener("change", async () => {
       const qty = Math.max(0, Math.min(99, Math.floor(Number(input.value) || 0)));
-      const ok = await post('/api/cart/update', { item_id: input.dataset.itemId, quantity: qty });
+      const ok = await post("/api/cart/update", { item_id: input.dataset.itemId, quantity: qty });
       if (ok) window.location.reload();
     });
   });
-  document.querySelectorAll<HTMLButtonElement>('.cart-remove').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const ok = await post('/api/cart/remove', { item_id: btn.dataset.itemId });
+  document.querySelectorAll<HTMLButtonElement>(".cart-remove").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const ok = await post("/api/cart/remove", { item_id: btn.dataset.itemId });
       if (ok) window.location.reload();
     });
   });

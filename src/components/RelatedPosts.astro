@@ -8,10 +8,11 @@ interface Props {
   posts: BlogEntry[];
 }
 const { locale, posts } = Astro.props;
-const dateFmt = new Intl.DateTimeFormat(
-  locale === "ar" ? "ar-SA-u-nu-latn" : "en-US",
-  { year: "numeric", month: "short", day: "numeric" },
-);
+const dateFmt = new Intl.DateTimeFormat(locale === "ar" ? "ar-SA-u-nu-latn" : "en-US", {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+});
 const postHref = (key: string) => localizedUrl(locale, `/blog/${key}`);
 ---
 

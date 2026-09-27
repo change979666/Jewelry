@@ -17,18 +17,28 @@ const locale = _locale;
 
 const channels = [
   { icon: "mail", label: "Email", value: SITE_CFG.email, href: `mailto:${SITE_CFG.email}` },
-  { icon: "chat", label: "WhatsApp", value: SITE_CFG.whatsapp || "Coming soon", href: SITE_CFG.whatsapp || "" },
+  {
+    icon: "chat",
+    label: "WhatsApp",
+    value: SITE_CFG.whatsapp || "Coming soon",
+    href: SITE_CFG.whatsapp || "",
+  },
 ];
 ---
 
-<BaseLayout locale={locale} title="Contact us" description={`Get in touch with ${SITE_CFG.name} support.`}>
+<BaseLayout
+  locale={locale}
+  title="Contact us"
+  description={`Get in touch with ${SITE_CFG.name} support.`}
+>
   <!-- Hero -->
   <section class="container-x py-20 text-center lg:py-28">
     <div class="mx-auto max-w-2xl reveal">
       <p class="eyebrow">Support</p>
       <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">We're here to help</h1>
       <p class="mt-4 text-lg leading-relaxed text-stone">
-        Questions about an order, sizing, materials, delivery or returns? Reach us and we'll respond as soon as we can.
+        Questions about an order, sizing, materials, delivery or returns? Reach us and we'll respond
+        as soon as we can.
       </p>
     </div>
   </section>
@@ -48,7 +58,9 @@ const channels = [
                 <div>
                   <p class="text-xs uppercase tracking-widest text-stone">{ch.label}</p>
                   {ch.href ? (
-                    <a href={ch.href} class="font-medium text-ink hover:text-accent">{ch.value}</a>
+                    <a href={ch.href} class="font-medium text-ink hover:text-accent">
+                      {ch.value}
+                    </a>
                   ) : (
                     <span class="font-medium text-stone">{ch.value}</span>
                   )}
@@ -91,7 +103,9 @@ const channels = [
             placeholder="How can we help?"
             class="w-full rounded-xl border border-line bg-paper px-4 py-3 text-sm outline-none focus:border-accent resize-vertical"
           ></textarea>
-          <button type="submit" class="btn btn-primary magnetic w-full justify-center py-4">Email us</button>
+          <button type="submit" class="btn btn-primary magnetic w-full justify-center py-4"
+            >Email us</button
+          >
           <p class="form-status text-center text-xs text-stone"></p>
         </form>
       </div>
@@ -113,7 +127,12 @@ const channels = [
       const subject = d.subject ? d.subject : "Website message from " + d.name;
       const body = "Name: " + d.name + "\nEmail: " + d.email + "\n\n" + d.message;
       location.href =
-        "mailto:" + to + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+        "mailto:" +
+        to +
+        "?subject=" +
+        encodeURIComponent(subject) +
+        "&body=" +
+        encodeURIComponent(body);
       if (status) status.textContent = "Opening your email app…";
     });
   })();

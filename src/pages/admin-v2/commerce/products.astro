@@ -11,12 +11,23 @@ const products = results || [];
 
 <AdminShell title="Products" activeModule="commerce">
   <Sidebar slot="sidebar" activeModule="commerce" />
-  <Topbar slot="topbar-left" title="Products" breadcrumbs={[{ label: "Home", href: "/admin-v2" }, { label: "Commerce" }, { label: "Products" }]} />
+  <Topbar
+    slot="topbar-left"
+    title="Products"
+    breadcrumbs={[
+      { label: "Home", href: "/admin-v2" },
+      { label: "Commerce" },
+      { label: "Products" },
+    ]}
+  />
 
   <div class="p-6">
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold">Products</h1>
-      <button onclick="document.getElementById('create-modal').style.display='block'" class="bg-blue-600 text-white px-4 py-2 rounded">Create Product</button>
+      <button
+        onclick="document.getElementById('create-modal').style.display='block'"
+        class="bg-blue-600 text-white px-4 py-2 rounded">Create Product</button
+      >
     </div>
 
     <table class="w-full text-left border-collapse">
@@ -29,27 +40,60 @@ const products = results || [];
         </tr>
       </thead>
       <tbody>
-        {products.map(p => (
-          <tr class="border-b">
-            <td class="p-2">{p.title}</td>
-            <td class="p-2">{p.slug}</td>
-            <td class="p-2">{p.status}</td>
-            <td class="p-2">{p.created_at}</td>
-          </tr>
-        ))}
+        {
+          products.map((p) => (
+            <tr class="border-b">
+              <td class="p-2">{p.title}</td>
+              <td class="p-2">{p.slug}</td>
+              <td class="p-2">{p.status}</td>
+              <td class="p-2">{p.created_at}</td>
+            </tr>
+          ))
+        }
       </tbody>
     </table>
 
-    <div id="create-modal" style="display:none;" class="fixed inset-0 bg-black/50 flex items-center justify-center">
+    <div
+      id="create-modal"
+      style="display:none;"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center"
+    >
       <div class="bg-white p-6 rounded-lg w-full max-w-md">
         <h2 class="text-xl mb-4 font-bold text-black">Create Product</h2>
         <form id="create-form" class="space-y-4 text-black">
-          <div><label class="block text-sm">Title</label><input name="title" required class="border w-full p-2 rounded" /></div>
-          <div><label class="block text-sm">Slug</label><input name="slug" required class="border w-full p-2 rounded" /></div>
-          <div><label class="block text-sm">Short Description</label><textarea name="short_description" class="border w-full p-2 rounded"></textarea></div>
-          <div><label class="block text-sm">Price (SAR minor units)</label><input type="number" name="price" value="14900" class="border w-full p-2 rounded" /></div>
+          <div>
+            <label class="block text-sm">Title</label><input
+              name="title"
+              required
+              class="border w-full p-2 rounded"
+            />
+          </div>
+          <div>
+            <label class="block text-sm">Slug</label><input
+              name="slug"
+              required
+              class="border w-full p-2 rounded"
+            />
+          </div>
+          <div>
+            <label class="block text-sm">Short Description</label><textarea
+              name="short_description"
+              class="border w-full p-2 rounded"></textarea>
+          </div>
+          <div>
+            <label class="block text-sm">Price (SAR minor units)</label><input
+              type="number"
+              name="price"
+              value="14900"
+              class="border w-full p-2 rounded"
+            />
+          </div>
           <div class="flex justify-end gap-2 mt-4">
-            <button type="button" onclick="document.getElementById('create-modal').style.display='none'" class="px-4 py-2 border rounded">Cancel</button>
+            <button
+              type="button"
+              onclick="document.getElementById('create-modal').style.display='none'"
+              class="px-4 py-2 border rounded">Cancel</button
+            >
             <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Save</button>
           </div>
         </form>
@@ -59,17 +103,17 @@ const products = results || [];
 </AdminShell>
 
 <script>
-  document.getElementById('create-form')?.addEventListener('submit', async (e) => {
+  document.getElementById("create-form")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
     const data = Object.fromEntries(formData.entries());
-    
-    const res = await fetch('/api/admin/v2/commerce/products', {
-      method: 'POST',
+
+    const res = await fetch("/api/admin/v2/commerce/products", {
+      method: "POST",
       body: JSON.stringify(data),
-      headers: { 'Content-Type': 'application/json' }
+      headers: { "Content-Type": "application/json" },
     });
-    
+
     if (res.ok) {
       window.location.reload();
     } else {

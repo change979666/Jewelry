@@ -13,7 +13,7 @@ async function handlerPost({ request, env }: PagesCtx): Promise<Response> {
   const { cart } = await getCommerce(db).cart.getCartBySessionId(sessionId);
   await getCommerce(db).cart.clearCart(cart.id);
   return json({ ok: true });
-};
+}
 
 // ---- Astro endpoint exports (migrated from Pages Functions) ----
 export const POST = endpoint(handlerPost);

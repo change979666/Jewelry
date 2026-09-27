@@ -48,7 +48,9 @@ async function handlerAll(context: PagesCtx): Promise<Response> {
     const id = url.searchParams.get("id");
 
     if (id) {
-      const customer = await env.DB.prepare("SELECT * FROM customers WHERE id = ?").bind(id).first();
+      const customer = await env.DB.prepare("SELECT * FROM customers WHERE id = ?")
+        .bind(id)
+        .first();
       if (!customer) return json({ error: "Customer not found" }, 404);
 
       const orders = await env.DB.prepare(
@@ -154,7 +156,8 @@ async function handlerAll(context: PagesCtx): Promise<Response> {
     } catch (err) {
       // email is UNIQUE — surface a clean 409 instead of a 500.
       const message = err instanceof Error ? err.message : String(err);
-      if (/UNIQUE/i.test(message)) return json({ error: "A customer with that email already exists" }, 409);
+      if (/UNIQUE/i.test(message))
+        return json({ error: "A customer with that email already exists" }, 409);
       throw err;
     }
 

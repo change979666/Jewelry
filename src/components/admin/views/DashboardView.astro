@@ -24,7 +24,10 @@ const { contentStats = {} } = Astro.props;
   <div class="admin-flex admin-flex-col" style="gap:var(--sp-5);">
     <!-- ① Hero：品牌 + 今日经营概览 -->
     <section class="dash-hero cc-glass cc-hero" aria-label="经营概览">
-      <div class="admin-flex admin-items-center admin-justify-between" style="flex-wrap:wrap;gap:var(--sp-4);">
+      <div
+        class="admin-flex admin-items-center admin-justify-between"
+        style="flex-wrap:wrap;gap:var(--sp-4);"
+      >
         <div style="flex:1;min-width:240px;">
           <div class="cc-hero-brand">JEWELRY <b>COMMERCE</b></div>
           <div class="cc-hero-sub">V1.0 COMMERCE CORE</div>
@@ -59,7 +62,9 @@ const { contentStats = {} } = Astro.props;
       <div class="admin-card">
         <div class="admin-card-header admin-flex admin-items-center admin-justify-between">
           <span class="admin-card-title">最近订单</span>
-          <a href="/admin-v2/commerce/orders" class="admin-btn admin-btn-ghost admin-btn-sm">全部订单</a>
+          <a href="/admin-v2/commerce/orders" class="admin-btn admin-btn-ghost admin-btn-sm"
+            >全部订单</a
+          >
         </div>
         <div class="admin-card-body" id="recent-orders"><Skeleton lines={6} height="26px" /></div>
       </div>
@@ -71,7 +76,9 @@ const { contentStats = {} } = Astro.props;
         <div class="admin-card">
           <div class="admin-card-header admin-flex admin-items-center admin-justify-between">
             <span class="admin-card-title">低库存预警</span>
-            <a href="/admin-v2/commerce/products" class="admin-btn admin-btn-ghost admin-btn-sm">商品管理</a>
+            <a href="/admin-v2/commerce/products" class="admin-btn admin-btn-ghost admin-btn-sm"
+              >商品管理</a
+            >
           </div>
           <div class="admin-card-body" id="low-stock"><Skeleton lines={3} height="24px" /></div>
         </div>

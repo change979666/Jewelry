@@ -9,7 +9,7 @@
 // ---------------------------------------------------------------------------
 
 import { describe, it, expect } from "vitest";
-import { classifySignal, classifyHealthBuckets } from "../functions/lib/health-buckets";
+import { classifySignal, classifyHealthBuckets } from "../src/lib/health-buckets";
 import { MockD1 } from "./helpers";
 
 describe("classifySignal — 五桶判定", () => {

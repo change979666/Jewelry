@@ -15,8 +15,8 @@ async function handlerGet({ request, env }: PagesCtx): Promise<Response> {
   const subtotal = items.reduce((sum, i) => sum + i.variant.price * i.quantity, 0);
   const count = items.reduce((sum, i) => sum + i.quantity, 0);
 
-  return json({ ok: true, items, subtotal, count, currency: items[0]?.variant.currency ?? 'SAR' });
-};
+  return json({ ok: true, items, subtotal, count, currency: items[0]?.variant.currency ?? "SAR" });
+}
 
 // ---- Astro endpoint exports (migrated from Pages Functions) ----
 export const GET = endpoint(handlerGet);

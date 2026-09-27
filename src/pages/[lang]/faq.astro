@@ -128,11 +128,9 @@ const nextTitle = locale === "ar" ? "إلى أين بعد ذلك؟" : "Where to 
 <BaseLayout
   locale={locale}
   title={t(locale, "nav.faq")}
-  description={
-    locale === "ar"
-      ? "الأسئلة الشائعة حول الشحن والدفع عند الاستلام والإرجاع والمواد."
-      : "Frequently asked questions about shipping, cash on delivery, returns and materials."
-  }
+  description={locale === "ar"
+    ? "الأسئلة الشائعة حول الشحن والدفع عند الاستلام والإرجاع والمواد."
+    : "Frequently asked questions about shipping, cash on delivery, returns and materials."}
 >
   <Breadcrumbs
     locale={locale}

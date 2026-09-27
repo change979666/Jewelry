@@ -63,8 +63,6 @@ export function toPagesCtx(ctx: APIContext): PagesCtx {
  * handlers may keep destructuring only the fields they use
  * (`async function handlerGet({ request, env }: PagesCtx)`).
  */
-export function endpoint<C>(
-  handler: (ctx: C) => Response | Promise<Response>,
-): APIRoute {
+export function endpoint<C>(handler: (ctx: C) => Response | Promise<Response>): APIRoute {
   return (ctx) => handler(toPagesCtx(ctx) as C);
 }

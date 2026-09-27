@@ -114,7 +114,7 @@ async function handlerGet({ request, env }: PagesCtx): Promise<Response> {
     console.error("[search] query failed:", err instanceof Error ? err.message : String(err));
     return json({ error: "Internal error" }, 500);
   }
-};
+}
 
 // ---- Astro endpoint exports (migrated from Pages Functions) ----
 export const GET = endpoint(handlerGet);

@@ -9,9 +9,9 @@
 // ---------------------------------------------------------------------------
 
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { sendAlert } from "../functions/lib/notify";
+import { sendAlert } from "../src/lib/notify";
 import { mockEnv, MockKV } from "./helpers";
-import type { Env } from "../functions/types";
+import type { Env } from "../src/lib/env";
 
 interface ResendCall {
   url: string;

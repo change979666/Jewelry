@@ -9,7 +9,11 @@ export function getSessionId(request: Request): string | null {
   return m ? decodeURIComponent(m[1]) : null;
 }
 
-export function json(data: unknown, status = 200, extraHeaders: Record<string, string> = {}): Response {
+export function json(
+  data: unknown,
+  status = 200,
+  extraHeaders: Record<string, string> = {},
+): Response {
   return new Response(JSON.stringify(data), {
     status,
     headers: { "Content-Type": "application/json", "Cache-Control": "no-store", ...extraHeaders },

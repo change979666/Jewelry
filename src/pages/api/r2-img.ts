@@ -46,7 +46,7 @@ async function handlerGet({ request, env }: PagesCtx): Promise<Response> {
   headers.set("Cache-Control", "public, max-age=31536000, immutable");
 
   return new Response(object.body, { headers });
-};
+}
 
 // ---- Astro endpoint exports (migrated from Pages Functions) ----
 export const GET = endpoint(handlerGet);

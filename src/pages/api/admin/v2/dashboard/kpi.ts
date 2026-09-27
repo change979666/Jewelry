@@ -7,10 +7,10 @@ import { authenticateRequest, requirePermission } from "@/lib/admin/rbac";
 import { endpoint, type PagesCtx } from "@/pages/api/_lib/ctx";
 
 function ok(data: unknown): Response {
-  return new Response(
-    JSON.stringify({ success: true, data, error: null, meta: null }),
-    { status: 200, headers: { "Content-Type": "application/json" } },
-  );
+  return new Response(JSON.stringify({ success: true, data, error: null, meta: null }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 function dayStartISO(d: Date): string {
@@ -75,13 +75,9 @@ async function handlerAll({ request, env }: PagesCtx): Promise<Response> {
       .bind(monthStart)
       .all<{ market: string; currency: string; orders: number; revenue: number }>(),
     db
-      .prepare(
-        `SELECT COUNT(*) AS c FROM orders WHERE order_status = 'PENDING_CONFIRMATION'`,
-      )
+      .prepare(`SELECT COUNT(*) AS c FROM orders WHERE order_status = 'PENDING_CONFIRMATION'`)
       .first<{ c: number }>(),
-    db
-      .prepare(`SELECT COUNT(*) AS c FROM products WHERE status = 'active'`)
-      .first<{ c: number }>(),
+    db.prepare(`SELECT COUNT(*) AS c FROM products WHERE status = 'active'`).first<{ c: number }>(),
     // 低库存：active 商品下所有变体总库存 < 5
     db
       .prepare(
@@ -95,9 +91,7 @@ async function handlerAll({ request, env }: PagesCtx): Promise<Response> {
       )
       .first<{ c: number }>(),
     db.prepare(`SELECT COUNT(*) AS c FROM customers`).first<{ c: number }>(),
-    db
-      .prepare(`SELECT COUNT(*) AS c FROM reviews WHERE status = 'pending'`)
-      .first<{ c: number }>(),
+    db.prepare(`SELECT COUNT(*) AS c FROM reviews WHERE status = 'pending'`).first<{ c: number }>(),
     db
       .prepare(`SELECT order_status AS s, COUNT(*) AS c FROM orders GROUP BY order_status`)
       .all<{ s: string; c: number }>(),
@@ -121,7 +115,7 @@ async function handlerAll({ request, env }: PagesCtx): Promise<Response> {
     pendingReviews: reviewRow?.c ?? 0,
     statusCounts,
   });
-};
+}
 
 // ---- Astro endpoint exports (migrated from Pages Functions) ----
 export const ALL = endpoint(handlerAll);
