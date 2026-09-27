@@ -1,0 +1,128 @@
+# Aromiso OS 2.0: Staggered AI pipeline triggers
+# Migrated to Beijing-morning window (V5.20): each role fires so that fresh
+# opportunities/tasks are ready when the operator starts the day (Beijing = UTC+8):
+#   22:00 UTC (06:00 BJ next day) — Collector (cron-pull, already in cron-pull.yml)
+#   22:15 UTC (06:15 BJ) — Analyst
+#   22:25 UTC (06:25 BJ) — Librarian
+#   22:35 UTC (06:35 BJ) — Strategist
+#   22:45 UTC (06:45 BJ) — Executor
+#   23:00 UTC (07:00 BJ) — Auditor
+#   Sun 22:30 UTC        — Weekly report (Pro) = Beijing Monday 06:30
+#   1st 23:00 UTC        — Monthly report (Pro) = Beijing 1st 07:00
+
+name: Aromiso OS Daily Pipeline
+
+on:
+  schedule:
+    # Daily pipeline steps (staggered 10min apart, Beijing morning)
+    - cron: "15 22 * * *" # Analyst
+    - cron: "25 22 * * *" # Librarian
+    - cron: "35 22 * * *" # Strategist
+    - cron: "45 22 * * *" # Executor
+    - cron: "0 23 * * *" # Auditor
+    # Weekly report (UTC Sunday = Beijing Monday morning)
+    - cron: "30 22 * * 0"
+    # Monthly report (1st of month, Beijing morning)
+    - cron: "0 23 1 * *"
+  workflow_dispatch:
+    inputs:
+      step:
+        description: "Which step to run (analyst/librarian/strategist/executor/auditor/weekly/monthly/all)"
+        required: false
+        default: "all"
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine step
+        id: step
+        run: |
+          # V5.413：改用触发者的 cron 表达式而非实际运行时刻的分钟数。原因是 GH Actions 的 cron 可能被延迟执行（如今早延迟了 14–45 分钟），
+          # 导致基于 MINUTE/HOUR 的分支全错判进 else → step=all，然后因为 os-daily:<UTCdate>:all 键已存在而被幂等短路。
+          # 改用 github.event.schedule 可以拿到“本该触发哪个 cron”的原始表达式，不受实际执行时间影响。
+          # V5.414：若 schedule 表达式非空却没匹配上任一已知 cron（理论上不该发生），退回旧的分钟判定兜底，
+          # 而不是退回 all——all 会命中当天已存在的幂等键被短路，等于整棒空跑。
+          INPUT="${{ github.event.inputs.step }}"
+          SCHEDULE="${{ github.event.schedule }}"
+          MINUTE=$(date -u +%M)
+          HOUR=$(date -u +%H)
+          DOW=$(date -u +%u)
+          DOM=$(date -u +%d)
+
+          if [ -n "$INPUT" ]; then
+            echo "step=$INPUT" >> $GITHUB_OUTPUT
+          elif [ -n "$SCHEDULE" ]; then
+            case "$SCHEDULE" in
+              "15 22 * * *") echo "step=analyst" >> $GITHUB_OUTPUT ;;
+              "25 22 * * *") echo "step=librarian" >> $GITHUB_OUTPUT ;;
+              "35 22 * * *") echo "step=strategist" >> $GITHUB_OUTPUT ;;
+              "45 22 * * *") echo "step=executor" >> $GITHUB_OUTPUT ;;
+              "0 23 1 * *")  echo "step=monthly" >> $GITHUB_OUTPUT ;;
+              "0 23 * * *")  echo "step=auditor" >> $GITHUB_OUTPUT ;;
+              "30 22 * * 0") echo "step=weekly" >> $GITHUB_OUTPUT ;;
+              *)
+                # 未知表达式 → 退回分钟判定兜底
+                if   [ "$MINUTE" = "15" ]; then echo "step=analyst" >> $GITHUB_OUTPUT
+                elif [ "$MINUTE" = "25" ]; then echo "step=librarian" >> $GITHUB_OUTPUT
+                elif [ "$MINUTE" = "35" ]; then echo "step=strategist" >> $GITHUB_OUTPUT
+                elif [ "$MINUTE" = "45" ]; then echo "step=executor" >> $GITHUB_OUTPUT
+                elif [ "$MINUTE" = "00" ] && [ "$HOUR" = "23" ] && [ "$DOM" = "01" ]; then echo "step=monthly" >> $GITHUB_OUTPUT
+                elif [ "$MINUTE" = "00" ] && [ "$HOUR" = "23" ]; then echo "step=auditor" >> $GITHUB_OUTPUT
+                elif [ "$MINUTE" = "30" ] && [ "$DOW" = "7" ]; then echo "step=weekly" >> $GITHUB_OUTPUT
+                else echo "step=all" >> $GITHUB_OUTPUT
+                fi
+                ;;
+            esac
+          else
+            echo "step=all" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run daily pipeline step
+        if: ${{ !contains(fromJSON('["weekly","monthly"]'), steps.step.outputs.step) }}
+        run: |
+          STEP="${{ steps.step.outputs.step }}"
+          echo "Running: $STEP"
+          # V5.15: pages.dev 别名绕过 aromiso.com 区边缘 IP 信誉挑战（见 cron-pull.yml 注释）
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"step\":\"$STEP\"}" \
+            "https://aromiso.pages.dev/api/admin/os-daily")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          echo "HTTP $HTTP_CODE: $BODY"
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            echo "::error::os-daily ($STEP) failed"
+            exit 1
+          fi
+
+      - name: Run report generation
+        if: ${{ contains(fromJSON('["weekly","monthly"]'), steps.step.outputs.step) }}
+        run: |
+          TYPE="${{ steps.step.outputs.step }}"
+          echo "Generating: $TYPE report"
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"type\":\"$TYPE\"}" \
+            "https://aromiso.pages.dev/api/admin/os-reports")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          echo "HTTP $HTTP_CODE"
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            echo "::error::report ($TYPE) failed"
+            exit 1
+          fi
+
+      - name: Run auditor (if auditor step)
+        if: ${{ steps.step.outputs.step == 'auditor' }}
+        run: |
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d '{"deep":false}' \
+            "https://aromiso.pages.dev/api/admin/os-audit")
+          echo "Audit HTTP: $RESPONSE"

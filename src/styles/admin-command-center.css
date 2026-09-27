@@ -1,0 +1,718 @@
+/* ==========================================================================
+   Aromiso OS — Command Center V1 (independent visual layer)
+   Direction: Apple Vision Pro × Tesla Dashboard × NASA Mission Control × premium B2B SaaS
+   Scope: Admin Shell brand layer + Dashboard command deck ONLY.
+   Rules: low-opacity ambience, glow only on Hero/AI/key numbers, glass only on
+   Hero + AI Workforce + System Status, animated border only on AI core module,
+   no site-wide glass, no neon, no purple-blue, no heavy animation, no new libs.
+   ========================================================================== */
+
+/* ---- Glow system (scoped, not on every button) ---- */
+.admin-v2-shell {
+  --ai-glow: 0 0 24px color-mix(in srgb, var(--ai, #7c5cff) 22%, transparent);
+  --accent-glow: 0 0 28px color-mix(in srgb, var(--admin-primary, #b4552d) 26%, transparent);
+  --success-glow: 0 0 22px color-mix(in srgb, var(--success, #2f7d4f) 24%, transparent);
+  /* Light theme: subtle warm paper ambience (never a dark void behind light UI) */
+  --cc-bg-0: #f6f3ec;
+  --cc-bg-1: #fbf9f5;
+  --cc-bg-2: #f2eee5;
+  --cc-ambient-opacity: 0.75;
+}
+/* Dark theme: the deep warm-black cockpit ambience */
+html.dark .admin-v2-shell {
+  --cc-bg-0: #0f0d0a;
+  --cc-bg-1: #14110d;
+  --cc-bg-2: #18140f;
+  --cc-ambient-opacity: 0.9;
+}
+
+/* ---- 1. Ambient background system (very low opacity, never harms reading) ---- */
+.admin-v2-shell {
+  position: relative;
+}
+.admin-v2-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(
+      1100px 520px at 12% -8%,
+      color-mix(in srgb, var(--admin-primary, #b4552d) 7%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 460px at 88% 0%,
+      color-mix(in srgb, var(--ai, #7c5cff) 5%, transparent),
+      transparent 62%
+    ),
+    linear-gradient(180deg, var(--cc-bg-1), var(--cc-bg-0) 55%, var(--cc-bg-2));
+  background-size:
+    140% 140%,
+    140% 140%,
+    100% 100%;
+  animation: cc-ambient-drift 26s ease-in-out infinite alternate;
+  opacity: var(--cc-ambient-opacity, 0.8);
+}
+@keyframes cc-ambient-drift {
+  from {
+    background-position:
+      0% 0%,
+      100% 0%,
+      0 0;
+  }
+  to {
+    background-position:
+      18% 12%,
+      82% 10%,
+      0 0;
+  }
+}
+
+/* ---- 2. Grid / data-mesh texture (5-8% opacity, subtle AI data-space) ---- */
+.admin-v2-shell::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.06;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--ink, #ece6da) 40%, transparent) 1px, transparent 1px),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--ink, #ece6da) 40%, transparent) 1px,
+      transparent 1px
+    );
+  background-size:
+    44px 44px,
+    44px 44px;
+  mask-image: radial-gradient(1200px 600px at 50% 0%, #000 0%, transparent 75%);
+}
+/* Lift in-flow children above the ambient layer. The sidebar is excluded:
+   it is position:fixed with z-index:100 and must stay out of flex flow,
+   otherwise .admin-v2-main's margin-left double-counts it (~280px gap). */
+.admin-v2-shell > *:not(.admin-v2-sidebar) {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- 3. Glass layer (ONLY hero / AI workforce / system status) ---- */
+.cc-glass {
+  background: color-mix(in srgb, var(--card, #1c1913) 62%, transparent);
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  border: 1px solid color-mix(in srgb, var(--ink, #ece6da) 10%, transparent);
+}
+
+/* ---- 4. Animated gradient border (AI core module only) ---- */
+.cc-ai-core {
+  position: relative;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--card, #1c1913), var(--card, #1c1913)) padding-box,
+    linear-gradient(
+        120deg,
+        color-mix(in srgb, var(--ai, #7c5cff) 55%, transparent),
+        color-mix(in srgb, var(--admin-primary, #b4552d) 45%, transparent),
+        color-mix(in srgb, var(--ai, #7c5cff) 35%, transparent)
+      )
+      border-box;
+  background-size:
+    100% 100%,
+    220% 220%;
+  animation: cc-border-flow 7s linear infinite;
+}
+@keyframes cc-border-flow {
+  from {
+    background-position:
+      0 0,
+      0% 50%;
+  }
+  to {
+    background-position:
+      0 0,
+      220% 50%;
+  }
+}
+
+/* ---- Command Deck: System Hero ---- */
+.cc-hero {
+  border-radius: var(--r-xl, 16px);
+  padding: var(--sp-6, 24px) var(--sp-6, 24px) var(--sp-5, 20px);
+  box-shadow: var(--accent-glow);
+  overflow: hidden;
+}
+.cc-hero-brand {
+  font-family: var(--font-display, var(--font-mono, monospace));
+  letter-spacing: 0.26em;
+  font-size: var(--fs-sm, 13px);
+  font-weight: 700;
+  color: color-mix(in srgb, var(--ink, #ece6da) 88%, transparent);
+  text-transform: uppercase;
+}
+.cc-hero-brand b {
+  color: var(--admin-primary, #b4552d);
+}
+.cc-hero-sub {
+  font-family: var(--font-display, var(--font-mono, monospace));
+  letter-spacing: 0.2em;
+  font-size: 0.625rem;
+  color: var(--stone, #a39b8c);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.cc-health {
+  font-family: var(--font-data, var(--font-mono, monospace));
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-kpi-hero, 3rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink, #ece6da);
+  text-shadow: var(--accent-glow);
+}
+.cc-health-label {
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--stone, #a39b8c);
+}
+.cc-status-online {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-data, var(--font-mono, monospace));
+  font-size: var(--fs-xs, 12px);
+  letter-spacing: 0.12em;
+  color: var(--success, #2f7d4f);
+  text-transform: uppercase;
+}
+
+/* ---- Business Pulse cockpit: big mono numbers + pure-CSS micro trend ---- */
+.cc-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--sp-4, 16px);
+  border-radius: var(--r-lg, 12px);
+  border: 1px solid color-mix(in srgb, var(--ink, #ece6da) 8%, transparent);
+  background: color-mix(in srgb, var(--card, #1c1913) 70%, transparent);
+  transition:
+    border-color var(--tr-fast, 150ms cubic-bezier(0.16, 1, 0.3, 1)),
+    transform var(--tr-fast, 150ms cubic-bezier(0.16, 1, 0.3, 1));
+}
+.cc-metric:hover {
+  border-color: color-mix(in srgb, var(--admin-primary, #b4552d) 40%, transparent);
+  transform: translateY(-2px);
+}
+.cc-metric-value {
+  font-family: var(--font-data, var(--font-mono, monospace));
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-kpi-hero, 3rem);
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--ink, #ece6da);
+}
+.cc-metric-label {
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--stone, #a39b8c);
+}
+/* pure-CSS micro trend line (no chart lib) */
+.cc-spark {
+  height: 22px;
+  margin-top: 6px;
+  background-image: linear-gradient(
+    100deg,
+    transparent 0 6%,
+    color-mix(in srgb, var(--admin-primary, #b4552d) 70%, transparent) 6% 7%,
+    transparent 7% 22%,
+    color-mix(in srgb, var(--admin-primary, #b4552d) 70%, transparent) 22% 23%,
+    transparent 23% 40%,
+    color-mix(in srgb, var(--admin-primary, #b4552d) 70%, transparent) 40% 41%,
+    transparent 41% 58%,
+    color-mix(in srgb, var(--admin-primary, #b4552d) 70%, transparent) 58% 59%,
+    transparent 59% 76%,
+    color-mix(in srgb, var(--admin-primary, #b4552d) 70%, transparent) 76% 77%,
+    transparent 77% 94%,
+    color-mix(in srgb, var(--admin-primary, #b4552d) 70%, transparent) 94% 95%,
+    transparent 95%
+  );
+  background-size: 100% 100%;
+  mask-image: linear-gradient(
+    180deg,
+    transparent 0 18%,
+    #000 18% 30%,
+    transparent 30% 44%,
+    #000 44% 56%,
+    transparent 56% 70%,
+    #000 70% 82%,
+    transparent 82%
+  );
+  opacity: 0.8;
+}
+
+/* ---- AI Workforce control panel (not cards) ---- */
+.cc-workforce {
+  border-radius: var(--r-lg, 12px);
+  padding: var(--sp-4, 16px);
+  box-shadow: var(--ai-glow);
+}
+.cc-agent-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3, 12px);
+  padding: var(--sp-3, 12px) var(--sp-2, 8px);
+  border-bottom: 1px dashed color-mix(in srgb, var(--ink, #ece6da) 10%, transparent);
+}
+.cc-agent-row:last-child {
+  border-bottom: none;
+}
+.cc-agent-name {
+  font-weight: 600;
+  font-size: var(--fs-md, 15px);
+  color: var(--ink, #ece6da);
+}
+.cc-agent-task {
+  font-size: var(--fs-xs, 12px);
+  color: var(--stone, #a39b8c);
+}
+.cc-agent-state {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-data, var(--font-mono, monospace));
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+/* status dot animations */
+.cc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.cc-dot--online {
+  background: var(--success, #2f7d4f);
+  box-shadow: var(--success-glow);
+  animation: cc-pulse 2.2s ease-in-out infinite;
+}
+.cc-dot--learning {
+  background: var(--admin-primary, #b4552d);
+  animation: cc-breathe 3.2s ease-in-out infinite;
+}
+.cc-dot--watching {
+  background: var(--stone, #a39b8c);
+}
+.cc-dot--processing {
+  background: var(--ai, #7c5cff);
+  box-shadow: var(--ai-glow);
+  animation: cc-slowglow 4s ease-in-out infinite;
+}
+@keyframes cc-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 0.75;
+  }
+}
+@keyframes cc-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes cc-slowglow {
+  0%,
+  100% {
+    box-shadow: 0 0 6px color-mix(in srgb, var(--ai, #7c5cff) 30%, transparent);
+  }
+  50% {
+    box-shadow: var(--ai-glow);
+  }
+}
+
+/* ---- Needs You: accent border + warm glow, real data only ---- */
+.cc-needsyou {
+  border: 1px solid color-mix(in srgb, var(--admin-primary, #b4552d) 55%, transparent);
+  border-left: 4px solid var(--admin-primary, #b4552d);
+  background: color-mix(in srgb, var(--admin-primary, #b4552d) 8%, var(--card, #1c1913));
+  box-shadow: var(--accent-glow);
+  border-radius: var(--r-lg, 12px);
+  padding: var(--sp-4, 16px);
+}
+
+/* ---- Sidebar: OS navigation + glow active indicator + system status ---- */
+.cc-side-brand {
+  font-family: var(--font-display, var(--font-mono, monospace));
+  letter-spacing: 0.24em;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.cc-side-brand small {
+  display: block;
+  font-size: 0.625rem;
+  letter-spacing: 0.2em;
+  color: var(--stone, #a39b8c);
+  font-weight: 500;
+}
+.admin-sidebar-nav .active,
+.admin-sidebar-nav [aria-current="page"] {
+  box-shadow:
+    inset 2px 0 0 var(--admin-primary, #b4552d),
+    var(--accent-glow);
+}
+.cc-side-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--sp-3, 12px) var(--sp-4, 16px);
+  border-top: 1px solid color-mix(in srgb, var(--ink, #ece6da) 10%, transparent);
+  font-family: var(--font-data, var(--font-mono, monospace));
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--stone, #a39b8c);
+}
+.cc-side-status .cc-dot--online {
+  animation: cc-pulse 2.2s ease-in-out infinite;
+}
+
+/* ---- Staged entrance (Hero → Pulse → Workforce → Decision) ---- */
+@keyframes cc-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.cc-stage {
+  animation: cc-enter var(--tr-scene, 650ms cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+.cc-stage-1 {
+  animation-delay: 0ms;
+}
+.cc-stage-2 {
+  animation-delay: 90ms;
+}
+.cc-stage-3 {
+  animation-delay: 180ms;
+}
+.cc-stage-4 {
+  animation-delay: 270ms;
+}
+
+/* ---- Reduced motion: disable all command-center animation ---- */
+@media (prefers-reduced-motion: reduce) {
+  .admin-v2-shell::before,
+  .cc-ai-core,
+  .cc-dot,
+  .cc-stage {
+    animation: none !important;
+  }
+}
+
+/* ---- Business Pulse: pure-CSS micro trend line on each metric card ---- */
+.dash-pulse-card {
+  position: relative;
+  overflow: hidden;
+}
+.dash-pulse-card::after {
+  content: "";
+  position: absolute;
+  left: var(--sp-4, 16px);
+  right: var(--sp-4, 16px);
+  bottom: 8px;
+  height: 18px;
+  pointer-events: none;
+  opacity: 0.55;
+  background-image: linear-gradient(
+    100deg,
+    transparent 0 8%,
+    color-mix(in srgb, var(--admin-primary, #b4552d) 65%, transparent) 8% 9%,
+    transparent 9% 26%,
+    color-mix(in srgb, var(--admin-primary, #b4552d) 65%, transparent) 26% 27%,
+    transparent 27% 44%,
+    color-mix(in srgb, var(--admin-primary, #b4552d) 65%, transparent) 44% 45%,
+    transparent 45% 62%,
+    color-mix(in srgb, var(--admin-primary, #b4552d) 65%, transparent) 62% 63%,
+    transparent 63% 80%,
+    color-mix(in srgb, var(--admin-primary, #b4552d) 65%, transparent) 80% 81%,
+    transparent 81%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    transparent 0 20%,
+    #000 20% 34%,
+    transparent 34% 48%,
+    #000 48% 62%,
+    transparent 62% 76%,
+    #000 76% 90%,
+    transparent 90%
+  );
+}
+
+/* ---- AI Workforce: existing timeline rows read as control-panel agent rows ---- */
+.cc-workforce .dash-tl-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3, 12px);
+  padding: var(--sp-2, 8px) 0;
+  border-bottom: 1px dashed color-mix(in srgb, var(--ink, #ece6da) 10%, transparent);
+}
+.cc-workforce .dash-tl-agent {
+  font-family: var(--font-data, var(--font-mono, monospace));
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  color: var(--ink, #ece6da);
+}
+.cc-workforce .dash-tl-time {
+  font-family: var(--font-data, var(--font-mono, monospace));
+  font-variant-numeric: tabular-nums;
+  font-size: 0.6875rem;
+  color: var(--stone, #a39b8c);
+}
+
+/* ==========================================================================
+   Asymmetry (DESIGN.md §5): no equal-weight card grids; bento + 70/30 splits
+   ========================================================================== */
+/* Business Pulse → asymmetric bento: dominant North-Star metric + satellites */
+.dash-pulse-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: minmax(96px, auto);
+  grid-auto-flow: dense;
+  gap: var(--sp-4, 16px);
+}
+.dash-pulse-grid .dash-pulse-card:first-child {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+.dash-pulse-grid .dash-pulse-card:first-child .cc-metric-value,
+.dash-pulse-grid .dash-pulse-card:first-child b,
+.dash-pulse-grid .dash-pulse-card:first-child strong {
+  font-size: var(--fs-kpi-hero, 3rem);
+}
+@media (max-width: 1024px) {
+  .dash-pulse-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dash-pulse-grid .dash-pulse-card:first-child {
+    grid-column: span 2;
+    grid-row: span 1;
+  }
+}
+@media (max-width: 768px) {
+  .dash-pulse-grid {
+    grid-template-columns: 1fr;
+  }
+  .dash-pulse-grid .dash-pulse-card:first-child {
+    grid-column: span 1;
+  }
+}
+/* AI Learning → asymmetric (wide first panel + two satellites) */
+.dash-learn-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  grid-auto-flow: dense;
+  gap: var(--sp-4, 16px);
+}
+.dash-learn-grid > *:last-child {
+  grid-column: auto / -1;
+}
+@media (max-width: 1024px) {
+  .dash-learn-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .dash-learn-grid > *:first-child {
+    grid-column: span 2;
+  }
+}
+@media (max-width: 768px) {
+  .dash-learn-grid {
+    grid-template-columns: 1fr;
+  }
+  .dash-learn-grid > *:first-child {
+    grid-column: span 1;
+  }
+}
+/* Hero hierarchy: taller deck, larger brand + health score */
+.cc-hero {
+  min-height: 176px;
+}
+.cc-hero-brand {
+  font-size: var(--fs-md, 15px);
+}
+.cc-health {
+  font-size: clamp(2.5rem, 4vw, 3.5rem);
+}
+
+/* ---- AI agent roster (control-panel rows) ---- */
+.cc-roster {
+  display: flex;
+  flex-direction: column;
+  margin: var(--sp-3, 12px) 0 var(--sp-2, 8px);
+}
+.cc-dot--failed {
+  background: var(--danger, #c6473c);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--danger, #c6473c) 35%, transparent);
+}
+
+/* ---- KPI bento (asymmetric; dominant first metric) ----
+   5 tracks: first card spans 2, the other three span 1 each (2+1+1+1 = 5),
+   so exactly 4 KPI cards fill one row with no wrapped hole. */
+.cc-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--sp-3, 12px);
+  margin-bottom: var(--sp-5, 20px);
+}
+.cc-kpi-grid > *:first-child {
+  grid-column: span 2;
+}
+.cc-kpi-grid .admin-kpi-value {
+  font-family: var(--font-data, var(--font-mono, monospace));
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-kpi, 2.5rem);
+  font-weight: 700;
+}
+.cc-kpi-grid > *:first-child .admin-kpi-value {
+  font-size: var(--fs-kpi-hero, 3rem);
+}
+@media (max-width: 1024px) {
+  .cc-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .cc-kpi-grid > *:first-child {
+    grid-column: span 1;
+  }
+}
+@media (max-width: 768px) {
+  .cc-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .cc-kpi-grid > *:first-child {
+    grid-column: span 1;
+  }
+}
+
+/* ==========================================================================
+   Density + larger navigation (owner: bigger menu, less whitespace)
+   ========================================================================== */
+.admin-v2-shell {
+  --admin-sidebar-w: 280px;
+}
+.admin-nav-item {
+  padding: 10px var(--sp-3);
+  font-size: var(--fs-md, 15px);
+}
+.admin-nav-child {
+  padding: 8px var(--sp-3) 8px var(--sp-6, 24px);
+  font-size: var(--fs-base, 14px);
+}
+.admin-sidebar-brand {
+  font-size: var(--fs-lg, 16px);
+}
+.admin-v2-shell .admin-flex-col.admin-gap-6 {
+  gap: var(--sp-4, 16px);
+}
+.cc-hero {
+  min-height: 0;
+  padding: var(--sp-5, 20px) var(--sp-6, 24px);
+}
+.dash-two-col {
+  align-items: stretch;
+}
+.dash-two-col > div {
+  display: flex;
+  flex-direction: column;
+}
+.dash-two-col .dash-pulse-grid {
+  flex: 1;
+  align-content: stretch;
+}
+.dash-pulse-grid .dash-pulse-card:last-child {
+  grid-column: auto / -1;
+}
+.dash-learn-grid {
+  align-items: start;
+}
+@media (max-width: 768px) {
+  .dash-pulse-grid .dash-pulse-card:last-child {
+    grid-column: auto / -1;
+  }
+}
+
+/* ==========================================================================
+   Wide-viewport fill (owner: too much dead whitespace on large displays)
+   The base cap is 1440px; on a 2560px screen that leaves ~230px of empty
+   margin each side. border-box keeps padding from overflowing the main
+   column, then we raise the cap in tiers so pages fill the workspace.
+   ========================================================================== */
+.admin-v2-content {
+  box-sizing: border-box;
+}
+.admin-v2-shell {
+  --admin-content-max-w: 1440px;
+}
+@media (min-width: 1600px) {
+  .admin-v2-shell {
+    --admin-content-max-w: 1520px;
+  }
+}
+@media (min-width: 2000px) {
+  .admin-v2-shell {
+    --admin-content-max-w: 1760px;
+  }
+}
+@media (min-width: 2400px) {
+  .admin-v2-shell {
+    --admin-content-max-w: 2000px;
+  }
+}
+
+/* ---- List-page density: tighter header rhythm + tabular data ---- */
+.admin-v2-content > .admin-page-header {
+  margin-bottom: var(--sp-5, 20px);
+}
+.admin-table td,
+.admin-table th {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   Launcher hubs (customers / system index): balance the vertical void
+   Pure nav-card hubs have little content, so they pin to the top and leave
+   ~800-880px empty below, and their few cards over-stretch across the wide
+   canvas. The .cc-hub wrapper becomes a capped (1240px), horizontally
+   centered column that fills the content height, and the title + card grid
+   are centered vertically together as one cohesive group — so the empty
+   space is balanced above and below the group instead of pooled at the
+   bottom, and the title aligns with the cards. `justify-content: safe
+   center` falls back to start if a hub is ever dense enough to overflow, so
+   the top row can never be clipped.
+   ========================================================================== */
+.admin-v2-content > .cc-hub {
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  min-height: 100%;
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+  box-sizing: border-box;
+}

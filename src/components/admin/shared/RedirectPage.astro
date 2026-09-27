@@ -1,0 +1,57 @@
+---
+// RedirectPage — 静态构建下的兼容跳转页
+//
+// 背景：Astro 静态输出（output: 'static'）时 `Astro.redirect()` 不会生成
+// index.html，旧 URL 会直接 404。这里改用 meta refresh + JS 兜底，
+// 既保留旧链接可访问（HTTP 200），又能立即跳到新地址。
+export interface Props {
+  target: string;
+  title?: string;
+  note?: string;
+}
+const { target, title = "正在跳转", note = "" } = Astro.props;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta http-equiv="refresh" content={`0;url=${target}`} />
+    <title>{title} — Aromiso Admin V2</title>
+    <script is:inline define:vars={{ target }}>
+      window.location.replace(target);
+    </script>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--beige);
+        color: var(--ink);
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+        font-size: 14px;
+      }
+      .wrap {
+        text-align: center;
+      }
+      a {
+        color: var(--admin-primary);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p>{title}</p>
+      {note && <p>{note}</p>}
+      <p><a href={target}>如果页面没有自动跳转，请点击这里</a></p>
+    </div>
+  </body>
+</html>

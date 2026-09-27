@@ -1,0 +1,119 @@
+---
+// ---------------------------------------------------------------------------
+//  Jewelry — Contact (placeholder for V1.0)
+//  Consumer support contact page. Until a backend contact endpoint exists, the
+//  form composes an email via mailto (works with no server). A proper
+//  /api/contact endpoint + optional help center comes in the Commerce phase.
+// ---------------------------------------------------------------------------
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Icon from "../../components/Icon.astro";
+import SocialContactButtons from "../../components/SocialContactButtons.astro";
+import { SITE_CFG } from "../../consts";
+import { localeStaticPaths } from "../../i18n";
+import type { Locale } from "../../i18n";
+
+export const getStaticPaths = localeStaticPaths;
+
+const locale = (Astro.props.locale as Locale) ?? "en";
+
+const channels = [
+  { icon: "mail", label: "Email", value: SITE_CFG.email, href: `mailto:${SITE_CFG.email}` },
+  { icon: "chat", label: "WhatsApp", value: SITE_CFG.whatsapp || "Coming soon", href: SITE_CFG.whatsapp || "" },
+];
+---
+
+<BaseLayout locale={locale} title="Contact us" description={`Get in touch with ${SITE_CFG.name} support.`}>
+  <!-- Hero -->
+  <section class="container-x py-20 text-center lg:py-28">
+    <div class="mx-auto max-w-2xl reveal">
+      <p class="eyebrow">Support</p>
+      <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">We're here to help</h1>
+      <p class="mt-4 text-lg leading-relaxed text-stone">
+        Questions about an order, sizing, materials, delivery or returns? Reach us and we'll respond as soon as we can.
+      </p>
+    </div>
+  </section>
+
+  <section class="container-x pb-24">
+    <div class="grid gap-10 lg:grid-cols-2">
+      <!-- Channels -->
+      <div class="reveal card-surface rounded-2xl p-8 lg:p-10">
+        <h2 class="text-xl font-semibold">Contact channels</h2>
+        <ul class="mt-6 space-y-4">
+          {
+            channels.map((ch) => (
+              <li class="flex items-center gap-4">
+                <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-ink text-paper">
+                  <Icon name={ch.icon} size={20} />
+                </span>
+                <div>
+                  <p class="text-xs uppercase tracking-widest text-stone">{ch.label}</p>
+                  {ch.href ? (
+                    <a href={ch.href} class="font-medium text-ink hover:text-accent">{ch.value}</a>
+                  ) : (
+                    <span class="font-medium text-stone">{ch.value}</span>
+                  )}
+                </div>
+              </li>
+            ))
+          }
+        </ul>
+        <div class="mt-7 border-t border-line pt-6">
+          <SocialContactButtons locale={locale} variant="full" />
+        </div>
+      </div>
+
+      <!-- Email form (mailto, no backend required) -->
+      <div class="reveal card-surface rounded-2xl p-8 lg:p-10">
+        <h2 class="text-xl font-semibold">Send us a message</h2>
+        <form class="contact-mail mt-6 grid gap-4" onsubmit="return false;">
+          <input
+            required
+            name="name"
+            placeholder="Your name"
+            class="w-full rounded-xl border border-line bg-paper px-4 py-3 text-sm outline-none focus:border-accent"
+          />
+          <input
+            required
+            type="email"
+            name="email"
+            placeholder="Your email"
+            class="w-full rounded-xl border border-line bg-paper px-4 py-3 text-sm outline-none focus:border-accent"
+          />
+          <input
+            name="subject"
+            placeholder="Subject (e.g. order number)"
+            class="w-full rounded-xl border border-line bg-paper px-4 py-3 text-sm outline-none focus:border-accent"
+          />
+          <textarea
+            required
+            rows="5"
+            name="message"
+            placeholder="How can we help?"
+            class="w-full rounded-xl border border-line bg-paper px-4 py-3 text-sm outline-none focus:border-accent resize-vertical"
+          ></textarea>
+          <button type="submit" class="btn btn-primary magnetic w-full justify-center py-4">Email us</button>
+          <p class="form-status text-center text-xs text-stone"></p>
+        </form>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script is:inline>
+  (function () {
+    const form = document.querySelector(".contact-mail");
+    if (!form) return;
+    const to = "support@example.com";
+    const status = form.querySelector(".form-status");
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const d = Object.fromEntries(new FormData(form).entries());
+      const subject = d.subject ? d.subject : "Website message from " + d.name;
+      const body = "Name: " + d.name + "\nEmail: " + d.email + "\n\n" + d.message;
+      location.href =
+        "mailto:" + to + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+      if (status) status.textContent = "Opening your email app…";
+    });
+  })();
+</script>

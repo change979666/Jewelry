@@ -1,0 +1,314 @@
+---
+// Phase 9 — V2 Media Editor — Full detail editing
+import "../../../styles/admin-v2.css";
+import AdminShell from "../../../components/admin/layout/AdminShell.astro";
+import Sidebar from "../../../components/admin/layout/Sidebar.astro";
+import Topbar from "../../../components/admin/layout/Topbar.astro";
+import Toast from "../../../components/admin/shared/Toast.astro";
+---
+
+<AdminShell title="媒体编辑" activeModule="media">
+  <Sidebar slot="sidebar" activeModule="media" />
+  <Topbar
+    slot="topbar-left"
+    title="媒体编辑"
+    breadcrumbs={[
+      { label: "首页", href: "/admin-v2" },
+      { label: "媒体", href: "/admin-v2/media" },
+      { label: "编辑" },
+    ]}
+  />
+  <Toast />
+
+  <div class="admin-flex-col admin-gap-4" style="max-width:900px;">
+    <!-- Preview -->
+    <div id="media-preview" class="admin-card admin-card-body" style="text-align:center;">
+      <div class="admin-text-muted" style="padding:40px;">
+        <span class="admin-skeleton-text"></span>
+      </div>
+    </div>
+
+    <!-- Basic info -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h3 class="admin-card-title">基本信息</h3>
+      </div>
+      <div class="admin-card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="admin-form-group" style="grid-column:1/-1;">
+            <label class="admin-label" for="e-title">标题</label>
+            <input id="e-title" type="text" class="admin-input" />
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-label" for="e-filename">文件名</label>
+            <input id="e-filename" type="text" class="admin-input" />
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-label" for="e-alt">替代文本（Alt）</label>
+            <input id="e-alt" type="text" class="admin-input" />
+          </div>
+          <div class="admin-form-group" style="grid-column:1/-1;">
+            <label class="admin-label" for="e-desc">描述</label>
+            <textarea id="e-desc" rows="4" class="admin-textarea"></textarea>
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-label" for="e-tags">标签 (逗号分隔)</label>
+            <input id="e-tags" type="text" class="admin-input" />
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-label">精选</label>
+            <label class="admin-flex admin-items-center admin-gap-2" style="padding:8px 0;">
+              <input type="checkbox" id="e-featured" /> 设为精选
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Entity linking -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h3 class="admin-card-title">关联对象</h3>
+      </div>
+      <div class="admin-card-body">
+        <div id="e-links" class="admin-mb-4"></div>
+        <div class="admin-flex admin-items-center admin-gap-2" style="flex-wrap:wrap;">
+          <select id="e-link-type" class="admin-select" style="width:auto;">
+            <option value="">选择关联类型</option>
+            <option value="product">商品</option>
+            <option value="oem_project">OEM 项目</option>
+            <option value="blog">博客</option>
+            <option value="video">视频</option>
+          </select>
+          <input
+            id="e-link-id"
+            type="text"
+            placeholder="关联对象 ID"
+            class="admin-input"
+            style="width:auto;"
+          />
+          <button id="e-link-add-btn" class="admin-btn admin-btn-primary">添加关联</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metadata -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h3 class="admin-card-title">文件信息</h3>
+      </div>
+      <div class="admin-card-body">
+        <div
+          id="e-meta"
+          style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:var(--fs-md);"
+        >
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div
+      class="admin-flex admin-items-center admin-gap-2"
+      style="justify-content:flex-end;padding-bottom:40px;"
+    >
+      <a href="/admin-v2/media" class="admin-btn admin-btn-secondary">返回列表</a>
+      <button id="e-save-btn" class="admin-btn admin-btn-primary">保存</button>
+      <button id="e-delete-btn" class="admin-btn admin-btn-danger">删除</button>
+    </div>
+  </div>
+</AdminShell>
+
+<script>
+  (function () {
+    const API = "/api/admin/v2/media";
+    const $ = (s: string) => document.querySelector(s) as any;
+    const params = new URLSearchParams(window.location.search);
+    const mediaId = params.get("id");
+    let currentItem: any = null;
+
+    if (!mediaId) {
+      $("#media-preview").innerHTML =
+        '<div style="color:var(--admin-danger);padding:40px;">缺少媒体 ID，请从列表页进入。</div>';
+      return;
+    }
+
+    function typeIcon(t: string) {
+      switch (t) {
+        case "image":
+          return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+        case "video":
+          return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/></svg>`;
+        case "document":
+          return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`;
+        case "cover":
+          return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c3.31 0 6-2.69 6-6 0-4.42-4.03-8-9-8zm-5.5 9.5c-.83 0-1.5-.67-1.5-1.5S5.67 8.5 6.5 8.5 8 9.17 8 10s-.67 1.5-1.5 1.5z"/></svg>`;
+        default:
+          return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
+      }
+    }
+
+    function formatSize(bytes: number) {
+      if (!bytes) return "-";
+      if (bytes < 1024) return bytes + " B";
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+      return (bytes / 1048576).toFixed(1) + " MB";
+    }
+
+    async function loadItem() {
+      const res = await fetch(`${API}?pageSize=999`);
+      const data = (await res.json()) as any;
+      // M5/S12：降级响应必须挂横幅，否则看起来像「媒体文件未找到」。
+      if (!window.AromisoNotifyDegraded?.(data, "媒体编辑")) {
+        window.AromisoNotifyDegraded?.(data?.data, "媒体编辑");
+      }
+      if (!data.success) {
+        $("#media-preview").innerHTML =
+          `<div style="color:red;">加载失败：${data?.error?.message || data?.error?.code || "未知错误"}</div>`;
+        return;
+      }
+      currentItem = (data.data || []).find((i: any) => i.id === mediaId);
+      if (!currentItem) {
+        $("#media-preview").innerHTML =
+          '<div style="color:var(--admin-danger);padding:40px;">媒体文件未找到</div>';
+        return;
+      }
+      render();
+    }
+
+    function render() {
+      const item = currentItem;
+      const isImage = item.media_type === "image" && item.public_url;
+
+      // Preview
+      $("#media-preview").innerHTML = isImage
+        ? `<img src="${item.public_url}" alt="${item.alt_text || ""}" style="max-height:400px;max-width:100%;object-fit:contain;border-radius:8px;" />`
+        : `<div style="padding:40px;font-size:4rem;">${typeIcon(item.media_type)}</div>
+         ${item.public_url ? `<a href="${item.public_url}" target="_blank" style="color:var(--admin-primary);font-size:var(--fs-md);">查看文件</a>` : ""}`;
+
+      // Fields
+      $("#e-title").value = item.title || "";
+      $("#e-filename").value = item.filename || "";
+      $("#e-alt").value = item.alt_text || "";
+      $("#e-desc").value = item.description || "";
+      $("#e-tags").value = (item.tags || []).join(", ");
+      $("#e-featured").checked = !!item.featured;
+
+      // Links
+      renderLinks(item.links || []);
+
+      // Meta
+      const meta = [
+        ["类型", item.media_type],
+        ["来源", item.source],
+        ["大小", formatSize(item.file_size)],
+        ["MIME", item.mime_type || "-"],
+        ["尺寸", item.width ? `${item.width}×${item.height}` : "-"],
+        ["创建时间", item.created_at ? new Date(item.created_at).toLocaleString("zh-CN") : "-"],
+        ["更新时间", item.updated_at ? new Date(item.updated_at).toLocaleString("zh-CN") : "-"],
+        [
+          "URL",
+          item.public_url
+            ? `<a href="${item.public_url}" target="_blank" style="color:var(--admin-primary);word-break:break-all;">查看</a>`
+            : "-",
+        ],
+      ];
+      $("#e-meta").innerHTML = meta
+        .map(([k, v]) => `<div><strong>${k}:</strong> ${v}</div>`)
+        .join("");
+    }
+
+    function renderLinks(links: any[]) {
+      const container = $("#e-links");
+      if (links.length === 0) {
+        container.innerHTML = '<div class="admin-text-muted admin-text-sm">暂无关联</div>';
+        return;
+      }
+      container.innerHTML = links
+        .map(
+          (l: any) => `
+      <div class="admin-flex admin-items-center" style="gap:8px;padding:6px 10px;border:1px solid var(--line);border-radius:var(--r-md);margin-bottom:4px;font-size:var(--fs-md);">
+        <span>${l.entity_type}:${l.entity_id}</span>
+        <button class="unlink-btn" data-type="${l.entity_type}" data-eid="${l.entity_id}" style="background:none;border:none;cursor:pointer;color:var(--admin-danger);margin-left:auto;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+    `,
+        )
+        .join("");
+      container.querySelectorAll(".unlink-btn").forEach((btn: any) => {
+        btn.addEventListener("click", async () => {
+          await fetch(API, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "unlink",
+              media_id: currentItem.id,
+              entity_type: btn.dataset.type,
+              entity_id: btn.dataset.eid,
+            }),
+          });
+          await loadItem();
+        });
+      });
+    }
+
+    // Add link
+    $("#e-link-add-btn").addEventListener("click", async () => {
+      const type = $("#e-link-type").value;
+      const eid = $("#e-link-id").value.trim();
+      if (!type || !eid) {
+        AromisoToast.warning("请选择关联类型并输入 ID");
+        return;
+      }
+      await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "link",
+          media_id: currentItem.id,
+          entity_type: type,
+          entity_id: eid,
+        }),
+      });
+      $("#e-link-id").value = "";
+      await loadItem();
+    });
+
+    // Save
+    $("#e-save-btn").addEventListener("click", async () => {
+      const tags = $("#e-tags")
+        .value.split(",")
+        .map((s: any) => s.trim())
+        .filter(Boolean);
+      await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update",
+          id: currentItem.id,
+          title: $("#e-title").value,
+          filename: $("#e-filename").value,
+          alt_text: $("#e-alt").value,
+          description: $("#e-desc").value,
+          tags,
+          featured: $("#e-featured").checked ? 1 : 0,
+        }),
+      });
+      window.dispatchEvent(
+        new CustomEvent("admin-toast", { detail: { message: "已保存", type: "success" } }),
+      );
+      await loadItem();
+    });
+
+    // Delete
+    $("#e-delete-btn").addEventListener("click", async () => {
+      if (!confirm("确定删除此媒体文件？")) return;
+      await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "soft_delete", id: currentItem.id }),
+      });
+      window.location.href = "/admin-v2/media";
+    });
+
+    loadItem();
+  })();
+</script>

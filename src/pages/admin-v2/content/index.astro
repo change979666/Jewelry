@@ -1,0 +1,543 @@
+---
+// Phase 4 — V2 Content Management (Unified DataTable)
+// 5 content types: blog, products, guides, case studies, FAQs
+// Features: search, filter, sort, pagination, quick actions
+import "../../../styles/admin-v2.css";
+import AdminShell from "../../../components/admin/layout/AdminShell.astro";
+import Sidebar from "../../../components/admin/layout/Sidebar.astro";
+import Topbar from "../../../components/admin/layout/Topbar.astro";
+import Toast from "../../../components/admin/shared/Toast.astro";
+import Skeleton from "../../../components/admin/shared/Skeleton.astro";
+---
+
+<AdminShell title="内容管理" activeModule="content">
+  <Sidebar slot="sidebar" activeModule="content" />
+  <Topbar
+    slot="topbar-left"
+    title="内容管理"
+    breadcrumbs={[{ label: "首页", href: "/admin-v2" }, { label: "内容" }]}
+  />
+  <Toast />
+
+  <!-- Header: Type Tabs + Actions -->
+  <div
+    class="admin-page-header admin-flex admin-items-center admin-justify-between"
+    style="flex-wrap:wrap;"
+  >
+    <div class="admin-tabs" id="type-tabs" style="margin-bottom:0;border-bottom:none;">
+      <button class="admin-tab active" data-type="">全部</button>
+      <button class="admin-tab" data-type="blog">博客</button>
+      <button class="admin-tab" data-type="product_content">产品</button>
+      <button class="admin-tab" data-type="guide">指南</button>
+      <button class="admin-tab" data-type="case_study">案例</button>
+      <button class="admin-tab" data-type="category_faqs">FAQ</button>
+    </div>
+    <div class="admin-flex admin-gap-2">
+      <button class="admin-btn admin-btn-secondary" id="btn-batch" disabled>批量操作</button>
+      <button class="admin-btn admin-btn-secondary" id="btn-recycle">回收站</button>
+      <button class="admin-btn admin-btn-primary" id="btn-new">＋ 新增内容</button>
+    </div>
+  </div>
+
+  <!-- Toolbar: search + filters + select-all (single cohesive panel) -->
+  <div class="content-toolbar">
+    <input type="text" id="search-input" placeholder="搜索内容..." class="admin-input" />
+    <select id="status-filter" class="admin-select">
+      <option value="">全部状态</option>
+      <option value="active">已发布</option>
+      <option value="draft">草稿</option>
+      <option value="building">构建中</option>
+      <option value="deployed">已部署</option>
+      <option value="build_failed">构建失败</option>
+      <option value="deleted">已删除</option>
+    </select>
+    <select id="locale-filter" class="admin-select">
+      <option value="">全部语言</option>
+      <option value="en">英语</option>
+      <option value="es">西班牙语</option>
+      <option value="de">德语</option>
+    </select>
+    <span class="toolbar-spacer"></span>
+    <label class="admin-flex admin-items-center admin-gap-2 admin-text-sm admin-text-muted">
+      <input type="checkbox" id="select-all" /> 全选本页
+    </label>
+  </div>
+
+  <!-- Content grid（卡片网格） -->
+  <div id="content-grid" class="content-grid">
+    <Skeleton lines={5} height="96px" />
+  </div>
+
+  <!-- Pagination -->
+  <div class="admin-flex admin-justify-between admin-items-center" style="margin-top:var(--sp-3);">
+    <div id="pagination-info" class="admin-text-sm admin-text-muted">
+      <span class="admin-skeleton-text"></span>
+    </div>
+    <div class="admin-flex admin-gap-1" id="pagination-controls"></div>
+  </div>
+</AdminShell>
+
+<script>
+  const API = "/api/admin/v2/content";
+  const toast = (window as any).AromisoToast;
+
+  let currentType = "";
+  let currentSearch = "";
+  let currentStatus = "";
+  let currentLocale = "";
+  let currentSort = "updated_at";
+  let currentOrder = "desc";
+  let currentPage = 1;
+  let currentPageSize = 20;
+  const selectedItems = new Set<string>();
+
+  function esc(s: unknown): string {
+    if (s == null) return "";
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function statusBadge(status: string | null): string {
+    if (!status) return '<span class="admin-badge">—</span>';
+    const map: Record<string, string> = {
+      active: "admin-badge-published",
+      deployed: "admin-badge-published",
+      published: "admin-badge-published",
+      draft: "admin-badge-draft",
+      new: "admin-badge-draft",
+      New: "admin-badge-draft",
+      building: "admin-badge-active",
+      committing: "admin-badge-active",
+      build_failed: "admin-badge-error",
+      deleted: "admin-badge-archived",
+    };
+    const labels: Record<string, string> = {
+      active: "已发布",
+      deployed: "已部署",
+      published: "已发布",
+      draft: "草稿",
+      new: "新建",
+      New: "新建",
+      building: "构建中",
+      committing: "提交中",
+      build_failed: "构建失败",
+      deleted: "已删除",
+    };
+    return `<span class="admin-badge ${map[status] || "admin-badge-archived"}">${labels[status] ?? status}</span>`;
+  }
+
+  function typeLabel(type: string): string {
+    const labels: Record<string, string> = {
+      blog: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> 博客',
+      product_content:
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg> 产品',
+      guide:
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> 指南',
+      case_study:
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg> 案例',
+      category_faqs:
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> FAQ',
+    };
+    return labels[type] ?? type;
+  }
+
+  function itemKey(type: string, key: string, locale: string): string {
+    return `${type}:${key}:${locale}`;
+  }
+
+  async function loadContent() {
+    const params = new URLSearchParams();
+    if (currentType) params.set("type", currentType);
+    if (currentSearch) params.set("search", currentSearch);
+    if (currentStatus) params.set("status", currentStatus);
+    if (currentLocale) params.set("locale", currentLocale);
+    params.set("sort", currentSort);
+    params.set("order", currentOrder);
+    params.set("page", String(currentPage));
+    params.set("pageSize", String(currentPageSize));
+
+    (window as any).AromisoBusy?.("content-grid", true);
+    try {
+      const res = await fetch(`${API}?${params}`);
+      if (res.status === 401) {
+        window.location.href = "/admin-v2/login";
+        return;
+      }
+      const json = (await res.json()) as any;
+      if (!json.success) {
+        toast?.show?.("加载失败", "error");
+        return;
+      }
+
+      const { items, total, page, _pageSize, pages } = json.data;
+      renderTable(items);
+      renderPagination(total, page, pages);
+      updateBatchButton();
+    } catch {
+      toast?.show?.("网络错误", "error");
+    } finally {
+      (window as any).AromisoBusy?.("content-grid", false);
+    }
+  }
+
+  function editorHref(item: any): string {
+    return `/admin-v2/content/editor?type=${esc(item.entity_type)}&key=${esc(item.entity_key)}&locale=${esc(item.locale)}`;
+  }
+  function renderTable(items: any[]) {
+    const grid = document.getElementById("content-grid")!;
+    if (items.length === 0) {
+      grid.innerHTML =
+        '<div class="admin-empty" style="grid-column:1/-1;padding:var(--sp-10);text-align:center;">暂无内容</div>';
+      return;
+    }
+
+    grid.innerHTML = items
+      .map((item) => {
+        const key = itemKey(item.entity_type, item.entity_key, item.locale);
+        const checked = selectedItems.has(key) ? "checked" : "";
+        return `<article class="content-card" data-key="${esc(key)}">
+        <div class="cc-top">
+          <input type="checkbox" class="row-select" data-key="${esc(key)}" ${checked} />
+          <span class="cc-type">${typeLabel(item.entity_type)}</span>
+          <span class="cc-locale">${esc(item.locale)}</span>
+          <span style="margin-left:auto;">${statusBadge(item.publish_status || item.status)}</span>
+        </div>
+        <a class="cc-title" href="${editorHref(item)}">${esc(item.title)}</a>
+        <div class="cc-meta">
+          <span class="cc-key" title="${esc(item.entity_key)}">${esc(item.entity_key)}</span>
+          <span class="cc-updated">${
+            item.updated_at
+              ? new Date(item.updated_at).toLocaleString("zh-CN", {
+                  month: "2-digit",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "—"
+          }</span>
+        </div>
+        <div class="cc-foot">
+          <span class="admin-text-xs admin-text-muted">${
+            item.updated_at ? new Date(item.updated_at).toLocaleDateString("zh-CN") : "—"
+          }</span>
+          <div class="admin-flex admin-gap-1">
+            <a href="${editorHref(item)}" class="admin-btn admin-btn-ghost admin-btn-sm" title="编辑">编辑</a>
+            <button class="admin-btn admin-btn-ghost admin-btn-sm btn-publish" data-type="${esc(item.entity_type)}" data-key="${esc(item.entity_key)}" data-locale="${esc(item.locale)}" title="发布">发布</button>
+          </div>
+        </div>
+      </article>`;
+      })
+      .join("");
+
+    // Bind events
+    grid.querySelectorAll(".row-select").forEach((cb) => {
+      cb.addEventListener("change", (e) => {
+        const key = (e.target as HTMLInputElement).dataset.key!;
+        if ((e.target as HTMLInputElement).checked) selectedItems.add(key);
+        else selectedItems.delete(key);
+        updateBatchButton();
+      });
+    });
+
+    grid.querySelectorAll(".btn-publish").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        const el = e.currentTarget as HTMLElement;
+        const type = el.dataset.type!;
+        const key = el.dataset.key!;
+        const locale = el.dataset.locale!;
+        if (!confirm(`确认发布 ${type}/${key} (${locale})？`)) return;
+        try {
+          const res = await fetch(`${API}/publish`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ entity_type: type, entity_key: key, locale }),
+          });
+          const json = (await res.json()) as any;
+          if (json.success) {
+            toast?.show?.("发布成功", "success");
+            loadContent();
+          } else toast?.show?.(json.error?.message || "发布失败", "error");
+        } catch {
+          toast?.show?.("网络错误", "error");
+        }
+      });
+    });
+  }
+
+  function renderPagination(total: number, page: number, pages: number) {
+    const info = document.getElementById("pagination-info");
+    const controls = document.getElementById("pagination-controls");
+    if (window.AromisoPagination && controls) {
+      window.AromisoPagination.render(info, controls, {
+        total,
+        page,
+        totalPages: pages,
+        pageSize: currentPageSize,
+        onChange: ({ page: p, pageSize: ps }) => {
+          currentPage = p;
+          if (ps) currentPageSize = ps;
+          loadContent();
+        },
+      });
+      return;
+    }
+    if (info) info.textContent = `共 ${total} 条，第 ${page}/${pages} 页`;
+    if (!controls) return;
+    let html = "";
+    if (page > 1)
+      html += `<button class="admin-btn admin-btn-sm admin-btn-secondary" data-page="${page - 1}">上一页</button>`;
+    for (let i = Math.max(1, page - 2); i <= Math.min(pages, page + 2); i++) {
+      html += `<button class="admin-btn admin-btn-sm ${i === page ? "admin-btn-primary" : "admin-btn-secondary"}" data-page="${i}">${i}</button>`;
+    }
+    if (page < pages)
+      html += `<button class="admin-btn admin-btn-sm admin-btn-secondary" data-page="${page + 1}">下一页</button>`;
+    controls.innerHTML = html;
+    controls.querySelectorAll(".admin-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        currentPage = parseInt((btn as HTMLElement).dataset.page!);
+        loadContent();
+      });
+    });
+  }
+
+  function updateBatchButton() {
+    const btn = document.getElementById("btn-batch") as HTMLButtonElement;
+    btn.disabled = selectedItems.size === 0;
+    btn.textContent = selectedItems.size > 0 ? `批量操作 (${selectedItems.size})` : "批量操作";
+  }
+
+  // Tab clicks
+  document.getElementById("type-tabs")?.addEventListener("click", (e) => {
+    const btn = (e.target as HTMLElement).closest(".admin-tab") as HTMLElement;
+    if (!btn) return;
+    document.querySelectorAll("#type-tabs .admin-tab").forEach((t) => t.classList.remove("active"));
+    btn.classList.add("active");
+    currentType = btn.dataset.type || "";
+    currentPage = 1;
+    loadContent();
+  });
+
+  // Search
+  let searchTimer: number;
+  document.getElementById("search-input")?.addEventListener("input", (e) => {
+    clearTimeout(searchTimer);
+    searchTimer = window.setTimeout(() => {
+      currentSearch = (e.target as HTMLInputElement).value;
+      currentPage = 1;
+      loadContent();
+    }, 300);
+  });
+
+  // Filters
+  document.getElementById("status-filter")?.addEventListener("change", (e) => {
+    currentStatus = (e.target as HTMLSelectElement).value;
+    currentPage = 1;
+    loadContent();
+  });
+  document.getElementById("locale-filter")?.addEventListener("change", (e) => {
+    currentLocale = (e.target as HTMLSelectElement).value;
+    currentPage = 1;
+    loadContent();
+  });
+
+  // Sort
+  document.querySelectorAll(".sortable").forEach((th) => {
+    th.addEventListener("click", () => {
+      const field = (th as HTMLElement).dataset.sort!;
+      if (currentSort === field) currentOrder = currentOrder === "desc" ? "asc" : "desc";
+      else {
+        currentSort = field;
+        currentOrder = "desc";
+      }
+      window.AromisoSort?.mark(document, currentSort, currentOrder);
+      loadContent();
+    });
+  });
+  window.AromisoSort?.mark(document, currentSort, currentOrder);
+
+  // Select all
+  document.getElementById("select-all")?.addEventListener("change", (e) => {
+    const checked = (e.target as HTMLInputElement).checked;
+    document.querySelectorAll(".row-select").forEach((cb) => {
+      const key = (cb as HTMLInputElement).dataset.key!;
+      if (checked) selectedItems.add(key);
+      else selectedItems.delete(key);
+      (cb as HTMLInputElement).checked = checked;
+    });
+    updateBatchButton();
+  });
+
+  // Batch button
+  document.getElementById("btn-batch")?.addEventListener("click", () => {
+    if (selectedItems.size === 0) return;
+    const items = Array.from(selectedItems).map((k) => {
+      const [item_type, item_id, locale] = k.split(":");
+      return { item_type, item_id, locale };
+    });
+    // Store in sessionStorage and navigate to batch page
+    sessionStorage.setItem("batch_items", JSON.stringify(items));
+    window.location.href = "/admin-v2/content/batch";
+  });
+
+  // Recycle bin
+  document.getElementById("btn-recycle")?.addEventListener("click", () => {
+    window.location.href = "/admin-v2/content/recycle";
+  });
+
+  // New content (create mode; preselect active tab type)
+  document.getElementById("btn-new")?.addEventListener("click", () => {
+    window.location.href = "/admin-v2/content/editor" + (currentType ? `?type=${currentType}` : "");
+  });
+
+  // Init
+  loadContent();
+</script>
+
+<style is:global>
+  .admin-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+  }
+  .admin-table th.sortable:hover {
+    color: var(--ink);
+  }
+
+  /* ---- 内容卡片网格（现代 CMS 观感；is:global 以作用于运行时注入的卡片） ---- */
+  .content-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--sp-4);
+    align-items: stretch;
+  }
+  .content-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding: var(--sp-4);
+    min-height: 176px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--card);
+    overflow: hidden;
+    transition:
+      border-color 0.15s ease,
+      transform 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+  .content-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: color-mix(in srgb, var(--admin-primary) 55%, transparent);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .content-card:hover {
+    border-color: color-mix(in srgb, var(--admin-primary) 35%, transparent);
+    transform: translateY(-2px);
+    box-shadow: var(--sh-md);
+  }
+  .content-card:hover::before {
+    opacity: 1;
+  }
+  .cc-top {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+  }
+  .cc-type {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--admin-primary) 10%, transparent);
+    color: var(--admin-primary);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+  }
+  .cc-locale {
+    font-size: var(--fs-xs);
+    color: var(--stone);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .cc-title {
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: var(--fs-md);
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 2.9em;
+  }
+  .cc-title:hover {
+    color: var(--admin-primary);
+  }
+  .cc-title:focus-visible,
+  .content-card .admin-btn:focus-visible,
+  .content-card input[type="checkbox"]:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--admin-primary) 60%, transparent);
+    outline-offset: 2px;
+    border-radius: var(--r-sm);
+  }
+  .cc-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    font-size: var(--fs-xs);
+    color: var(--stone);
+  }
+  .cc-key {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 60%;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .cc-updated {
+    flex-shrink: 0;
+  }
+  .cc-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    margin-top: auto;
+    padding-top: var(--sp-2);
+    border-top: 1px dashed var(--line);
+  }
+
+  /* ---- 工具栏 / 筛选（内联、不拉伸满宽） ---- */
+  .content-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4);
+    margin-bottom: var(--sp-4);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--card);
+  }
+  .content-toolbar .admin-input {
+    width: auto;
+    flex: 1 1 220px;
+    max-width: 320px;
+  }
+  .content-toolbar .admin-select {
+    width: auto;
+    min-width: 130px;
+    max-width: 200px;
+  }
+  .content-toolbar .toolbar-spacer {
+    margin-left: auto;
+  }
+</style>

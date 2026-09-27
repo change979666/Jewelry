@@ -1,0 +1,24 @@
+# 构建产物与依赖
+dist/
+node_modules/
+.astro/
+.wrangler/
+
+# 静态资产与一次性脚本
+public/
+tmp/
+scripts/
+
+# 内容真源：frontmatter 由 CMS 序列化器负责，禁止 prettier 改动
+src/content/
+docs/
+*.md
+
+# 锁文件
+package-lock.json
+
+# SQL 迁移真源：无 prettier parser，禁止 prettier 改动/检查
+*.sql
+
+# 浏览器自动化快照（工具产物，不入库不检查）
+.playwright-mcp/

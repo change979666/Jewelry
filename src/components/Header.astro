@@ -1,0 +1,234 @@
+---
+import { NAV, SITE } from "../consts";
+import { t } from "../i18n";
+import type { Locale } from "../i18n";
+import { LOCALE_LIST, stripLocale } from "../i18n";
+import { getRelativeLocaleUrl } from "astro:i18n";
+import Icon from "./Icon.astro";
+import ThemeToggle from "./ThemeToggle.astro";
+import LangToggle from "./LangToggle.astro";
+import SearchModal from "./SearchModal.astro";
+
+const _l = (Astro.props.locale as Locale) ?? (Astro.currentLocale as Locale) ?? "en";
+const locale = (LOCALE_LIST.includes(_l) ? _l : "en") as Locale;
+const path = Astro.url.pathname;
+const base = stripLocale(path);
+const isActive = (href: string) =>
+  href === "/" ? base === "/" || base === "" : base === href || base.startsWith(href + "/");
+
+const href = (p: string) => getRelativeLocaleUrl(locale, p);
+---
+
+<header
+  id="site-header"
+  class="sticky top-0 z-50 border-b border-line/70 bg-paper/80 backdrop-blur-md transition-shadow duration-300"
+>
+  <div class="container-x flex h-16 items-center justify-between gap-4">
+    <!-- Wordmark -->
+    <a href={href("/")} class="group flex items-center gap-2.5">
+      <span
+        class="flex h-9 w-9 items-center justify-center rounded-full bg-ink text-paper transition-transform duration-300 group-hover:scale-105"
+      >
+        <Icon name="leaf" size={18} />
+      </span>
+      <span class="text-lg font-semibold tracking-tight">{SITE.name}</span>
+    </a>
+
+    <!-- Desktop nav -->
+    <nav class="hidden items-center gap-1 lg:flex">
+      {
+        NAV.map((item) =>
+          item.children ? (
+            <div class="group relative">
+              {item.href ? (
+                <a
+                  href={href(item.href)}
+                  class={`flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-2 text-[13px] transition-colors duration-200 ${
+                    isActive(item.href) || item.children.some((ch) => isActive(ch.href))
+                      ? "bg-beige font-medium text-ink"
+                      : "text-stone hover:bg-beige hover:text-ink"
+                  }`}
+                >
+                  {t(locale, `nav.${item.key}`)}
+                  <Icon
+                    name="chevron"
+                    size={14}
+                    class="mt-0.5 transition-transform duration-200 group-hover:rotate-180"
+                  />
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  class={`flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-2 text-[13px] transition-colors duration-200 ${
+                    item.children.some((ch) => isActive(ch.href))
+                      ? "bg-beige font-medium text-ink"
+                      : "text-stone hover:bg-beige hover:text-ink"
+                  }`}
+                >
+                  {t(locale, `nav.${item.key}`)}
+                  <Icon
+                    name="chevron"
+                    size={14}
+                    class="mt-0.5 transition-transform duration-200 group-hover:rotate-180"
+                  />
+                </button>
+              )}
+              <div class="invisible absolute left-0 top-full z-50 pt-2 opacity-0 transition-all duration-200 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+                <div
+                  class:list={[
+                    "rounded-2xl border border-line bg-card p-2 shadow-[0_24px_50px_-24px_rgba(33,31,27,0.4)]",
+                    (item.columns ?? 1) > 1 ? "w-[34rem]" : "w-64",
+                  ]}
+                >
+                  <div class:list={[(item.columns ?? 1) > 1 && "grid grid-cols-2 gap-x-2"]}>
+                    {item.children.map((child) => (
+                      <a
+                        href={href(child.href)}
+                        class={`block rounded-xl px-4 py-2.5 text-sm transition-colors ${
+                          isActive(child.href)
+                            ? "bg-beige font-medium text-ink"
+                            : "text-stone hover:bg-beige hover:text-ink"
+                        }`}
+                      >
+                        {t(locale, child.labelKey)}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <a
+              href={href(item.href!)}
+              class={`whitespace-nowrap rounded-full px-3 py-2 text-[13px] transition-colors duration-200 ${
+                isActive(item.href!)
+                  ? "bg-beige font-medium text-ink"
+                  : "text-stone hover:bg-beige hover:text-ink"
+              }`}
+            >
+              {t(locale, `nav.${item.key}`)}
+            </a>
+          ),
+        )
+      }
+    </nav>
+
+    <!-- Actions: Search | Theme | Lang | CTA | Menu -->
+    <div class="flex items-center gap-2">
+      <button
+        id="search-btn"
+        type="button"
+        class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line text-ink transition-colors duration-300 hover:bg-beige"
+        aria-label={t(locale, "search.label")}
+        title={`${t(locale, "search.label")} (Ctrl+K)`}
+      >
+        <Icon name="search" size={18} />
+      </button>
+      <ThemeToggle />
+      <LangToggle locale={locale} />
+      <a
+        href={href("/workspace")}
+        class="hidden text-xs font-medium text-stone transition-colors hover:text-ink sm:inline-block"
+      >
+        {t(locale, "nav.workspace")}
+      </a>
+      <a href={href("/contact")} class="btn btn-primary btn-sm magnetic hidden sm:inline-flex">
+        {t(locale, "cta_short")}
+      </a>
+      <button
+        id="menu-btn"
+        type="button"
+        class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line text-ink transition-colors duration-300 hover:bg-beige lg:hidden"
+        aria-label={t(locale, "a11y.menu_open")}
+        aria-expanded="false"
+      >
+        <Icon name="menu" size={20} />
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile panel -->
+  <div id="mobile-menu" class="hidden border-t border-line bg-paper lg:hidden">
+    <nav class="container-x flex flex-col py-3">
+      {
+        NAV.map((item) =>
+          item.children ? (
+            <details class="group">
+              <summary class="flex cursor-pointer list-none items-center justify-between rounded-xl px-4 py-3 text-sm text-stone transition-colors hover:bg-beige hover:text-ink [&::-webkit-details-marker]:hidden">
+                {t(locale, `nav.${item.key}`)}
+                <Icon
+                  name="chevron"
+                  size={16}
+                  class="transition-transform duration-200 group-open:rotate-180"
+                />
+              </summary>
+              <div class="mb-1 ml-4 border-l border-line pl-2">
+                {item.children.map((child) => (
+                  <a
+                    href={href(child.href)}
+                    class={`block rounded-xl px-4 py-2.5 text-sm transition-colors ${
+                      isActive(child.href)
+                        ? "bg-beige font-medium text-ink"
+                        : "text-stone hover:bg-beige hover:text-ink"
+                    }`}
+                  >
+                    {t(locale, child.labelKey)}
+                  </a>
+                ))}
+              </div>
+            </details>
+          ) : (
+            <a
+              href={href(item.href!)}
+              class={`rounded-xl px-4 py-3 text-sm transition-colors ${
+                isActive(item.href!)
+                  ? "bg-beige font-medium text-ink"
+                  : "text-stone hover:bg-beige hover:text-ink"
+              }`}
+            >
+              {t(locale, `nav.${item.key}`)}
+            </a>
+          ),
+        )
+      }
+      <a href={href("/contact")} class="btn btn-primary mt-3 w-full">{t(locale, "cta")}</a>
+    </nav>
+  </div>
+
+  <SearchModal locale={locale} />
+</header>
+
+<script is:inline>
+  (function () {
+    const btn = document.getElementById("menu-btn");
+    const menu = document.getElementById("mobile-menu");
+    btn.addEventListener("click", function () {
+      const open = menu.classList.toggle("hidden") === false;
+      btn.setAttribute("aria-expanded", String(open));
+    });
+
+    // Header shadow on scroll (premium polish)
+    const header = document.getElementById("site-header");
+    const onScroll = function () {
+      if (window.scrollY > 8) header.classList.add("shadow-[0_8px_30px_-18px_rgba(33,31,27,0.35)]");
+      else header.classList.remove("shadow-[0_8px_30px_-18px_rgba(33,31,27,0.35)]");
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+
+    // Subtle magnetic effect on primary CTAs
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      document.querySelectorAll(".magnetic").forEach(function (el) {
+        el.addEventListener("mousemove", function (e) {
+          const r = el.getBoundingClientRect();
+          const x = e.clientX - r.left - r.width / 2;
+          const y = e.clientY - r.top - r.height / 2;
+          el.style.transform = "translate(" + x * 0.15 + "px," + y * 0.25 + "px)";
+        });
+        el.addEventListener("mouseleave", function () {
+          el.style.transform = "";
+        });
+      });
+    }
+  })();
+</script>

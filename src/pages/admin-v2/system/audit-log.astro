@@ -1,0 +1,138 @@
+---
+import "../../../styles/admin-v2.css";
+import AdminShell from "../../../components/admin/layout/AdminShell.astro";
+import Sidebar from "../../../components/admin/layout/Sidebar.astro";
+import Topbar from "../../../components/admin/layout/Topbar.astro";
+import Toast from "../../../components/admin/shared/Toast.astro";
+import Skeleton from "../../../components/admin/shared/Skeleton.astro";
+---
+
+<AdminShell title="操作日志 Audit Log" activeModule="system">
+  <Sidebar slot="sidebar" activeModule="system" />
+  <Topbar
+    slot="topbar-left"
+    title="操作日志 Audit Log"
+    breadcrumbs={[{ label: "系统", href: "/admin-v2/system" }, { label: "操作日志" }]}
+  />
+  <Toast />
+
+  <div class="admin-page-header admin-flex admin-items-center admin-gap-3">
+    <h1 class="admin-page-title">操作日志 Audit Log</h1>
+    <select id="filter-actor" class="admin-select" style="width:140px;">
+      <option value="">全部来源</option>
+      <option value="human">人工</option>
+      <option value="ai">AI</option>
+      <option value="cron">定时</option>
+      <option value="system">系统</option>
+    </select>
+    <select id="filter-action" class="admin-select" style="width:120px;">
+      <option value="">全部操作</option>
+      <option value="create">创建</option>
+      <option value="update">更新</option>
+      <option value="delete">删除</option>
+      <option value="publish">发布</option>
+      <option value="login">登录</option>
+      <option value="logout">登出</option>
+    </select>
+    <button class="admin-btn admin-btn-secondary" id="btn-refresh" data-once>刷新</button>
+  </div>
+
+  <div id="audit-list-container">
+    <Skeleton lines={8} height="36px" />
+  </div>
+
+  <div
+    id="audit-pagination"
+    class="admin-flex admin-gap-2"
+    style="justify-content:center;margin-top:var(--sp-4);"
+  >
+  </div>
+</AdminShell>
+
+<script>
+  const container = document.getElementById("audit-list-container")!;
+  let page = 1;
+
+  async function load(pageNum?: number) {
+    if (pageNum) page = pageNum;
+    container.innerHTML =
+      '<div class="admin-skeleton" style="height:36px;margin-bottom:4px;"></div>'.repeat(8);
+    try {
+      const actorType = (document.getElementById("filter-actor") as unknown as HTMLSelectElement)
+        .value;
+      const action = (document.getElementById("filter-action") as unknown as HTMLSelectElement)
+        .value;
+      const params = new URLSearchParams({ page: String(page), pageSize: "20" });
+      if (actorType) params.set("actor_type", actorType);
+      if (action) params.set("action", action);
+
+      const res = await fetch(`/api/admin/v2/system/audit?${params}`);
+      const json = (await res.json()) as any;
+      if (!json.success) {
+        container.innerHTML = `<div class="admin-error"><div class="admin-error-title">加载失败</div><div class="admin-error-desc">${json.error?.message || ""}</div></div>`;
+        return;
+      }
+
+      const items = json.data || [];
+      const meta = json.meta || { page: 1, totalPages: 1, total: 0 };
+      if (items.length === 0) {
+        container.innerHTML =
+          '<div class="admin-empty"><div class="admin-empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></div><div class="admin-empty-title">暂无操作记录</div></div>';
+      } else {
+        let html = '<div class="admin-table-wrapper"><table class="admin-table">';
+        html +=
+          "<thead><tr><th>时间</th><th>来源</th><th>用户</th><th>操作</th><th>对象</th><th>摘要</th></tr></thead><tbody>";
+        for (const a of items) {
+          const actorEmoji =
+            (
+              {
+                human: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+                ai: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16.01"/><line x1="16" y1="16" x2="16" y2="16.01"/></svg>`,
+                cron: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+                system: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
+              } as Record<string, string>
+            )[a.actor_type] || "—";
+          html += `<tr>
+            <td class="text-nowrap admin-text-muted">${a.created_at || "—"}</td>
+            <td>${actorEmoji} ${a.actor_type || "—"}</td>
+            <td>${a.username || "—"}</td>
+            <td>${a.action || "—"}</td>
+            <td>${a.resource_type || "—"}${a.resource_title ? ": " + a.resource_title : ""}</td>
+            <td>${a.change_summary || "—"}</td>
+          </tr>`;
+        }
+        html += "</tbody></table></div>";
+        container.innerHTML = html;
+      }
+
+      // Pagination
+      const pag = document.getElementById("audit-pagination")!;
+      if (window.AromisoPagination) {
+        window.AromisoPagination.render(null, pag, {
+          total: meta.total,
+          page,
+          totalPages: meta.totalPages,
+          showPageSize: false,
+          onChange: ({ page: np }) => load(np),
+        });
+      } else {
+        pag.innerHTML = "";
+        for (let i = 1; i <= meta.totalPages; i++) {
+          const btn = document.createElement("button");
+          btn.className = `admin-btn admin-btn-sm ${i === page ? "admin-btn-primary" : "admin-btn-secondary"}`;
+          btn.textContent = String(i);
+          btn.addEventListener("click", () => load(i));
+          pag.appendChild(btn);
+        }
+      }
+    } catch (_e) {
+      container.innerHTML =
+        '<div class="admin-error"><div class="admin-error-title">网络错误</div></div>';
+    }
+  }
+
+  document.getElementById("filter-actor")!.addEventListener("change", () => load(1));
+  document.getElementById("filter-action")!.addEventListener("change", () => load(1));
+  document.getElementById("btn-refresh")!.addEventListener("click", () => load(1));
+  load();
+</script>

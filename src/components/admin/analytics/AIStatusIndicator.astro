@@ -1,0 +1,51 @@
+---
+// AIStatusIndicator — AI 今日状态面板
+export interface Props {
+  healthScore?: number | null;
+  todayMissions?: number;
+  completedToday?: number;
+  pendingApproval?: number;
+  totalCost?: number;
+}
+const {
+  healthScore,
+  todayMissions = 0,
+  completedToday = 0,
+  pendingApproval = 0,
+  totalCost = 0,
+} = Astro.props;
+---
+
+<div
+  class="admin-ai-status-card"
+  style="background:var(--card);border-radius:var(--radius-md);padding:var(--admin-gap-section);border:1px solid var(--line);display:flex;flex-direction:column;gap:12px;"
+>
+  <h3 style="font-size:0.9375rem;font-weight:600;color:var(--ink);margin:0;">AI 今日状态</h3>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+    <div style="text-align:center;">
+      <div style="font-size:1.25rem;font-weight:700;color:var(--admin-accent);">
+        {healthScore !== null && healthScore !== undefined ? healthScore : "—"}
+      </div>
+      <div style="font-size:0.625rem;color:var(--stone);">健康分</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-size:1.25rem;font-weight:700;color:var(--ink);">{todayMissions}</div>
+      <div style="font-size:0.625rem;color:var(--stone);">今日任务</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-size:1.25rem;font-weight:700;color:var(--ink);">{completedToday}</div>
+      <div style="font-size:0.625rem;color:var(--stone);">已完成</div>
+    </div>
+  </div>
+  <div
+    style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--stone);border-top:1px solid var(--line);padding-top:8px;"
+  >
+    <span
+      >待人工确认: <strong
+        style="color:{pendingApproval > 0 ? 'var(--admin-danger)' : 'var(--ink)'};"
+        >{pendingApproval}</strong
+      ></span
+    >
+    <span>今日成本: ${totalCost.toFixed(2)}</span>
+  </div>
+</div>

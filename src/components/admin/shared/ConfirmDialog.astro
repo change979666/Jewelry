@@ -1,0 +1,49 @@
+---
+// ConfirmDialog — 确认弹窗（危险操作）
+export interface Props {
+  open: boolean;
+  title?: string;
+  message?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  onConfirm?: string;
+  onCancel?: string;
+  danger?: boolean;
+}
+const {
+  open,
+  title = "确认操作",
+  message = "确定要执行此操作吗？",
+  confirmLabel = "确定",
+  cancelLabel = "取消",
+  onConfirm,
+  onCancel,
+  danger = false,
+} = Astro.props;
+---
+
+{
+  open && (
+    <div class="admin-modal-overlay" onclick={onCancel ?? "void(0)"}>
+      <div class="admin-modal" style="max-width:420px;" onclick="event.stopPropagation()">
+        <div class="admin-modal-header">
+          <span>{title}</span>
+        </div>
+        <div class="admin-modal-body">
+          <p style="margin:0;color:var(--stone);font-size:var(--fs-md);">{message}</p>
+        </div>
+        <div class="admin-modal-footer">
+          <button class="admin-btn admin-btn-secondary" onclick={onCancel}>
+            {cancelLabel}
+          </button>
+          <button
+            class={`admin-btn ${danger ? "admin-btn-danger" : "admin-btn-primary"}`}
+            onclick={onConfirm}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}

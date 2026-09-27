@@ -1,0 +1,173 @@
+---
+// Phase 8 — V2 SEO Inspector
+import "../../../styles/admin-v2.css";
+import AdminShell from "../../../components/admin/layout/AdminShell.astro";
+import Sidebar from "../../../components/admin/layout/Sidebar.astro";
+import Topbar from "../../../components/admin/layout/Topbar.astro";
+import Toast from "../../../components/admin/shared/Toast.astro";
+---
+
+<AdminShell title="SEO 检查器" activeModule="growth">
+  <Sidebar slot="sidebar" activeModule="growth" />
+  <Topbar
+    slot="topbar-left"
+    title="SEO 检查器"
+    breadcrumbs={[
+      { label: "首页", href: "/admin-v2" },
+      { label: "增长中心", href: "/admin-v2/growth" },
+      { label: "SEO 检查器" },
+    ]}
+  />
+  <Toast />
+
+  <div class="admin-page-header">
+    <h1 class="admin-page-title">SEO 检查器</h1>
+    <p class="admin-page-desc">页面级 SEO 评分与问题诊断</p>
+  </div>
+
+  <!-- Search Bar -->
+  <div class="admin-card" style="margin-bottom:var(--sp-5);">
+    <div class="admin-card-body">
+      <div class="admin-flex admin-items-center admin-gap-3">
+        <input
+          type="text"
+          id="seo-search"
+          placeholder="输入 URL 搜索..."
+          class="admin-input"
+          style="flex:1;"
+        />
+        <select id="seo-status-filter" class="admin-select" style="width:auto;">
+          <option value="">全部状态</option>
+          <option value="indexed">已索引</option>
+          <option value="crawled_not_indexed">已抓取未索引</option>
+          <option value="discovered_not_indexed">已发现未索引</option>
+          <option value="duplicate">重复</option>
+          <option value="not_found">未找到</option>
+          <option value="unknown">未知</option>
+        </select>
+        <button onclick="loadSEO()" class="admin-btn admin-btn-primary">搜索</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Table -->
+  <div class="admin-table-wrapper">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>URL</th>
+          <th style="width:120px;">索引状态</th>
+          <th style="width:200px;">详情</th>
+          <th style="width:140px;">检查时间</th>
+        </tr>
+      </thead>
+      <tbody id="seo-tbody">
+        <tr
+          ><td colspan="4" class="text-center admin-text-muted" style="padding:var(--sp-10);"
+            ><span class="admin-skeleton-text"></span></td
+          ></tr
+        >
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div
+    id="seo-pagination"
+    class="admin-flex admin-justify-between admin-items-center"
+    style="margin-top:var(--sp-4);font-size:var(--fs-base);color:var(--stone);"
+  >
+  </div>
+</AdminShell>
+
+<script is:inline>
+  let seoPage = 1;
+  const seoPageSize = 20;
+
+  function loadSEO() {
+    const search = document.getElementById("seo-search").value;
+    const status = document.getElementById("seo-status-filter").value;
+    const params = new URLSearchParams({ page: seoPage, pageSize: seoPageSize });
+    if (search) params.set("search", search);
+    if (status) params.set("status", status);
+
+    fetch("/api/admin/v2/growth/seo-inspections?" + params)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.success) return;
+        const tbody = document.getElementById("seo-tbody");
+        const items = data.data || [];
+        if (items.length === 0) {
+          tbody.innerHTML =
+            '<tr><td colspan="4" class="text-center admin-text-muted" style="padding:var(--sp-10);">暂无检查记录</td></tr>';
+          return;
+        }
+        const statusColors = {
+          indexed: "var(--admin-success)",
+          crawled_not_indexed: "var(--admin-warning)",
+          discovered_not_indexed: "var(--admin-warning)",
+          duplicate: "var(--admin-danger)",
+          not_found: "var(--admin-danger)",
+          unknown: "var(--stone)",
+        };
+        tbody.innerHTML = items
+          .map((r) => {
+            const color = statusColors[r.status] || "var(--stone)";
+            const date = r.inspected_at
+              ? new Date(r.inspected_at * 1000).toLocaleDateString("zh-CN")
+              : "-";
+            return (
+              "<tr>" +
+              '<td class="text-truncate">' +
+              r.url +
+              "</td>" +
+              '<td><span style="color:' +
+              color +
+              ';font-weight:500;">' +
+              (r.status || "-") +
+              "</span></td>" +
+              '<td class="text-truncate">' +
+              (r.detail || "-") +
+              "</td>" +
+              "<td>" +
+              date +
+              "</td>" +
+              "</tr>"
+            );
+          })
+          .join("");
+
+        const m = data.meta;
+        const seoPag = document.getElementById("seo-pagination");
+        if (window.AromisoPagination && seoPag) {
+          window.AromisoPagination.render(null, seoPag, {
+            total: m.total,
+            page: m.page,
+            totalPages: m.totalPages,
+            showPageSize: false,
+            onChange: ({ page: np }) => {
+              seoPage = np;
+              loadSEO();
+            },
+          });
+        } else if (seoPag) {
+          seoPag.innerHTML =
+            "<span>共 " +
+            m.total +
+            " 条</span><span>第 " +
+            m.page +
+            " / " +
+            m.totalPages +
+            " 页</span>";
+        }
+      });
+  }
+
+  document.getElementById("seo-search").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      seoPage = 1;
+      loadSEO();
+    }
+  });
+  loadSEO();
+</script>

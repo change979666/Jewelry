@@ -1,0 +1,63 @@
+---
+import { SITE } from "../consts";
+import { stripLocale, type Locale } from "../i18n";
+import { getRelativeLocaleUrl } from "astro:i18n";
+
+interface Crumb {
+  label: string;
+  href?: string;
+}
+interface Props {
+  locale?: Locale;
+  items: Crumb[];
+}
+const { locale = "en", items } = Astro.props;
+
+// stripLocale first so callers may pass either a raw path ("/export") OR an
+// already-localized one ("/en/export") without producing "/en/en/export".
+const list = items.map((it) => {
+  const localHref = it.href ? getRelativeLocaleUrl(locale, stripLocale(it.href)) : undefined;
+  return {
+    ...it,
+    localHref,
+    url: localHref ? new URL(localHref, SITE.url).href : undefined,
+  };
+});
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: list.map((it, i) => ({
+    "@type": "ListItem",
+    position: i + 1,
+    name: it.label,
+    item: it.url,
+  })),
+};
+---
+
+<nav aria-label="Breadcrumb" class="container-x pt-8">
+  <ol class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-stone">
+    {
+      list.map((it, i) => (
+        <li class="flex items-center gap-x-2">
+          {i < list.length - 1 && it.href ? (
+            <a href={it.localHref} class="transition-colors hover:text-ink">
+              {it.label}
+            </a>
+          ) : (
+            <span class="font-medium text-ink" aria-current="page">
+              {it.label}
+            </span>
+          )}
+          {i < list.length - 1 && (
+            <span aria-hidden="true" class="text-stone/50">
+              /
+            </span>
+          )}
+        </li>
+      ))
+    }
+  </ol>
+</nav>
+<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />

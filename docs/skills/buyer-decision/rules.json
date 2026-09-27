@@ -1,0 +1,155 @@
+{
+  "skill": "buyer-decision",
+  "version": "0.1.0",
+  "status": "Validated · Manual — core rules frozen 2026-08-15 (owner verdict, V5.327)",
+  "source": "docs/BUYER_DECISION_FRAMEWORK.md",
+  "hardBoundaries": [
+    "观察期内仅作人工分析标准：人工触发 → 人工审核 → 人工决定 → 人工上线",
+    "不注入任何运行时 Prompt（含 Analyst）",
+    "不创建 Agent / 数据库表 / Task，不触发自动执行，不自动修改 PDP",
+    "不为缺失项补写内容、不推断数字、不参考同行编写承诺",
+    "不使用数字评分（Trust Score / Opportunity Score / Critical-Red 分级），只做三态判定"
+  ],
+  "aiResponsibilities": [
+    "AI 不替业务创造可信度，只负责发现可信度缺口",
+    "AI 不替业务成交，只负责降低客户进入人工销售之前的信息摩擦",
+    "AI 不无限增加内容，而负责让已有事实在正确的采购决策节点出现"
+  ],
+  "rules": [
+    { "id": "Rule 01", "text": "先判断客户处于什么采购决策阶段" },
+    { "id": "Rule 02", "text": "优先解决客户决策障碍，而不是增加内容数量" },
+    { "id": "Rule 03", "text": "检查方案层、组织层、个人层需求（threeLayerNeeds）" },
+    { "id": "Rule 04", "text": "客户 / 需求 / 价值三个维度中，任何缺失都标记风险（ironTriangle）" },
+    { "id": "Rule 05", "text": "客户疑虑优先于 SEO 字数" },
+    { "id": "Rule 06", "text": "无法验证的事实不得生成" },
+    { "id": "Rule 07", "text": "优先推荐最小有效内容改动（minimumEffectiveChange）" },
+    { "id": "Rule 08", "text": "没有数据证明，不把规则升级成新的自动化 Agent" }
+  ],
+  "truthfulnessFirst": {
+    "priority": "最高规则，高于其余八条",
+    "logic": "事实完整度 < 100% 时，不可通过生成内容提高事实评分；无法由已验证资料支持的信息 → 标记 Missing Evidence → 不生成、不推断、不包装成事实",
+    "factSources": [
+      "docs/SUPPLY_CHAIN_CAPABILITIES.md（事实宪法）",
+      "仓库内真实存在的已发布内容（案例 / 页面 / 文件）",
+      "functions/lib/fact-registry.json（Fact Authority Layer 运行时副本）"
+    ],
+    "redLinesInherited": "SUPPLY_CHAIN_CAPABILITIES.md 第三节五条红线（主体归属 / 绝不编造数字 / 认证须可出证 / 不泄露供应链 / 能力≠承诺）"
+  },
+  "buyerDecisionChain": [
+    "产品理解",
+    "采购适配",
+    "定制可行",
+    "样品",
+    "合规文件",
+    "质量控制",
+    "真实案例",
+    "包装/运输",
+    "询盘"
+  ],
+  "coverageVerdicts": [
+    { "verdict": "covered", "symbol": "✅", "meaning": "页面提供了该决策信息，且有可核实事实支撑" },
+    { "verdict": "partial", "symbol": "⚠️", "meaning": "有提及但不完整、或归属/表述边界需业务确认" },
+    { "verdict": "missing", "symbol": "❌", "meaning": "页面完全没有该决策信息" }
+  ],
+  "coverageItems": [
+    "产品规格",
+    "MOQ",
+    "定制流程",
+    "样品流程",
+    "包装信息",
+    "交期",
+    "QC",
+    "文件支持",
+    "真实案例",
+    "认证归属",
+    "询盘 CTA"
+  ],
+  "threeLayerNeeds": {
+    "solution": {
+      "alias": "方案层（树叶）",
+      "buyerQuestion": "要什么？",
+      "pageShouldAnswer": "产品/规格/尺寸/材质/容量/香型/MOQ/定制选项/Private Label/OEM/ODM/包装/交期/样品",
+      "auditFocus": "字段是否完整、数字是否有出处"
+    },
+    "organization": {
+      "alias": "组织层（树干）",
+      "buyerQuestion": "为什么采购？",
+      "pageShouldAnswer": "OEM/Private Label/批量采购/包装定制/产品开发/QC 流程、文件支持、出口信息、项目协作方式",
+      "auditFocus": "流程是否可执行、是否写到客户能照着走的程度"
+    },
+    "personal": {
+      "alias": "个人层（树根）",
+      "buyerQuestion": "我为什么敢把项目交给你？",
+      "pageShouldAnswer": "可核实的能力证明/真实项目证据/真实工厂能力/真实认证归属/真实 QC 与交付流程",
+      "auditFocus": "只认证据有无，绝不建议编造；没有证据就标缺失"
+    }
+  },
+  "ironTriangle": {
+    "corners": {
+      "customer": "客户角：页面是否帮买家内部交差（能拿去汇报的文件、案例、数据）",
+      "demand": "需求角：方案层 + 组织层覆盖度",
+      "value": "价值角：差异化价值陈述 + 风险消解（认证/QC/售后/交付记录）"
+    },
+    "marking": "任何一角缺失即标记风险，产出补证据任务建议（而非直接建议加内容）；只做三态风险标记，结论直接写「当前主要风险：××」"
+  },
+  "missingEvidenceGate": {
+    "route": "❌/⚠️ 缺失项 → 路由给业务端（owner）确认 → 能提供真实事实则纳入内容计划（观察期后执行）；无法提供则保持缺失标记，不生成、不推断",
+    "aiFillInForbidden": true,
+    "attributionException": "页面声称的能力在事实宪法中属「合作工厂持有」时，判定不是 missing，而是 partial（归属/主体需要明确），注明需业务确认归属及页面表述边界"
+  },
+  "minimumEffectiveChange": {
+    "noBigRebuild": "不建议重构整个 PDP 这类大动作",
+    "suggestionShape": "问题 → 建议（具体到区块/字段）→ 事实依据（引用事实宪法条目或已发布内容）→ 状态（可执行 / 待业务确认）",
+    "noEvidenceRule": "没有事实依据的建议，状态只能是待业务确认，并标注禁止 AI 自行编写具体承诺",
+    "doNotChangeList": "必须同时产出「不要改什么」清单：理论上可优化但证据不足的项明确不动（憋得住原则）"
+  },
+  "assetGapTypes": [
+    { "type": "Missing Asset", "meaning": "证据根本不存在 → 只能标缺失，等业务提供" },
+    { "type": "Existing Asset Not Connected", "meaning": "证据存在但没出现在决策点（如案例已发布但 PDP 未链接）→ 路由问题，不需创造新事实" },
+    { "type": "Existing Asset, Wrong Decision Stage", "meaning": "证据存在也出现了，但出现在错误的决策阶段 → 重新路由" }
+  ],
+  "antiPatterns": [
+    "Evidence Scope Expansion：真实案例事实（曾经做过）不得自动扩展为全产品/全订单/长期承诺（如：美国案例做过 GC-MS ≠ 每批标配 GC-MS；有 GC-MS 结果 ≠ 有 QC 流程证据）",
+    "评分游戏：任何数字评分或 Critical/Yellow/Red 系统化结论",
+    "AI 补写缺失项：为缺失证据生成替代内容、推断数字、参考同行编写承诺",
+    "角色滑移：从「客户可能需要」滑向「网站必须提供」"
+  ],
+  "outputDiscipline": [
+    "不使用数字评分",
+    "铁三角只做三态风险标记",
+    "EB/TB/UB 决策角色证据需求统一写：不同决策角色可能需要不同证据，具体证据类型需根据已验证业务流程确认",
+    "每个 partial/missing 项必须给出：缺什么 → 为什么影响采购决策 → 是否有可核实事实可补 → 补的动作归谁"
+  ],
+  "l1Execution": {
+    "selection": "owner 指定或按 featured + 真实案例对应关系人工选定，首批 2~3 个，不铺量",
+    "readSources": "真实页面源码 / 内容集合 / FAQ / i18n 文案 / 事实宪法 / 已发布案例。不凭记忆、不凭摘要假设",
+    "outputs": [
+      "买家疑虑清单",
+      "三层覆盖",
+      "铁三角风险",
+      "缺失的采购决策信息",
+      "可验证事实 / Missing Evidence",
+      "最小改动建议",
+      "建议内容形态",
+      "是否值得进入后续 Content Factory",
+      "不要改什么"
+    ],
+    "acceptanceQuestion": "它有没有找到一个普通 SEO Audit 找不到、但确实影响 B2B 买家决策的真实缺口？",
+    "internalizedPrinciples": "利他（客户还缺什么信息才能做采购决定）/ 好奇心（Fast Delivery 必须追问多快）/ 憋得住（没有事实时暂不生成）"
+  },
+  "upgradeGateToL2": [
+    "连续多批 Audit 稳定产出真实缺口（非重复性发现）",
+    "观察期数据支撑（GSC/GA/询盘归因）证明框架介入方向有效",
+    "三条红线闸门（认证承诺 / 归属漂移 / 法规数字）已并入审查流程且未发生违规"
+  ],
+  "inquiryReverseVerification": {
+    "dataSource": "客户在 Email / WhatsApp 中反复问什么（owner 观察期维护）",
+    "loop": "记录 → 判断「网站本来应该回答吗？」→ Yes 纳入未来补到正确决策节点计划（BACKLOG §8）→ No 标记为正常销售谈判范围",
+    "doNotMixWithSeoAudit": true
+  },
+  "threeLayerContentArchitecture": {
+    "seo": "让客户能不能找到我们 → Analyst / Content Factory",
+    "buyerDecision": "让客户找到之后为什么敢发询盘 → 本 Skill（手工）",
+    "humanSales": "客户感兴趣之后如何成交 → owner（Email / WhatsApp），AI 不越界"
+  }
+}

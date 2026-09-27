@@ -1,0 +1,234 @@
+---
+// Phase 5 — V2 Commerce Center Index
+import "../../../styles/admin-v2.css";
+import AdminShell from "../../../components/admin/layout/AdminShell.astro";
+import Sidebar from "../../../components/admin/layout/Sidebar.astro";
+import Topbar from "../../../components/admin/layout/Topbar.astro";
+import Toast from "../../../components/admin/shared/Toast.astro";
+---
+
+<AdminShell title="商城中心" activeModule="commerce">
+  <Sidebar slot="sidebar" activeModule="commerce" />
+  <Topbar
+    slot="topbar-left"
+    title="商城中心"
+    breadcrumbs={[{ label: "首页", href: "/admin-v2" }, { label: "商城" }]}
+  />
+  <Toast />
+
+  <div class="admin-flex admin-flex-col admin-gap-6 cc-hub">
+    <div class="admin-page-header">
+      <h1 class="admin-page-title">商城中心</h1>
+      <p class="admin-page-desc">商品、订单、运营、数据质量一站式管理</p>
+    </div>
+
+    <div
+      style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--sp-5);"
+    >
+      <!-- Product Center -->
+      <a
+        href="/admin-v2/commerce/products"
+        class="admin-card"
+        style="text-decoration:none;color:var(--ink);"
+      >
+        <div class="admin-card-body" style="display:flex;flex-direction:column;gap:var(--sp-2);">
+          <div style="font-size:2rem;">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line><path
+                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+              ></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line
+                x1="12"
+                y1="22.08"
+                x2="12"
+                y2="12"></line></svg
+            >
+          </div>
+          <h3 class="admin-card-title">商品管理</h3>
+          <p class="admin-page-desc">商品列表、搜索、筛选、编辑、创建、删除</p>
+        </div>
+      </a>
+
+      <!-- Orders -->
+      <a
+        href="/admin-v2/commerce/orders"
+        class="admin-card"
+        style="text-decoration:none;color:var(--ink);"
+      >
+        <div class="admin-card-body" style="display:flex;flex-direction:column;gap:var(--sp-2);">
+          <div style="font-size:2rem;">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+              ></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg
+            >
+          </div>
+          <h3 class="admin-card-title">订单管理</h3>
+          <p class="admin-page-desc">订单列表、状态更新、订单详情、订单 KPI</p>
+        </div>
+      </a>
+
+      <!-- Merchandising -->
+      <a
+        href="/admin-v2/commerce/merchandising"
+        class="admin-card"
+        style="text-decoration:none;color:var(--ink);"
+      >
+        <div class="admin-card-body" style="display:flex;flex-direction:column;gap:var(--sp-2);">
+          <div style="font-size:2rem;">⭐</div>
+          <h3 class="admin-card-title">运营位管理</h3>
+          <p class="admin-page-desc">Featured、Trending 排序、优先级、上下架</p>
+        </div>
+      </a>
+
+      <!-- Calculator -->
+      <a
+        href="/admin-v2/commerce/calculator"
+        class="admin-card"
+        style="text-decoration:none;color:var(--ink);"
+      >
+        <div class="admin-card-body" style="display:flex;flex-direction:column;gap:var(--sp-2);">
+          <div style="font-size:2rem;">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><rect x="4" y="2" width="16" height="20" rx="2"></rect><line
+                x1="8"
+                y1="6"
+                x2="16"
+                y2="6"></line><line x1="16" y1="14" x2="16" y2="14.01"></line><path d="M8 14h.01"
+              ></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path><path d="M12 14h.01"
+              ></path><path d="M16 18h.01"></path></svg
+            >
+          </div>
+          <h3 class="admin-card-title">利润计算器</h3>
+          <p class="admin-page-desc">成本计算、利润率、ROI、保存计算历史</p>
+        </div>
+      </a>
+
+      <!-- Data Quality -->
+      <a
+        href="/admin-v2/commerce/data-quality"
+        class="admin-card"
+        style="text-decoration:none;color:var(--ink);"
+      >
+        <div class="admin-card-body" style="display:flex;flex-direction:column;gap:var(--sp-2);">
+          <div style="font-size:2rem;">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"
+              ></line><line x1="6" y1="20" x2="6" y2="14"></line></svg
+            >
+          </div>
+          <h3 class="admin-card-title">数据质量</h3>
+          <p class="admin-page-desc">商品完整度评分、缺失字段、覆盖度分析</p>
+        </div>
+      </a>
+
+      <!-- Taxonomy -->
+      <a
+        href="/admin-v2/commerce/taxonomy"
+        class="admin-card"
+        style="text-decoration:none;color:var(--ink);"
+      >
+        <div class="admin-card-body" style="display:flex;flex-direction:column;gap:var(--sp-2);">
+          <div style="font-size:2rem;">🌳</div>
+          <h3 class="admin-card-title">分类体系</h3>
+          <p class="admin-page-desc">规范三级分类树、SEO 标题、启用状态</p>
+        </div>
+      </a>
+
+      <!-- Mapping -->
+      <a
+        href="/admin-v2/commerce/mapping"
+        class="admin-card"
+        style="text-decoration:none;color:var(--ink);"
+      >
+        <div class="admin-card-body" style="display:flex;flex-direction:column;gap:var(--sp-2);">
+          <div style="font-size:2rem;">🔀</div>
+          <h3 class="admin-card-title">分类映射</h3>
+          <p class="admin-page-desc">1688/供应商来源分类 → 规范分类映射</p>
+        </div>
+      </a>
+
+      <!-- AI Review -->
+      <a
+        href="/admin-v2/commerce/ai-review"
+        class="admin-card"
+        style="text-decoration:none;color:var(--ink);"
+      >
+        <div class="admin-card-body" style="display:flex;flex-direction:column;gap:var(--sp-2);">
+          <div style="font-size:2rem;">✦</div>
+          <h3 class="admin-card-title">AI 审核</h3>
+          <p class="admin-page-desc">AI 抽取属性/分类/香型建议的批量审核</p>
+        </div>
+      </a>
+
+      <!-- SKU -->
+      <a
+        href="/admin-v2/commerce/skus"
+        class="admin-card"
+        style="text-decoration:none;color:var(--ink);"
+      >
+        <div class="admin-card-body" style="display:flex;flex-direction:column;gap:var(--sp-2);">
+          <div style="font-size:2rem;">🏷️</div>
+          <h3 class="admin-card-title">SKU 管理</h3>
+          <p class="admin-page-desc">变体、SKU 编码、库存与价格档</p>
+        </div>
+      </a>
+
+      <!-- Import -->
+      <a
+        href="/admin-v2/commerce/import"
+        class="admin-card"
+        style="text-decoration:none;color:var(--ink);"
+      >
+        <div class="admin-card-body" style="display:flex;flex-direction:column;gap:var(--sp-2);">
+          <div style="font-size:2rem;">📥</div>
+          <h3 class="admin-card-title">导入中心</h3>
+          <p class="admin-page-desc">1688/Excel/CSV 导入、校验、映射、AI 补全</p>
+        </div>
+      </a>
+
+      <!-- Channels -->
+      <a
+        href="/admin-v2/commerce/channels"
+        class="admin-card"
+        style="text-decoration:none;color:var(--ink);"
+      >
+        <div class="admin-card-body" style="display:flex;flex-direction:column;gap:var(--sp-2);">
+          <div style="font-size:2rem;">📡</div>
+          <h3 class="admin-card-title">渠道中心</h3>
+          <p class="admin-page-desc">Feed 渠道、导出模板、SEO 页面登记</p>
+        </div>
+      </a>
+    </div>
+  </div>
+</AdminShell>

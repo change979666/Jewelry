@@ -1,0 +1,645 @@
+---
+// Phase 9 — V2 Media Center — Media Library Grid
+import "../../../styles/admin-v2.css";
+import AdminShell from "../../../components/admin/layout/AdminShell.astro";
+import Sidebar from "../../../components/admin/layout/Sidebar.astro";
+import Topbar from "../../../components/admin/layout/Topbar.astro";
+import Toast from "../../../components/admin/shared/Toast.astro";
+---
+
+<AdminShell title="媒体中心" activeModule="media">
+  <Sidebar slot="sidebar" activeModule="media" />
+  <Topbar
+    slot="topbar-left"
+    title="媒体中心"
+    breadcrumbs={[{ label: "首页", href: "/admin-v2" }, { label: "媒体" }]}
+  />
+  <Toast />
+
+  <div class="admin-flex-col" style="gap:var(--sp-5);">
+    <!-- Page Header -->
+    <div class="admin-page-header">
+      <h1 class="admin-page-title">媒体中心</h1>
+      <p class="admin-page-desc">管理图片、视频、文档等媒体资源</p>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="admin-card">
+      <div
+        class="admin-card-body admin-flex admin-items-center"
+        style="flex-wrap:wrap;gap:var(--sp-3);"
+      >
+        <input
+          id="media-search"
+          type="text"
+          placeholder="搜索文件名、标题…"
+          class="admin-input"
+          style="flex:1;min-width:200px;"
+        />
+        <select id="media-type-filter" class="admin-select" style="max-width:140px;">
+          <option value="">全部类型</option>
+          <option value="image">图片</option>
+          <option value="video">视频</option>
+          <option value="document">文档</option>
+          <option value="cover">封面</option>
+          <option value="other">其他</option>
+        </select>
+        <select id="media-source-filter" class="admin-select" style="max-width:140px;">
+          <option value="">全部来源</option>
+          <option value="upload">上传</option>
+          <option value="import">导入</option>
+          <option value="url">外链</option>
+          <option value="video_center">视频中心</option>
+        </select>
+        <label
+          class="admin-flex admin-items-center admin-gap-1 admin-text-sm"
+          style="cursor:pointer;"
+        >
+          <input type="checkbox" id="media-featured-only" /> 精选
+        </label>
+        <button id="media-upload-btn" class="admin-btn admin-btn-primary">上传文件</button>
+        <button id="media-bulk-delete-btn" class="admin-btn admin-btn-danger" style="display:none;"
+          >批量删除</button
+        >
+      </div>
+    </div>
+
+    <!-- Stats bar -->
+    <div id="media-stats" class="admin-text-xs admin-text-muted admin-flex admin-gap-4"></div>
+
+    <!-- Grid -->
+    <div
+      id="media-grid"
+      style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--sp-4);"
+    >
+    </div>
+
+    <!-- Pagination -->
+    <div
+      id="media-pagination"
+      class="admin-flex admin-items-center admin-justify-between"
+      style="justify-content:center;gap:var(--sp-2);"
+    >
+    </div>
+
+    <!-- Empty state -->
+    <div id="media-empty" style="display:none;">
+      <div class="admin-empty">
+        <div class="admin-empty-icon">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+            ></path></svg
+          >
+        </div>
+        <div class="admin-empty-title">暂无媒体文件</div>
+        <div class="admin-empty-desc">点击「上传文件」开始构建媒体库</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload modal -->
+  <div id="upload-modal" class="admin-modal-overlay" style="display:none;">
+    <div class="admin-modal">
+      <div class="admin-modal-header">
+        <span>上传媒体文件</span>
+      </div>
+      <div class="admin-modal-body">
+        <div
+          id="upload-dropzone"
+          style="border:2px dashed var(--line);border-radius:var(--r-md);padding:var(--sp-10);text-align:center;cursor:pointer;margin-bottom:var(--sp-4);"
+        >
+          <div style="font-size:2rem;margin-bottom:var(--sp-2);">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline
+                points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg
+            >
+          </div>
+          <div>拖拽文件到此处，或点击选择</div>
+          <div class="admin-text-xs admin-text-muted" style="margin-top:var(--sp-1);">
+            支持 JPG/PNG/GIF/MP4/WebM/PDF，最大 50MB
+          </div>
+          <input
+            type="file"
+            id="upload-file-input"
+            accept="image/*,video/*,.pdf,.doc,.docx"
+            style="display:none;"
+            multiple
+          />
+        </div>
+        <div id="upload-preview" style="display:none;"></div>
+      </div>
+      <div class="admin-modal-footer">
+        <button id="upload-cancel-btn" class="admin-btn admin-btn-secondary">取消</button>
+        <button id="upload-confirm-btn" class="admin-btn admin-btn-primary" disabled>上传</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail drawer -->
+  <div id="detail-drawer" class="admin-drawer-overlay" style="display:none;">
+    <div class="admin-drawer">
+      <div class="admin-drawer-header">
+        <span>媒体详情</span>
+        <button id="drawer-close-btn" class="admin-btn admin-btn-ghost admin-btn-sm"
+          ><svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"
+            ></line></svg
+          ></button
+        >
+      </div>
+      <div class="admin-drawer-body" id="drawer-content"></div>
+      <div class="admin-drawer-footer" id="drawer-footer"></div>
+    </div>
+  </div>
+</AdminShell>
+
+<script>
+  (function () {
+    const API = "/api/admin/v2/media";
+    let currentPage = 1;
+    const selectedIds = new Set();
+    let allItems: any[] = [];
+
+    const $ = (s: any) => document.querySelector(s);
+    const grid = $("#media-grid");
+    const empty = $("#media-empty");
+    const pagination = $("#media-pagination");
+    const stats = $("#media-stats");
+    const searchInput = $("#media-search");
+    const typeFilter = $("#media-type-filter");
+    const sourceFilter = $("#media-source-filter");
+    const featuredOnly = $("#media-featured-only");
+    const bulkDeleteBtn = $("#media-bulk-delete-btn");
+
+    function buildParams() {
+      const p = new URLSearchParams();
+      p.set("page", String(currentPage));
+      p.set("pageSize", "24");
+      const q = searchInput.value.trim();
+      if (q) p.set("search", q);
+      const t = typeFilter.value;
+      if (t) p.set("media_type", t);
+      const s = sourceFilter.value;
+      if (s) p.set("source", s);
+      if (featuredOnly.checked) p.set("featured", "1");
+      return p;
+    }
+
+    function formatSize(bytes: any) {
+      if (!bytes) return "-";
+      if (bytes < 1024) return bytes + " B";
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+      return (bytes / 1048576).toFixed(1) + " MB";
+    }
+
+    function typeIcon(t: any) {
+      switch (t) {
+        case "image":
+          return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+        case "video":
+          return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/></svg>`;
+        case "document":
+          return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`;
+        case "cover":
+          return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c3.31 0 6-2.69 6-6 0-4.42-4.03-8-9-8zm-5.5 9.5c-.83 0-1.5-.67-1.5-1.5S5.67 8.5 6.5 8.5 8 9.17 8 10s-.67 1.5-1.5 1.5z"/></svg>`;
+        default:
+          return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
+      }
+    }
+
+    function renderCard(item: any) {
+      const isImage = item.media_type === "image" && item.public_url;
+      const isSelected = selectedIds.has(item.id);
+      return `<div class="admin-card" style="padding:0;overflow:hidden;cursor:pointer;position:relative;${isSelected ? "outline:2px solid var(--admin-primary);" : ""}" data-id="${item.id}">
+      <div style="position:absolute;top:var(--sp-2);left:var(--sp-2);z-index:2;">
+        <input type="checkbox" class="media-select-cb" data-id="${item.id}" ${isSelected ? "checked" : ""} style="width:18px;height:18px;cursor:pointer;" />
+      </div>
+      ${item.featured ? '<div class="admin-badge" style="position:absolute;top:var(--sp-2);right:var(--sp-2);z-index:2;background:var(--admin-primary);color:var(--card);">精选</div>' : ""}
+      <div style="aspect-ratio:1;background:var(--paper);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+        ${
+          isImage
+            ? `<img src="${item.public_url}" alt="${item.alt_text || item.title || ""}" style="width:100%;height:100%;object-fit:cover;" loading="lazy" onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\\'font-size:2.5rem\\'>${typeIcon(item.media_type)}</div>';" />`
+            : `<div style="font-size:2.5rem;">${typeIcon(item.media_type)}</div>`
+        }
+      </div>
+      <div style="padding:var(--sp-2) var(--sp-3);">
+        <div class="admin-text-xs admin-font-semibold" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${item.title || item.filename || ""}">${item.title || item.filename || "(未命名)"}</div>
+        <div class="admin-flex admin-justify-between admin-items-center admin-text-xs admin-text-muted" style="margin-top:var(--sp-1);">
+          <span>${item.media_type}</span>
+          <span>${formatSize(item.file_size)}</span>
+        </div>
+        ${item.links && item.links.length > 0 ? `<div class="admin-text-xs" style="margin-top:var(--sp-1);color:var(--admin-primary);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> ${item.links.length} 个关联</div>` : ""}
+      </div>
+    </div>`;
+    }
+
+    function renderPagination(meta: any) {
+      if (!meta || meta.totalPages <= 1) {
+        pagination.innerHTML = "";
+        return;
+      }
+      if (window.AromisoPagination) {
+        window.AromisoPagination.render(null, pagination, {
+          total: meta.total,
+          page: meta.page,
+          totalPages: meta.totalPages,
+          showPageSize: false,
+          onChange: ({ page: np }) => {
+            currentPage = np;
+            loadMedia();
+          },
+        });
+        return;
+      }
+      let html = "";
+      if (meta.page > 1)
+        html += `<button class="admin-btn admin-btn-secondary" data-page="${meta.page - 1}">上一页</button>`;
+      html += `<span class="admin-text-sm admin-text-muted">第 ${meta.page} / ${meta.totalPages} 页</span>`;
+      if (meta.page < meta.totalPages)
+        html += `<button class="admin-btn admin-btn-secondary" data-page="${meta.page + 1}">下一页</button>`;
+      pagination.innerHTML = html;
+      pagination.querySelectorAll("[data-page]").forEach((btn: any) => {
+        btn.addEventListener("click", () => {
+          currentPage = parseInt(btn.dataset.page);
+          loadMedia();
+        });
+      });
+    }
+
+    /** 写操作必须知道结果（S22 类静默失败）：成功/失败都 toast，返回是否成功。 */
+    async function postMedia(
+      body: Record<string, unknown>,
+      okMsg: string,
+      failMsg: string,
+    ): Promise<boolean> {
+      try {
+        const r = await fetch(API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const j = (await r.json().catch(() => ({}))) as any;
+        if (r.ok && j?.success !== false) {
+          window.showToast?.(okMsg, "success");
+          return true;
+        }
+        const reason = j?.error?.message || j?.error?.code || `HTTP ${r.status}`;
+        window.showToast?.(`${failMsg}：${reason}`, "error");
+        return false;
+      } catch (e) {
+        window.showToast?.(`${failMsg}：${e instanceof Error ? e.message : String(e)}`, "error");
+        return false;
+      }
+    }
+
+    async function loadMedia() {
+      const params = buildParams();
+      try {
+        const res = await fetch(`${API}?${params}`);
+        const data = (await res.json()) as any;
+        // M5/S12/F06：降级/部分失败的响应必须挂横幅，不能当成「媒体库就这么点」。
+        if (!window.AromisoNotifyDegraded?.(data, "媒体库")) {
+          window.AromisoNotifyDegraded?.(data?.data, "媒体库");
+        }
+        if (!data.success) {
+          grid.innerHTML = `<div style="color:var(--admin-danger);">加载失败：${data?.error?.message || data?.error?.code || "未知错误"}</div>`;
+          return;
+        }
+        allItems = data.data || [];
+        const meta = data.meta;
+        stats.innerHTML = `共 ${meta.total} 个媒体文件`;
+        if (allItems.length === 0) {
+          grid.innerHTML = "";
+          empty.style.display = "block";
+        } else {
+          empty.style.display = "none";
+          grid.innerHTML = allItems.map(renderCard).join("");
+          bindCardEvents();
+        }
+        renderPagination(meta);
+        updateBulkBtn();
+      } catch (e) {
+        grid.innerHTML = `<div style="color:var(--admin-danger);">网络错误: ${(e as any).message}</div>`;
+      }
+    }
+
+    function bindCardEvents() {
+      grid.querySelectorAll(".admin-card[data-id]").forEach((card: any) => {
+        card.addEventListener("click", (e: any) => {
+          if (e.target.closest(".media-select-cb")) return;
+          openDrawer(card.dataset.id);
+        });
+      });
+      grid.querySelectorAll(".media-select-cb").forEach((cb: any) => {
+        cb.addEventListener("change", (e: any) => {
+          e.stopPropagation();
+          if (cb.checked) selectedIds.add(cb.dataset.id);
+          else selectedIds.delete(cb.dataset.id);
+          const card = cb.closest(".admin-card");
+          if (card) card.style.outline = cb.checked ? "2px solid var(--admin-primary)" : "";
+          updateBulkBtn();
+        });
+      });
+    }
+
+    function updateBulkBtn() {
+      bulkDeleteBtn.style.display = selectedIds.size > 0 ? "inline-flex" : "none";
+      bulkDeleteBtn.textContent =
+        selectedIds.size > 0 ? `批量删除 (${selectedIds.size})` : "批量删除";
+    }
+
+    function openDrawer(id: any) {
+      const item = allItems.find((i) => i.id === id);
+      if (!item) return;
+      const drawer = $("#detail-drawer");
+      const content = $("#drawer-content");
+      const footer = $("#drawer-footer");
+      const isImage = item.media_type === "image" && item.public_url;
+      content.innerHTML = `
+      <div class="admin-mb-4">
+        ${isImage ? `<img src="${item.public_url}" alt="${item.alt_text || ""}" style="width:100%;max-height:300px;object-fit:contain;border-radius:var(--r-md);background:var(--paper);" />` : `<div style="width:100%;height:200px;background:var(--paper);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:3rem;">${typeIcon(item.media_type)}</div>`}
+      </div>
+      <div class="admin-flex-col admin-gap-4">
+        <div><strong>文件名:</strong> ${item.filename || "-"}</div>
+        <div class="admin-form-group"><strong>标题:</strong> <input id="d-title" value="${(item.title || "").replace(/"/g, "&quot;")}" class="admin-input" /></div>
+        <div class="admin-form-group"><strong>替代文本（Alt）:</strong> <input id="d-alt" value="${(item.alt_text || "").replace(/"/g, "&quot;")}" class="admin-input" /></div>
+        <div class="admin-form-group"><strong>描述:</strong><br/><textarea id="d-desc" rows="3" class="admin-textarea">${item.description || ""}</textarea></div>
+        <div><strong>类型:</strong> ${item.media_type}</div>
+        <div><strong>来源:</strong> ${item.source}</div>
+        <div><strong>大小:</strong> ${formatSize(item.file_size)}</div>
+        ${item.width ? `<div><strong>尺寸:</strong> ${item.width}×${item.height}</div>` : ""}
+        <div><strong>URL:</strong> ${item.public_url ? `<a href="${item.public_url}" target="_blank" style="color:var(--admin-primary);word-break:break-all;font-size:var(--fs-sm);">${item.public_url}</a>` : "-"}</div>
+        <div><strong>标签:</strong> ${(item.tags || []).join(", ") || "-"}</div>
+        <div><strong>关联:</strong> ${item.links.length > 0 ? item.links.map((l: any) => `${l.entity_type}:${l.entity_id}`).join(", ") : "无"}</div>
+        <div><strong>精选:</strong> <label class="admin-flex admin-items-center admin-gap-1" style="display:inline-flex;"><input type="checkbox" id="d-featured" ${item.featured ? "checked" : ""} /> 设为精选</label></div>
+        <div><strong>创建时间:</strong> ${item.created_at ? new Date(item.created_at).toLocaleString("zh-CN") : "-"}</div>
+      </div>
+    `;
+      footer.innerHTML = `
+      <button class="admin-btn admin-btn-danger" id="d-delete-btn">删除</button>
+      <a href="/admin-v2/media/editor?id=${item.id}" class="admin-btn admin-btn-secondary" style="text-decoration:none;">完整编辑</a>
+      <button class="admin-btn admin-btn-primary" id="d-save-btn">保存</button>
+    `;
+      drawer.style.display = "block";
+
+      $("#d-save-btn").onclick = async () => {
+        // 之前完全丢弃响应就关抽屉+刷新 → 保存失败与成功看起来一样。
+        const ok = await postMedia(
+          {
+            action: "update",
+            id: item.id,
+            title: $("#d-title").value,
+            alt_text: $("#d-alt").value,
+            description: $("#d-desc").value,
+            featured: $("#d-featured").checked ? 1 : 0,
+          },
+          "已保存",
+          "未保存",
+        );
+        if (!ok) return;
+        drawer.style.display = "none";
+        loadMedia();
+      };
+
+      $("#d-delete-btn").onclick = async () => {
+        if (!confirm("确定删除此媒体文件？")) return;
+        const ok = await postMedia(
+          { action: "soft_delete", id: item.id },
+          "已删除",
+          "删除失败（文件仍在）",
+        );
+        if (!ok) return;
+        drawer.style.display = "none";
+        loadMedia();
+      };
+    }
+
+    // Close drawer
+    $("#drawer-close-btn").addEventListener("click", () => {
+      $("#detail-drawer").style.display = "none";
+    });
+
+    // Upload modal
+    const uploadModal = $("#upload-modal");
+    const dropzone = $("#upload-dropzone");
+    const fileInput = $("#upload-file-input");
+    const uploadBtn = $("#media-upload-btn");
+    const cancelBtn = $("#upload-cancel-btn");
+    const confirmBtn = $("#upload-confirm-btn");
+    let pendingFiles: File[] = [];
+
+    uploadBtn.addEventListener("click", () => {
+      uploadModal.style.display = "flex";
+      pendingFiles = [];
+      updateUploadPreview();
+    });
+    cancelBtn.addEventListener("click", () => {
+      uploadModal.style.display = "none";
+    });
+    dropzone.addEventListener("click", () => fileInput.click());
+    dropzone.addEventListener("dragover", (e: any) => {
+      e.preventDefault();
+      dropzone.style.borderColor = "var(--admin-primary)";
+    });
+    dropzone.addEventListener("dragleave", () => {
+      dropzone.style.borderColor = "var(--line)";
+    });
+    dropzone.addEventListener("drop", (e: any) => {
+      e.preventDefault();
+      dropzone.style.borderColor = "var(--line)";
+      handleFiles(e.dataTransfer.files);
+    });
+    fileInput.addEventListener("change", () => handleFiles(fileInput.files));
+
+    function handleFiles(files: any) {
+      for (const f of files) {
+        if (f.size > 50 * 1024 * 1024) {
+          AromisoToast.warning(`${f.name} 超过 50MB 限制`);
+          continue;
+        }
+        pendingFiles.push(f);
+      }
+      updateUploadPreview();
+    }
+
+    function updateUploadPreview() {
+      const preview = $("#upload-preview");
+      if (pendingFiles.length === 0) {
+        preview.style.display = "none";
+        confirmBtn.disabled = true;
+        return;
+      }
+      preview.style.display = "block";
+      confirmBtn.disabled = false;
+      preview.innerHTML = pendingFiles
+        .map(
+          (f, i) => `
+      <div class="admin-flex admin-items-center admin-gap-2" style="padding:var(--sp-2);border:1px solid var(--line);border-radius:var(--r-sm);margin-bottom:var(--sp-1);">
+        <span>${f.type.startsWith("image/") ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>` : f.type.startsWith("video/") ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/></svg>` : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`}</span>
+        <span class="admin-text-xs" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.name}</span>
+        <span class="admin-text-xs admin-text-muted">${(f.size / 1024).toFixed(0)} KB</span>
+        <button class="upload-remove admin-btn admin-btn-ghost admin-btn-sm" data-index="${i}" style="color:var(--admin-danger);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+    `,
+        )
+        .join("");
+      preview.querySelectorAll(".upload-remove").forEach((btn: any) => {
+        btn.addEventListener("click", () => {
+          pendingFiles.splice(parseInt(btn.dataset.index), 1);
+          updateUploadPreview();
+        });
+      });
+    }
+
+    confirmBtn.addEventListener("click", async () => {
+      if (pendingFiles.length === 0) return;
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = "上传中…";
+      let successCount = 0;
+      let failCount = 0;
+      const failedNames: string[] = [];
+      for (const file of pendingFiles) {
+        try {
+          const reader = new FileReader();
+          const b64 = await new Promise((resolve, reject) => {
+            reader.onload = () => {
+              const result = reader.result;
+              const base64 = typeof result === "string" ? result.split(",")[1] : "";
+              resolve(base64);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+
+          // Upload to R2 via existing upload endpoint
+          const uploadRes = await fetch("/api/admin/upload", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: file.name, mime: file.type, contentB64: b64 }),
+          });
+          const uploadData = (await uploadRes.json()) as any;
+          if (!uploadData.url && !uploadData.public_url) throw new Error("Upload failed");
+
+          const publicUrl = uploadData.url || uploadData.public_url;
+          const r2Key = uploadData.key || uploadData.r2_key || "";
+
+          // Create media asset record
+          const mediaType = file.type.startsWith("video/")
+            ? "video"
+            : file.type.startsWith("image/")
+              ? "image"
+              : "document";
+          const createRes = await fetch(API, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "create",
+              filename: file.name,
+              mime_type: file.type,
+              file_size: file.size,
+              public_url: publicUrl,
+              r2_key: r2Key,
+              media_type: mediaType,
+              source: "upload",
+              title: file.name.replace(/\.[^.]+$/, ""),
+            }),
+          });
+          const createJson = (await createRes.json().catch(() => ({}))) as any;
+          // 文件已进 R2 但入库失败时，过去仍算 successCount++ → 媒体库里找不到却报成功。
+          if (!createRes.ok || createJson?.success === false) {
+            throw new Error(
+              "入库失败：" +
+                (createJson?.error?.message ||
+                  createJson?.error?.code ||
+                  `HTTP ${createRes.status}`),
+            );
+          }
+          successCount++;
+        } catch (e) {
+          failCount++;
+          failedNames.push(file.name);
+          console.error("Upload error:", file.name, e);
+        }
+      }
+      uploadModal.style.display = "none";
+      pendingFiles = [];
+      confirmBtn.textContent = "上传";
+      if (failCount > 0) {
+        window.showToast?.(
+          `上传未完成：成功 ${successCount} 个，失败 ${failCount} 个（${failedNames.slice(0, 3).join("、")}${failedNames.length > 3 ? " 等" : ""}）`,
+          "error",
+        );
+      } else if (successCount > 0) {
+        window.showToast?.(`已上传 ${successCount} 个文件`, "success");
+      }
+      if (successCount > 0) loadMedia();
+    });
+
+    // Bulk delete
+    bulkDeleteBtn.addEventListener("click", async () => {
+      if (selectedIds.size === 0) {
+        window.showToast?.("请先勾选要删除的媒体文件", "warning");
+        return;
+      }
+      const count = selectedIds.size;
+      if (!confirm(`确定删除 ${count} 个媒体文件？`)) return;
+      const ok = await postMedia(
+        { action: "bulk_delete", ids: [...selectedIds] },
+        `已删除 ${count} 个媒体文件`,
+        "批量删除失败（文件仍在）",
+      );
+      if (!ok) return;
+      selectedIds.clear();
+      loadMedia();
+    });
+
+    // Filter events
+    let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+    searchInput.addEventListener("input", () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        currentPage = 1;
+        loadMedia();
+      }, 300);
+    });
+    typeFilter.addEventListener("change", () => {
+      currentPage = 1;
+      loadMedia();
+    });
+    sourceFilter.addEventListener("change", () => {
+      currentPage = 1;
+      loadMedia();
+    });
+    featuredOnly.addEventListener("change", () => {
+      currentPage = 1;
+      loadMedia();
+    });
+
+    // Init
+    loadMedia();
+  })();
+</script>

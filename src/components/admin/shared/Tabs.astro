@@ -1,0 +1,23 @@
+---
+// Tabs — 标签页切换
+export interface Props {
+  tabs: { id: string; label: string; count?: number }[];
+  activeId?: string;
+}
+const { tabs, activeId = "" } = Astro.props;
+---
+
+<div class="admin-tabs">
+  {
+    tabs.map((tab) => (
+      <button class={`admin-tab${activeId === tab.id ? " active" : ""}`} data-tab={tab.id}>
+        {tab.label}
+        {tab.count != null && (
+          <span style="margin-left:var(--sp-1);font-size:var(--fs-xs);opacity:0.6;">
+            ({tab.count})
+          </span>
+        )}
+      </button>
+    ))
+  }
+</div>

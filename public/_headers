@@ -1,0 +1,21 @@
+# Cloudflare Pages response headers
+# https://developers.cloudflare.com/pages/configuration/headers/
+
+# Long-cache Astro's fingerprinted build assets (hashed, immutable).
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Admin pages are dynamic — never serve a cached copy (avoids stale admin UI
+# after deploys, e.g. fields that were removed still showing up).
+/admin
+  Cache-Control: no-store, max-age=0
+/admin/*
+  Cache-Control: no-store, max-age=0
+
+# Baseline security + privacy headers for everything else.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains

@@ -1,0 +1,41 @@
+name: CI
+
+# 质量门禁：类型检查 + Lint + 格式 + 测试 + 构建验证。
+# 仅在 PR 与 main 推送时运行，控制 GitHub Actions 免费分钟用量
+# （私有仓库 2,000 分钟/月，本项目单次运行约 3–5 分钟）。
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Check / Lint / Format / Test / Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20 # 与 .nvmrc 保持一致
+          cache: npm
+
+      - run: npm ci
+
+      - name: Astro type check
+        run: npm run check
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Prettier format check
+        run: npm run format:check
+
+      - name: Unit tests (vitest)
+        run: npm run test
+
+      - name: Production build
+        run: npm run build

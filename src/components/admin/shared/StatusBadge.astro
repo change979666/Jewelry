@@ -1,0 +1,24 @@
+---
+// StatusBadge — 状态标签
+export interface Props {
+  status: string;
+}
+const { status } = Astro.props;
+
+const statusMap: Record<string, { label: string; cls: string }> = {
+  draft: { label: "草稿", cls: "admin-badge-draft" },
+  published: { label: "已发布", cls: "admin-badge-published" },
+  active: { label: "活跃", cls: "admin-badge-active" },
+  archived: { label: "归档", cls: "admin-badge-archived" },
+  error: { label: "错误", cls: "admin-badge-error" },
+  new: { label: "新", cls: "admin-badge-new" },
+  spam: { label: "垃圾", cls: "admin-badge-spam" },
+  pending: { label: "待处理", cls: "admin-badge-draft" },
+  completed: { label: "已完成", cls: "admin-badge-published" },
+  cancelled: { label: "已取消", cls: "admin-badge-archived" },
+};
+
+const s = statusMap[status] || { label: status, cls: "admin-badge-archived" };
+---
+
+<span class={`admin-badge ${s.cls}`}>{s.label}</span>

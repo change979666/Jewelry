@@ -1,0 +1,714 @@
+---
+// ---------------------------------------------------------------------------
+//  Aromiso — Global search modal
+//  Included once via Header. Fetches the build-time /search-index.json once,
+//  then matches fully client-side.
+//
+//  Lead-gen focused result cards:
+//    · type badge (Product / Article / FAQ) + thumbnail so buyers know at a
+//      glance what they're looking at
+//    · product rows carry MOQ + OEM/ODM meta and a "Get Quote" CTA that
+//      deep-links to the contact form with the product prefilled
+//    · article rows carry reading time + publish year
+//  Grouped by type with live match counts, ranked by type weight
+//  (products > blog > FAQ, title hits boosted). Also: popular-search chips,
+//  synonym expansion, "did you mean" spell correction, keyword highlighting
+//  and full keyboard navigation.
+// ---------------------------------------------------------------------------
+import { t } from "../i18n";
+import type { Locale } from "../i18n";
+import Icon from "./Icon.astro";
+import settings from "../data/settings.json";
+import { SITE } from "../consts";
+
+interface Props {
+  locale?: Locale;
+}
+const locale = (Astro.props.locale as Locale) ?? "en";
+
+const labels = {
+  placeholder: t(locale, "search.placeholder"),
+  hint: t(locale, "search.hint"),
+  noResults: t(locale, "search.no_results"),
+  popular: t(locale, "search.popular"),
+  didYouMean: t(locale, "search.did_you_mean"),
+  getQuote: t(locale, "search.get_quote"),
+  oem: t(locale, "search.oem"),
+  moq: t(locale, "search.moq"),
+  emptyTitle: t(locale, "search.empty_title"),
+  emptyText: t(locale, "search.empty_text"),
+  requestQuote: t(locale, "cta"),
+  products: t(locale, "search.products"),
+  blog: t(locale, "search.blog"),
+  guides: t(locale, "search.guides"),
+  faq: t(locale, "search.faq"),
+  minRead: t(locale, "blog.min_read"),
+  navigate: t(locale, "search.navigate"),
+  open: t(locale, "search.open"),
+  close: t(locale, "search.close"),
+};
+
+const popular =
+  locale === "es"
+    ? [
+        "Aceite esencial",
+        "Vela de soja",
+        "OEM",
+        "Private Label",
+        "Difusor",
+        "Caja de regalo",
+        "MOQ",
+      ]
+    : locale === "de"
+      ? [
+          "Ätherisches Öl",
+          "Sojawachs-Kerze",
+          "OEM",
+          "Private Label",
+          "Diffuser",
+          "Geschenkbox",
+          "MOQ",
+        ]
+      : ["Essential Oil", "Soy Candle", "OEM", "Private Label", "Diffuser", "Gift Box", "MOQ"];
+
+// WhatsApp deep link for the empty-state CTA
+const waNumber = settings.social.whatsapp || SITE.whatsapp;
+const waMsg = encodeURIComponent(
+  locale === "es"
+    ? "Hola Aromiso, quisiera consultar sobre su fabricación de aromas."
+    : locale === "de"
+      ? "Hallo Aromiso, ich hätte eine Frage zu Ihrer Aroma-Herstellung."
+      : "Hi Aromiso, I'd like to inquire about your aroma manufacturing.",
+);
+const waHref = waNumber
+  ? waNumber.startsWith("http")
+    ? waNumber
+    : `https://wa.me/${waNumber}?text=${waMsg}`
+  : "";
+const contactHref = `/${locale}/contact/`;
+---
+
+<div
+  id="search-modal"
+  class="fixed inset-0 z-[100] hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-label={t(locale, "search.label")}
+  data-locale={locale}
+  data-labels={JSON.stringify(labels)}
+  data-popular={JSON.stringify(popular)}
+  data-wa={waHref}
+  data-contact={contactHref}
+>
+  <!-- Backdrop -->
+  <div id="search-backdrop" class="absolute inset-0 bg-ink/50 backdrop-blur-sm"></div>
+
+  <!-- Panel: fullscreen on mobile, centered card on sm+ -->
+  <div
+    class="absolute inset-0 flex flex-col bg-paper sm:inset-x-0 sm:top-[8vh] sm:bottom-auto sm:mx-auto sm:max-h-[78vh] sm:w-[calc(100%-2.5rem)] sm:max-w-2xl sm:rounded-3xl sm:border sm:border-line sm:shadow-[0_40px_90px_-32px_rgba(33,31,27,0.55)]"
+  >
+    <!-- Input row -->
+    <div class="flex items-center gap-3 border-b border-line px-4 py-3 sm:px-5">
+      <Icon name="search" size={20} class="shrink-0 text-stone" />
+      <input
+        id="search-input"
+        type="search"
+        autocomplete="off"
+        spellcheck="false"
+        enterkeyhint="search"
+        class="h-10 w-full bg-transparent text-base outline-none placeholder:text-stone/70 [&::-webkit-search-cancel-button]:hidden"
+        placeholder={labels.placeholder}
+      />
+      <button
+        id="search-close"
+        type="button"
+        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-stone transition-colors hover:bg-beige hover:text-ink"
+        aria-label={labels.close}
+      >
+        <Icon name="close" size={16} />
+      </button>
+    </div>
+
+    <!-- Results (rendered client-side) -->
+    <div id="search-results" class="flex-1 overflow-y-auto overscroll-contain px-2 py-2 sm:px-3">
+    </div>
+
+    <!-- Keyboard hints (desktop only) -->
+    <div
+      class="hidden items-center gap-4 border-t border-line px-5 py-2.5 text-[11px] text-stone sm:flex"
+    >
+      <span class="flex items-center gap-1"><kbd>↑</kbd><kbd>↓</kbd>&nbsp;{labels.navigate}</span>
+      <span class="flex items-center gap-1"><kbd>↵</kbd>&nbsp;{labels.open}</span>
+      <span class="flex items-center gap-1"><kbd>Esc</kbd>&nbsp;{labels.close}</span>
+    </div>
+  </div>
+</div>
+
+<!-- is:global because results are injected via innerHTML (scoped styles would
+     not receive the data-astro-cid attribute on dynamic nodes) -->
+<style is:global>
+  #search-modal kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.4rem;
+    height: 1.4rem;
+    padding: 0 0.3rem;
+    border: 1px solid var(--line);
+    border-radius: 0.375rem;
+    background: var(--beige);
+    font-family: inherit;
+    font-size: 10px;
+    color: var(--stone);
+  }
+  #search-results mark {
+    background: var(--beige);
+    color: var(--accent);
+    font-weight: 600;
+    border-radius: 2px;
+    padding: 0 1px;
+  }
+  #search-results .search-item.active {
+    background: var(--beige);
+  }
+  #search-results .search-thumb {
+    background: var(--beige);
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    const modal = document.getElementById("search-modal");
+    if (!modal) return;
+    const input = document.getElementById("search-input");
+    const results = document.getElementById("search-results");
+    const labels = JSON.parse(modal.getAttribute("data-labels") || "{}");
+    const locale = modal.getAttribute("data-locale") || "en";
+    const popular = JSON.parse(modal.getAttribute("data-popular") || "[]");
+    const waHref = modal.getAttribute("data-wa") || "";
+    const contactHref = modal.getAttribute("data-contact") || "/contact/";
+
+    // Type weighting (per product spec): products rank above guides, guides
+    // above blog, blog above FAQ.
+    const WEIGHTS = { product: 10, guide: 9, post: 8, faq: 6 };
+    const CAPS = { product: 5, guide: 4, post: 5, faq: 4 };
+    const ORDER = ["product", "guide", "post", "faq"];
+    const NAMES = {
+      product: labels.products,
+      guide: labels.guides,
+      post: labels.blog,
+      faq: labels.faq,
+    };
+    const svg = function (body) {
+      return (
+        '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        body +
+        "</svg>"
+      );
+    };
+    const BADGE_ICONS = {
+      product: svg('<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>'),
+      guide: svg(
+        '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+      ),
+      post: svg(
+        '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 3 14 8 19 8"/>',
+      ),
+      faq: svg('<path d="M4 5h16v10H8l-4 4V5z"/><path d="M8 9.5h8M8 12.5h5"/>'),
+    };
+    const FALLBACK_ICONS = {
+      product:
+        '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>',
+      guide:
+        '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+      post: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 3 14 8 19 8"/></svg>',
+      faq: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v10H8l-4 4V5z"/><path d="M8 9.5h8M8 12.5h5"/></svg>',
+    };
+
+    // Synonym expansion — matches OR across a token's synonyms, AND across
+    // tokens. Includes cross-language pairs so e.g. an English query still
+    // finds German/Spanish content (and vice versa).
+    const SYNONYMS = {
+      perfume: ["fragrance", "aroma"],
+      fragrance: ["perfume", "aroma", "scent"],
+      scent: ["fragrance", "aroma"],
+      aroma: ["fragrance", "scent"],
+      reed: ["diffuser", "difusor"],
+      diffuser: ["reed", "difusor"],
+      difusor: ["diffuser", "reed"],
+      candle: ["candles", "vela", "kerze", "kerzen"],
+      candles: ["candle", "vela", "kerze"],
+      vela: ["candle", "candles"],
+      kerze: ["candle", "candles"],
+      oil: ["oils", "aceite", "öl", "oel"],
+      oils: ["oil", "aceite", "öl"],
+      aceite: ["oil", "oils"],
+      öl: ["oil", "oils"],
+      soy: ["soja", "soya"],
+      soja: ["soy", "soya"],
+      wax: ["wachs", "cera"],
+      wachs: ["wax"],
+      cera: ["wax"],
+      essential: ["esencial", "ätherisches", "aetherisches"],
+      esencial: ["essential"],
+      ätherisches: ["essential"],
+      lavender: ["lavanda", "lavendel"],
+      lavanda: ["lavender"],
+      lavendel: ["lavender"],
+      vanilla: ["vanille", "vainilla"],
+      vanille: ["vanilla"],
+      vainilla: ["vanilla"],
+      private: ["label"],
+      label: ["private", "oem", "odm"],
+      oem: ["odm"],
+      odm: ["oem"],
+      gift: ["regalo", "geschenk"],
+      box: ["gift", "packaging"],
+      packaging: ["box", "packing"],
+    };
+
+    let index = null; // entries for the current locale
+    let vocab = []; // known words for spell correction
+    let flat = []; // flattened items currently on screen
+    let activeIdx = -1;
+    let lastFocus = null;
+    let timer = null;
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, function (ch) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+      });
+    }
+
+    function buildVocab() {
+      const seen = {};
+      vocab = [];
+      for (let i = 0; i < index.length; i++) {
+        const words = (index[i].title + " " + (index[i].extra || ""))
+          .toLowerCase()
+          .split(/[^a-z0-9\u00c0-\u024f]+/);
+        for (let j = 0; j < words.length; j++) {
+          const w = words[j];
+          if (w.length >= 4 && !seen[w]) {
+            seen[w] = true;
+            vocab.push(w);
+          }
+        }
+      }
+    }
+
+    function loadIndex(cb) {
+      if (index) return cb();
+      fetch("/search-index.json", { credentials: "omit" })
+        .then(function (r) {
+          return r.json();
+        })
+        .then(function (data) {
+          index = data[locale] || data.en || [];
+          buildVocab();
+          cb();
+        })
+        .catch(function () {
+          index = [];
+          cb();
+        });
+    }
+
+    function highlight(text, tokens) {
+      const safe = esc(text);
+      if (!tokens.length) return safe;
+      const parts = [];
+      for (let i = 0; i < tokens.length; i++) {
+        const group = [tokens[i]].concat(SYNONYMS[tokens[i]] || []);
+        for (let j = 0; j < group.length; j++)
+          parts.push(group[j].replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+      }
+      try {
+        return safe.replace(new RegExp("(" + parts.join("|") + ")", "ig"), "<mark>$1</mark>");
+      } catch (_e) {
+        return safe;
+      }
+    }
+
+    // Does one query token (or any of its synonyms) appear in `hay`?
+    function tokenIn(tok, hay) {
+      if (hay.indexOf(tok) !== -1) return true;
+      const syns = SYNONYMS[tok] || [];
+      for (let i = 0; i < syns.length; i++) {
+        if (hay.indexOf(syns[i]) !== -1) return true;
+      }
+      return false;
+    }
+
+    // AND across tokens, OR within a token's synonyms. Title hits score 3x.
+    function search(q) {
+      // B-04: index 在 loadIndex() 异步 fetch 完成前为 null，此时读取 index.length 会抛
+      // TypeError（慢网下打开弹窗即快速输入 → PAGEERROR/冻结）。安全等待加载完成后重试本次
+      // 搜索；loadIndex 即使 fetch 失败也会把 index 置为 []，故不会无限重试。
+      if (!index) {
+        loadIndex(function () {
+          search(q);
+        });
+        return;
+      }
+      const query = (q || "").trim().toLowerCase();
+      if (!query) {
+        renderInitial();
+        return;
+      }
+      const tokens = query.split(/\s+/).filter(Boolean);
+      const scored = [];
+      const counts = { product: 0, guide: 0, post: 0, faq: 0 };
+      for (let i = 0; i < index.length; i++) {
+        const it = index[i];
+        const title = it.title.toLowerCase();
+        const hay = title + " " + it.excerpt.toLowerCase() + " " + (it.extra || "").toLowerCase();
+        let ok = true;
+        let s = 0;
+        for (let j = 0; j < tokens.length; j++) {
+          if (!tokenIn(tokens[j], hay)) {
+            ok = false;
+            break;
+          }
+          s += tokenIn(tokens[j], title) ? 3 : 1;
+        }
+        if (!ok) continue;
+        counts[it.type] = (counts[it.type] || 0) + 1;
+        scored.push({ it: it, score: s * (WEIGHTS[it.type] || 5) });
+      }
+      scored.sort(function (a, b) {
+        return b.score - a.score;
+      });
+      if (scored.length) renderResults(scored, counts, tokens, query);
+      else renderEmpty(tokens, query);
+    }
+
+    function thumb(it) {
+      if (it.cover) {
+        return (
+          '<img src="' +
+          esc(it.cover) +
+          '" alt="" loading="lazy" class="search-thumb h-12 w-12 shrink-0 rounded-xl object-cover" />'
+        );
+      }
+      return (
+        '<span class="search-thumb flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-accent">' +
+        FALLBACK_ICONS[it.type] +
+        "</span>"
+      );
+    }
+
+    function badge(type) {
+      return (
+        '<span class="inline-flex items-center gap-1 rounded-full bg-beige px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-accent">' +
+        BADGE_ICONS[type] +
+        esc(NAMES[type]) +
+        "</span>"
+      );
+    }
+
+    function meta(it) {
+      if (it.type === "product") {
+        const m = [];
+        if (it.moq) m.push(labels.moq + " " + esc(it.moq));
+        m.push(labels.oem);
+        return m.join(" · ");
+      }
+      if (it.type === "post" || it.type === "guide") {
+        const p = [];
+        if (it.read) p.push(it.read + " " + labels.minRead);
+        if (it.year) p.push(it.year);
+        return p.join(" · ");
+      }
+      // FAQ: show a short slice of the answer
+      return esc(it.excerpt);
+    }
+
+    function quoteCta(it) {
+      if (it.type !== "product") return "";
+      const href = contactHref + "?product=" + encodeURIComponent(it.title);
+      return (
+        '<a href="' +
+        esc(href) +
+        '" class="search-quote ml-auto shrink-0 self-center rounded-full border border-accent/50 px-3 py-1.5 text-[11px] font-semibold text-accent transition-colors hover:bg-accent hover:text-paper">' +
+        esc(labels.getQuote) +
+        "</a>"
+      );
+    }
+
+    function renderResults(scored, counts, tokens, _query) {
+      const groups = { product: [], guide: [], post: [], faq: [] };
+      for (let i = 0; i < scored.length; i++) {
+        const g = groups[scored[i].it.type];
+        if (g && g.length < CAPS[scored[i].it.type]) g.push(scored[i].it);
+      }
+      let html = "";
+      flat = [];
+      for (let k = 0; k < ORDER.length; k++) {
+        const type = ORDER[k];
+        const items = groups[type];
+        if (!items.length) continue;
+        html +=
+          '<p class="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone">' +
+          esc(NAMES[type]) +
+          ' <span class="text-stone/70">(' +
+          counts[type] +
+          ")</span></p>";
+        for (let m = 0; m < items.length; m++) {
+          const it = items[m];
+          const idx = flat.length;
+          flat.push(it);
+          html +=
+            '<div role="link" tabindex="-1" data-href="' +
+            esc(it.url) +
+            '" data-si="' +
+            idx +
+            '" class="search-item flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-colors">' +
+            thumb(it) +
+            '<span class="min-w-0 flex-1">' +
+            '<span class="mb-1 block">' +
+            badge(type) +
+            "</span>" +
+            '<span class="block truncate text-sm font-medium leading-snug">' +
+            highlight(it.title, tokens) +
+            "</span>" +
+            '<span class="mt-0.5 block truncate text-xs leading-relaxed text-stone">' +
+            meta(it) +
+            "</span>" +
+            "</span>" +
+            quoteCta(it) +
+            "</div>";
+        }
+      }
+      results.innerHTML = html;
+      activeIdx = flat.length ? 0 : -1;
+      paintActive();
+    }
+
+    // Levenshtein distance for "did you mean"
+    function lev(a, b) {
+      if (a === b) return 0;
+      const m = a.length,
+        n = b.length;
+      if (!m) return n;
+      if (!n) return m;
+      const prev = [],
+        cur = [];
+      let i, j;
+      for (j = 0; j <= n; j++) prev[j] = j;
+      for (i = 1; i <= m; i++) {
+        cur[0] = i;
+        for (j = 1; j <= n; j++) {
+          cur[j] = Math.min(
+            prev[j] + 1,
+            cur[j - 1] + 1,
+            prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1),
+          );
+        }
+        for (j = 0; j <= n; j++) prev[j] = cur[j];
+      }
+      return prev[n];
+    }
+
+    function suggestCorrection(tokens) {
+      let best = null;
+      let bestDist = 3; // max allowed distance
+      for (let i = 0; i < tokens.length; i++) {
+        const tok = tokens[i];
+        if (tok.length < 4) continue;
+        for (let j = 0; j < vocab.length; j++) {
+          const w = vocab[j];
+          if (Math.abs(w.length - tok.length) > 2) continue;
+          const d = lev(tok, w);
+          if (d > 0 && d < bestDist && d <= Math.floor(tok.length / 3)) {
+            bestDist = d;
+            best = { from: tok, to: w };
+          }
+        }
+      }
+      return best;
+    }
+
+    function popularChips() {
+      if (!popular.length) return "";
+      let html =
+        '<p class="mt-6 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone">' +
+        esc(labels.popular) +
+        "</p>";
+      html += '<div class="mt-2.5 flex flex-wrap justify-center gap-2">';
+      for (let i = 0; i < popular.length; i++) {
+        html +=
+          '<button type="button" data-sug="' +
+          esc(popular[i]) +
+          '" class="rounded-full border border-line px-3.5 py-1.5 text-xs text-stone transition-colors hover:bg-beige hover:text-ink">' +
+          esc(popular[i]) +
+          "</button>";
+      }
+      return html + "</div>";
+    }
+
+    function emptyCtas() {
+      return (
+        '<div class="mt-6 rounded-2xl border border-line bg-card p-5 text-center">' +
+        '<p class="text-sm font-semibold">' +
+        esc(labels.emptyTitle) +
+        "</p>" +
+        '<p class="mt-1 text-xs leading-relaxed text-stone">' +
+        esc(labels.emptyText) +
+        "</p>" +
+        '<div class="mt-4 flex flex-wrap justify-center gap-2">' +
+        '<a href="' +
+        esc(contactHref) +
+        '" class="btn btn-primary px-5 py-2.5 text-xs">' +
+        esc(labels.requestQuote) +
+        "</a>" +
+        (waHref
+          ? '<a href="' +
+            esc(waHref) +
+            '" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-full border border-line px-5 py-2.5 text-xs font-semibold text-ink transition-colors hover:bg-beige">WhatsApp</a>'
+          : "") +
+        "</div>" +
+        "</div>"
+      );
+    }
+
+    function renderEmpty(tokens, query) {
+      flat = [];
+      activeIdx = -1;
+      const correction = suggestCorrection(tokens);
+      let html = '<div class="px-4 py-8 text-center">';
+      html +=
+        '<p class="text-sm text-stone">' + esc(labels.noResults) + " “" + esc(query) + "”</p>";
+      if (correction) {
+        const fixed = query.replace(correction.from, correction.to);
+        html +=
+          '<p class="mt-2 text-sm">' +
+          esc(labels.didYouMean) +
+          ' <button type="button" data-dym="' +
+          esc(fixed) +
+          '" class="font-semibold text-accent underline decoration-accent/40 underline-offset-2 hover:decoration-accent">“' +
+          esc(fixed) +
+          "”</button>?</p>";
+      }
+      html += popularChips();
+      html += emptyCtas();
+      html += "</div>";
+      results.innerHTML = html;
+    }
+
+    function renderInitial() {
+      flat = [];
+      activeIdx = -1;
+      results.innerHTML =
+        '<div class="px-4 py-8 text-center"><p class="text-sm leading-relaxed text-stone">' +
+        esc(labels.hint) +
+        "</p>" +
+        popularChips() +
+        "</div>";
+    }
+
+    function paintActive() {
+      const els = results.querySelectorAll(".search-item");
+      for (let i = 0; i < els.length; i++) {
+        const isActive = Number(els[i].getAttribute("data-si")) === activeIdx;
+        els[i].classList.toggle("active", isActive);
+        if (isActive) els[i].scrollIntoView({ block: "nearest" });
+      }
+    }
+
+    function open() {
+      lastFocus = document.activeElement;
+      modal.classList.remove("hidden");
+      document.body.style.overflow = "hidden";
+      loadIndex(function () {
+        renderInitial();
+      });
+      setTimeout(function () {
+        input.focus();
+      }, 30);
+    }
+
+    function close() {
+      modal.classList.add("hidden");
+      document.body.style.overflow = "";
+      input.value = "";
+      if (lastFocus && lastFocus.focus) lastFocus.focus();
+    }
+
+    // --- Wiring -------------------------------------------------------------
+    const btn = document.getElementById("search-btn");
+    if (btn) btn.addEventListener("click", open);
+    document.getElementById("search-close").addEventListener("click", close);
+    document.getElementById("search-backdrop").addEventListener("click", close);
+
+    input.addEventListener("input", function () {
+      clearTimeout(timer);
+      const v = input.value;
+      timer = setTimeout(function () {
+        search(v);
+      }, 150);
+    });
+
+    // Delegated clicks (results are dynamic):
+    //  · .search-quote  → real link, let it navigate (Get Quote CTA)
+    //  · .search-item   → navigate to the result
+    //  · [data-sug]     → fill input with a popular term and search
+    //  · [data-dym]     → apply a "did you mean" correction
+    results.addEventListener("click", function (e) {
+      if (e.target.closest && e.target.closest(".search-quote")) return;
+      const sug = e.target.closest ? e.target.closest("[data-sug]") : null;
+      if (sug) {
+        input.value = sug.getAttribute("data-sug");
+        search(input.value);
+        input.focus();
+        return;
+      }
+      const dym = e.target.closest ? e.target.closest("[data-dym]") : null;
+      if (dym) {
+        input.value = dym.getAttribute("data-dym");
+        search(input.value);
+        input.focus();
+        return;
+      }
+      const item = e.target.closest ? e.target.closest(".search-item") : null;
+      if (item) location.href = item.getAttribute("data-href");
+    });
+    results.addEventListener("mouseover", function (e) {
+      const item = e.target.closest ? e.target.closest(".search-item") : null;
+      if (item) {
+        activeIdx = Number(item.getAttribute("data-si"));
+        paintActive();
+      }
+    });
+
+    // Keyboard: Ctrl/Cmd+K to toggle, Esc to close, arrows + Enter to navigate
+    document.addEventListener("keydown", function (e) {
+      if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
+        e.preventDefault();
+        if (modal.classList.contains("hidden")) open();
+        else close();
+        return;
+      }
+      if (modal.classList.contains("hidden")) return;
+      if (e.key === "Escape") {
+        close();
+        return;
+      }
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (flat.length) {
+          activeIdx = (activeIdx + 1) % flat.length;
+          paintActive();
+        }
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (flat.length) {
+          activeIdx = (activeIdx - 1 + flat.length) % flat.length;
+          paintActive();
+        }
+      } else if (e.key === "Enter") {
+        if (activeIdx >= 0 && flat[activeIdx]) location.href = flat[activeIdx].url;
+      }
+    });
+  })();
+</script>

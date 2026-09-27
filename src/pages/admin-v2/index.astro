@@ -1,0 +1,44 @@
+---
+// /admin-v2 — 后台首页（与 /admin-v2/dashboard 共用同一视图）
+// 注意：静态构建下 Astro.redirect 不会生成 index.html，会导致 /admin-v2 404，
+// 因此这里直接渲染同一视图，而不是重定向。
+import DashboardView from "../../components/admin/views/DashboardView.astro";
+import { getCollection } from "astro:content";
+
+const [blogC, prodC, guideC, caseC] = await Promise.all([
+  getCollection("blog"),
+  getCollection("products"),
+  getCollection("guides"),
+  getCollection("caseStudies"),
+]);
+const contentStats = {
+  blog: blogC.length,
+  products: prodC.length,
+  guides: guideC.length,
+  cases: caseC.length,
+};
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>总览 — Aromiso 后台管理系统</title>
+    <script is:inline>
+      (function () {
+        fetch("/api/admin/v2/auth/me", { credentials: "same-origin" })
+          .then(function (r) {
+            if (r.status === 401) window.location.replace("/admin-v2/login");
+          })
+          .catch(function () {
+            window.location.replace("/admin-v2/login");
+          });
+      })();
+    </script>
+  </head>
+  <body>
+    <DashboardView contentStats={contentStats} />
+  </body>
+</html>

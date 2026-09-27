@@ -1,0 +1,326 @@
+---
+// Phase 11 — Roles & Permissions Management Page
+import "../../../styles/admin-v2.css";
+import AdminShell from "../../../components/admin/layout/AdminShell.astro";
+import Sidebar from "../../../components/admin/layout/Sidebar.astro";
+import Topbar from "../../../components/admin/layout/Topbar.astro";
+import Toast from "../../../components/admin/shared/Toast.astro";
+import Skeleton from "../../../components/admin/shared/Skeleton.astro";
+---
+
+<AdminShell title="角色权限" activeModule="system">
+  <Sidebar slot="sidebar" activeModule="system" />
+  <Topbar
+    slot="topbar-left"
+    title="角色权限"
+    breadcrumbs={[{ label: "系统", href: "/admin-v2/system" }, { label: "角色权限" }]}
+  />
+  <Toast />
+
+  <div class="admin-page-header admin-flex admin-items-center admin-justify-between">
+    <h1 class="admin-page-title">角色管理</h1>
+    <button class="admin-btn admin-btn-primary" id="btn-create-role">+ 新建角色</button>
+  </div>
+
+  <div id="roles-container">
+    <Skeleton lines={4} height="80px" />
+  </div>
+
+  <!-- Role Detail / Edit Modal -->
+  <div id="role-modal" style="display:none;" class="admin-modal-overlay">
+    <div class="admin-modal" style="max-width:640px;">
+      <div class="admin-modal-header" id="role-modal-title">新建角色</div>
+      <div class="admin-modal-body">
+        <div class="admin-flex-col admin-gap-4">
+          <div class="admin-form-group">
+            <label class="admin-label">角色名称</label>
+            <input
+              type="text"
+              id="role-name"
+              placeholder="角色名称"
+              class="admin-input"
+              style="width:100%;"
+            />
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-label">角色描述</label>
+            <input
+              type="text"
+              id="role-description"
+              placeholder="角色描述"
+              class="admin-input"
+              style="width:100%;"
+            />
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-label">权限</label>
+            <div
+              id="role-permissions-grid"
+              style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:var(--sp-2);"
+            >
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="admin-modal-footer">
+        <button class="admin-btn admin-btn-secondary" id="btn-role-cancel">取消</button>
+        <button class="admin-btn admin-btn-primary" id="btn-role-save">保存</button>
+      </div>
+    </div>
+  </div>
+</AdminShell>
+
+<script>
+  const container = document.getElementById("roles-container")!;
+  const toast = (window as any).AromisoToast;
+  let editingRoleId: string | null = null;
+
+  const SYSTEM_ROLES = ["role_owner", "role_admin", "role_editor", "role_viewer"];
+  const RESOURCES = ["content", "commerce", "customers", "oem", "media", "ai", "growth", "system"];
+  const ACTIONS = [
+    "view",
+    "create",
+    "edit",
+    "publish",
+    "delete",
+    "export",
+    "execute_ai",
+    "approve_ai",
+    "manage_settings",
+  ];
+  const resourceLabels: Record<string, string> = {
+    content:
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> 内容',
+    commerce:
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> 商品',
+    customers:
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> 客户',
+    oem: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22h20"/><path d="M4 22V8l4 4V8l4 4V8l4 4v14"/><path d="M16 22V10l4-2v14"/></svg> OEM',
+    media:
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/></svg> 媒体',
+    ai: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16.01"/><line x1="16" y1="16" x2="16" y2="16.01"/></svg> AI',
+    growth:
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg> 增长',
+    system:
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> 系统',
+  };
+  const actionLabels: Record<string, string> = {
+    view: "查看",
+    create: "创建",
+    edit: "编辑",
+    publish: "发布",
+    delete: "删除",
+    export: "导出",
+    execute_ai: "执行AI",
+    approve_ai: "审批AI",
+    manage_settings: "管理设置",
+  };
+
+  function esc(s: unknown): string {
+    if (s == null) return "";
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  async function loadRoles() {
+    container.innerHTML =
+      '<div class="admin-skeleton" style="height:80px;margin-bottom:8px;"></div>'.repeat(4);
+    try {
+      const res = await fetch("/api/admin/v2/system/roles");
+      const json: any = await res.json();
+      if (!json.success) {
+        container.innerHTML =
+          '<div class="admin-error"><div class="admin-error-title">加载失败</div></div>';
+        return;
+      }
+
+      const roles = json.data || [];
+      if (roles.length === 0) {
+        container.innerHTML =
+          '<div class="admin-empty"><div class="admin-empty-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="admin-empty-title">暂无角色</div></div>';
+        return;
+      }
+
+      let html = '<div class="admin-flex-col admin-gap-3">';
+      for (const r of roles) {
+        const isSystem = SYSTEM_ROLES.includes(r.id);
+        html += `<div class="admin-card">
+          <div class="admin-card-body">
+            <div class="admin-flex admin-justify-between admin-items-center" style="align-items:flex-start;">
+              <div>
+                <div class="admin-flex admin-gap-2 admin-items-center admin-mb-4" style="margin-bottom:var(--sp-1);">
+                  <span style="font-size:var(--fs-lg);font-weight:600;color:var(--ink);">${esc(r.name)}</span>
+                  ${isSystem ? '<span class="admin-badge admin-badge-active">系统角色</span>' : '<span class="admin-badge admin-badge-draft">自定义</span>'}
+                </div>
+                <div style="font-size:var(--fs-base);color:var(--stone);">${esc(r.description || "无描述")}</div>
+                <div style="font-size:var(--fs-sm);color:var(--stone);margin-top:var(--sp-1);">${r.permission_count || 0} 个权限 · ${r.user_count || 0} 个用户</div>
+              </div>
+              <div class="admin-flex admin-gap-1">
+                <button class="admin-btn admin-btn-ghost admin-btn-sm" data-edit="${r.id}">编辑</button>
+                ${!isSystem ? `<button class="admin-btn admin-btn-ghost admin-btn-sm" data-delete="${r.id}" style="color:var(--admin-danger);">删除</button>` : ""}
+              </div>
+            </div>
+          </div>
+        </div>`;
+      }
+      html += "</div>";
+      container.innerHTML = html;
+
+      container
+        .querySelectorAll("[data-edit]")
+        .forEach((btn) =>
+          btn.addEventListener("click", () => openRole(btn.getAttribute("data-edit")!)),
+        );
+      container
+        .querySelectorAll("[data-delete]")
+        .forEach((btn) =>
+          btn.addEventListener("click", () => deleteRole(btn.getAttribute("data-delete")!)),
+        );
+    } catch {
+      container.innerHTML =
+        '<div class="admin-error"><div class="admin-error-title">网络错误</div></div>';
+    }
+  }
+
+  async function openRole(roleId: string) {
+    editingRoleId = roleId;
+    document.getElementById("role-modal-title")!.textContent = "编辑角色";
+
+    try {
+      const res = await fetch(`/api/admin/v2/system/roles?role_id=${roleId}`);
+      const json: any = await res.json();
+      if (!json.success) {
+        toast?.show({ message: "加载角色失败", type: "error" });
+        return;
+      }
+
+      const role = json.data;
+      (document.getElementById("role-name")! as unknown as HTMLInputElement).value =
+        role.name || "";
+      (document.getElementById("role-description")! as unknown as HTMLInputElement).value =
+        role.description || "";
+
+      // Disable name editing for system roles
+      (document.getElementById("role-name")! as unknown as HTMLInputElement).disabled =
+        SYSTEM_ROLES.includes(roleId);
+
+      // Build permissions grid
+      const existingPerms = new Set<string>();
+      for (const p of role.permissions || []) {
+        existingPerms.add(`${p.resource}:${p.action}`);
+      }
+      renderPermissionsGrid(existingPerms);
+    } catch {
+      toast?.show({ message: "网络错误", type: "error" });
+      return;
+    }
+
+    document.getElementById("role-modal")!.style.display = "flex";
+  }
+
+  function renderPermissionsGrid(selected?: Set<string>) {
+    const grid = document.getElementById("role-permissions-grid")!;
+    if (!selected) selected = new Set<string>();
+    let html = "";
+    for (const res of RESOURCES) {
+      html += `<div style="background:var(--paper);border-radius:var(--r-sm);padding:var(--sp-2);">
+        <div style="font-size:var(--fs-sm);font-weight:600;color:var(--ink);margin-bottom:var(--sp-1);">${resourceLabels[res] || res}</div>`;
+      for (const act of ACTIONS) {
+        const key = `${res}:${act}`;
+        const checked = selected.has(key) ? "checked" : "";
+        html += `<label style="display:flex;align-items:center;gap:var(--sp-1);font-size:var(--fs-xs);color:var(--stone);cursor:pointer;padding:2px 0;">
+          <input type="checkbox" data-perm="${key}" ${checked} style="accent-color:var(--accent);" /> ${actionLabels[act] || act}
+        </label>`;
+      }
+      html += "</div>";
+    }
+    grid.innerHTML = html;
+  }
+
+  document.getElementById("btn-create-role")!.addEventListener("click", () => {
+    editingRoleId = null;
+    document.getElementById("role-modal-title")!.textContent = "新建角色";
+    (document.getElementById("role-name")! as unknown as HTMLInputElement).value = "";
+    (document.getElementById("role-name")! as unknown as HTMLInputElement).disabled = false;
+    (document.getElementById("role-description")! as unknown as HTMLInputElement).value = "";
+    renderPermissionsGrid();
+    document.getElementById("role-modal")!.style.display = "flex";
+  });
+
+  document.getElementById("btn-role-cancel")!.addEventListener("click", () => {
+    document.getElementById("role-modal")!.style.display = "none";
+  });
+  document.getElementById("role-modal")!.addEventListener("click", (e) => {
+    if (e.target === document.getElementById("role-modal"))
+      document.getElementById("role-modal")!.style.display = "none";
+  });
+
+  document.getElementById("btn-role-save")!.addEventListener("click", async () => {
+    const name = (
+      document.getElementById("role-name")! as unknown as HTMLInputElement
+    ).value.trim();
+    const description = (
+      document.getElementById("role-description")! as unknown as HTMLInputElement
+    ).value.trim();
+    if (!name) {
+      toast?.show({ message: "角色名称不能为空", type: "error" });
+      return;
+    }
+
+    // Collect permissions
+    const checkboxes = document.querySelectorAll("[data-perm]") as NodeListOf<HTMLInputElement>;
+    const permissions: Array<{ resource: string; action: string }> = [];
+    checkboxes.forEach((cb) => {
+      if (cb.checked && cb.dataset.perm) {
+        const [resource, action] = cb.dataset.perm.split(":");
+        permissions.push({ resource, action });
+      }
+    });
+
+    if (editingRoleId) {
+      const res = await fetch("/api/admin/v2/system/roles", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role_id: editingRoleId, name, description, permissions }),
+      });
+      const json: any = await res.json();
+      toast?.show({
+        message: json.success ? "角色已更新" : json.error?.message || "更新失败",
+        type: json.success ? "success" : "error",
+      });
+    } else {
+      const res = await fetch("/api/admin/v2/system/roles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, description, permissions }),
+      });
+      const json: any = await res.json();
+      toast?.show({
+        message: json.success ? "角色已创建" : json.error?.message || "创建失败",
+        type: json.success ? "success" : "error",
+      });
+    }
+    document.getElementById("role-modal")!.style.display = "none";
+    loadRoles();
+  });
+
+  async function deleteRole(roleId: string) {
+    if (!confirm("确定删除此角色？")) return;
+    try {
+      const res = await fetch(`/api/admin/v2/system/roles?role_id=${roleId}`, { method: "DELETE" });
+      const json: any = await res.json();
+      toast?.show({
+        message: json.success ? "角色已删除" : json.error?.message || "删除失败",
+        type: json.success ? "success" : "error",
+      });
+      if (json.success) loadRoles();
+    } catch {
+      toast?.show({ message: "网络错误", type: "error" });
+    }
+  }
+
+  loadRoles();
+</script>

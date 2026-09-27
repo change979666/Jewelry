@@ -1,0 +1,99 @@
+---
+/**
+ * SocialContactButtons — 可复用的社交联系按钮组件
+ * 用于产品详情页、联系页、案例研究、指南页等
+ *
+ * Props:
+ * - variant: "full" (带文字的大按钮) | "icon" (仅图标的小按钮) | "header" (header紧凑版)
+ * - className: 自定义容器类名
+ * - refUrl: 当前页面 URL，自动附加 ?ref= 参数用于追踪来源
+ */
+import { t, type Locale } from "../i18n";
+import Icon from "./Icon.astro";
+import settings from "../data/settings.json";
+
+const locale = (Astro.props.locale as Locale) ?? "en";
+const variant = Astro.props.variant ?? "full";
+const containerClass = Astro.props.className ?? "";
+const refUrl = Astro.props.refUrl ?? "";
+
+// Social links from settings (with hardcoded fallbacks)
+const socialLinks = {
+  facebook:
+    (settings.social as Record<string, string>).facebook ||
+    "https://www.facebook.com/profile.php?id=61592517126738",
+  messenger:
+    (settings.social as Record<string, string>).messenger || "https://m.me/1299111856611532",
+  whatsapp:
+    (settings.social as Record<string, string>).whatsapp || "https://wa.me/message/6XKDZ5VGJ56DE1",
+};
+
+// Append page ref for source tracking across all platforms
+function withRef(href: string): string {
+  if (!refUrl) return href;
+  const sep = href.includes("?") ? "&" : "?";
+  return href + sep + "ref=" + encodeURIComponent(refUrl);
+}
+
+const buttons = [
+  {
+    key: "facebook",
+    label: t(locale, "shop.facebook_page"),
+    color: "#1877F2",
+    href: withRef(socialLinks.facebook),
+    track: "click_facebook",
+  },
+  {
+    key: "messenger",
+    label: t(locale, "shop.messenger"),
+    color: "#00C4FF",
+    href: withRef(socialLinks.messenger),
+    track: "click_messenger",
+  },
+  {
+    key: "whatsapp",
+    label: t(locale, "shop.whatsapp_chat"),
+    color: "#25D366",
+    href: withRef(socialLinks.whatsapp),
+    track: "click_whatsapp",
+  },
+];
+---
+
+<div class={containerClass}>
+  {
+    variant === "full" ? (
+      <div class="space-y-2">
+        {buttons.map((btn) => (
+          <a
+            href={btn.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-track={btn.track}
+            class="flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-medium text-white transition-all hover:opacity-90 hover:shadow-md min-w-0 overflow-hidden"
+            style={`background-color: ${btn.color};`}
+          >
+            <Icon name={btn.key} size={18} class="shrink-0" />
+            <span class="truncate">{btn.label}</span>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <div class="flex flex-wrap items-center gap-2">
+        {buttons.map((btn) => (
+          <a
+            href={btn.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-track={btn.track}
+            aria-label={btn.label}
+            class="flex h-9 w-9 items-center justify-center rounded-full text-white transition-opacity hover:opacity-85"
+            style={`background-color: ${btn.color};`}
+          >
+            <Icon name={btn.key} size={16} />
+          </a>
+        ))}
+      </div>
+    )
+  }
+</div>

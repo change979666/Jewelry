@@ -1,0 +1,21 @@
+---
+import { SITE } from "../consts";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="refresh" content="0; url=/en" />
+    <link rel="canonical" href={SITE.url + "/en"} />
+    <link rel="alternate" hreflang="x-default" href="/en" />
+    <title>{SITE.name}</title>
+  </head>
+  <body>
+    <p>Redirecting to <a href="/en">English</a>…</p>
+    <script is:inline>
+      location.replace("/en");
+    </script>
+  </body>
+</html>

@@ -1,0 +1,118 @@
+---
+import Icon from "./Icon.astro";
+
+interface Props {
+  images: string[];
+  title: string;
+  icon?: string;
+}
+const { images, title, icon = "image" } = Astro.props;
+const hasImages = images.length > 0;
+const thumbs = images.slice(0, 4);
+---
+
+<div class="mx-auto max-w-4xl">
+  {
+    hasImages ? (
+      <>
+        <figure class="reveal aspect-[16/9] overflow-hidden rounded-2xl bg-beige">
+          <img
+            id="gallery-main"
+            src={images[0]}
+            alt={title}
+            loading="lazy"
+            class="h-full w-full cursor-zoom-in object-cover"
+            data-full={images[0]}
+          />
+        </figure>
+        {thumbs.length > 1 && (
+          <div class="mt-4 grid grid-cols-4 gap-4">
+            {thumbs.map((src, i) => (
+              <button
+                type="button"
+                class="gallery-thumb aspect-[4/3] overflow-hidden rounded-xl bg-paper ring-offset-2 transition focus:outline-none"
+                data-full={src}
+                class:list={[{ "ring-2 ring-accent": i === 0 }]}
+              >
+                <img
+                  src={src}
+                  alt={`${title} ${i + 1}`}
+                  loading="lazy"
+                  class="h-full w-full object-cover"
+                />
+              </button>
+            ))}
+          </div>
+        )}
+      </>
+    ) : (
+      <div class="reveal aspect-[16/9] overflow-hidden rounded-2xl bg-beige">
+        <div class="grid h-full place-items-center text-accent/40">
+          <Icon name={icon} size={80} />
+        </div>
+      </div>
+    )
+  }
+</div>
+
+<!-- Lightweight lightbox -->
+<div
+  id="gallery-lightbox"
+  class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/85 p-6"
+  role="dialog"
+  aria-modal="true"
+>
+  <button
+    type="button"
+    id="gallery-lb-close"
+    class="absolute right-5 top-5 text-white/80 transition hover:text-white"
+    aria-label="Close"
+  >
+    <Icon name="close" size={30} />
+  </button>
+  <img
+    id="gallery-lb-img"
+    src=""
+    alt={title}
+    class="max-h-[85vh] max-w-full rounded-xl object-contain"
+  />
+</div>
+
+<script>
+  const main = document.getElementById("gallery-main") as HTMLImageElement | null;
+  const lb = document.getElementById("gallery-lightbox");
+  const lbImg = document.getElementById("gallery-lb-img") as HTMLImageElement | null;
+  const lbClose = document.getElementById("gallery-lb-close");
+  if (main && lb && lbImg) {
+    const open = (src: string) => {
+      lbImg.src = src;
+      lb.classList.remove("hidden");
+      lb.classList.add("flex");
+    };
+    const close = () => {
+      lb.classList.add("hidden");
+      lb.classList.remove("flex");
+    };
+    main.addEventListener("click", () => open(main.dataset.full || main.src));
+    document.querySelectorAll<HTMLButtonElement>(".gallery-thumb").forEach((t) => {
+      t.addEventListener("click", () => {
+        const src = t.dataset.full || "";
+        main.src = src;
+        main.dataset.full = src;
+        document
+          .querySelectorAll(".gallery-thumb")
+          .forEach((x) => x.classList.remove("ring-2", "ring-accent"));
+        t.classList.add("ring-2", "ring-accent");
+      });
+      // Double-click a thumbnail to open the lightbox directly
+      t.addEventListener("dblclick", () => open(t.dataset.full || ""));
+    });
+    lbClose?.addEventListener("click", close);
+    lb.addEventListener("click", (e) => {
+      if (e.target === lb) close();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") close();
+    });
+  }
+</script>

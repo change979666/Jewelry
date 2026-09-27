@@ -1,0 +1,160 @@
+---
+// V2 补齐 — 订阅者管理（对齐 V1 /api/admin/subscribers：列表/搜索/CSV导出/删除）
+import "../../../styles/admin-v2.css";
+import AdminShell from "../../../components/admin/layout/AdminShell.astro";
+import Sidebar from "../../../components/admin/layout/Sidebar.astro";
+import Topbar from "../../../components/admin/layout/Topbar.astro";
+import Toast from "../../../components/admin/shared/Toast.astro";
+---
+
+<AdminShell title="订阅者" activeModule="customers">
+  <Sidebar slot="sidebar" activeModule="customers" />
+  <Topbar
+    slot="topbar-left"
+    title="订阅者"
+    breadcrumbs={[
+      { label: "首页", href: "/admin-v2" },
+      { label: "客户", href: "/admin-v2/customers" },
+      { label: "订阅者" },
+    ]}
+  />
+  <Toast />
+
+  <div class="admin-flex admin-flex-col admin-gap-6">
+    <header
+      class="admin-page-header admin-flex admin-items-center admin-justify-between"
+      style="flex-wrap:wrap;"
+    >
+      <div>
+        <h1 class="admin-page-title">订阅者</h1>
+        <p class="admin-page-desc">网站 Newsletter（邮件订阅）收集名单，仅查看与导出，不自动群发</p>
+      </div>
+      <div class="admin-flex admin-gap-2">
+        <input
+          type="text"
+          id="search-input"
+          placeholder="搜索邮箱/来源…"
+          class="admin-input"
+          style="max-width:240px;"
+        />
+        <button class="admin-btn admin-btn-secondary" data-once onclick="exportCsv()"
+          >⬇ 导出 CSV</button
+        >
+        <button class="admin-btn admin-btn-secondary" data-once onclick="load()">刷新</button>
+      </div>
+    </header>
+
+    <section class="admin-flex admin-gap-3" style="flex-wrap:wrap;">
+      <div class="admin-kpi-card">
+        <div class="admin-kpi-label">总订阅数</div>
+        <div id="kpi-total" class="admin-kpi-value">—</div>
+      </div>
+      <div class="admin-kpi-card">
+        <div class="admin-kpi-label">本周新增</div>
+        <div id="kpi-week" class="admin-kpi-value">—</div>
+      </div>
+    </section>
+
+    <section class="admin-card">
+      <div class="admin-table-wrapper">
+        <table class="admin-table">
+          <thead>
+            <tr><th>日期</th><th>邮箱</th><th>语言</th><th>来源</th><th>操作</th></tr>
+          </thead>
+          <tbody id="sub-list">
+            <tr
+              ><td colspan="5" class="admin-text-center admin-text-muted" style="padding:32px;"
+                ><span class="admin-skeleton-text"></span></td
+              ></tr
+            >
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script is:inline>
+    let currentSearch = "";
+
+    async function load() {
+      const url =
+        "/api/admin/subscribers" +
+        (currentSearch ? `?search=${encodeURIComponent(currentSearch)}` : "");
+      const res = await fetch(url);
+      const data = await res.json();
+      const tbody = document.getElementById("sub-list");
+      if (!data.ok) {
+        tbody.innerHTML =
+          '<tr><td colspan="5" class="admin-text-center admin-text-muted" style="padding:32px;">加载失败</td></tr>';
+        return;
+      }
+
+      const list = data.subscribers || [];
+      document.getElementById("kpi-total").textContent = data.total ?? list.length;
+      const weekAgo = Date.now() - 7 * 86400000;
+      document.getElementById("kpi-week").textContent = list.filter(
+        (s) => new Date(s.createdAt || 0).getTime() >= weekAgo,
+      ).length;
+
+      if (!list.length) {
+        tbody.innerHTML =
+          '<tr><td colspan="5" class="admin-text-center admin-text-muted" style="padding:32px;">暂无订阅者</td></tr>';
+      } else {
+        tbody.innerHTML = list
+          .map(
+            (s) => `
+          <tr>
+            <td style="white-space:nowrap;">${(s.createdAt || "").slice(0, 10)}</td>
+            <td><strong>${esc(s.email)}</strong></td>
+            <td>${esc(s.locale) || "—"}</td>
+            <td>${esc(s.source) || "—"}</td>
+            <td><button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="delSub(${s.id})">删除</button></td>
+          </tr>
+        `,
+          )
+          .join("");
+      }
+    }
+
+    function esc(s) {
+      return s
+        ? String(s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+        : "";
+    }
+
+    async function delSub(id) {
+      if (!confirm("确定删除该订阅者？")) return;
+      const r = await fetch("/api/admin/subscribers", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const j = await r.json();
+      if (window.showToast)
+        window.showToast(j.ok ? "已删除" : j.error || "删除失败", j.ok ? "success" : "error");
+      load();
+    }
+    window.delSub = delSub;
+
+    function exportCsv() {
+      window.location.href = "/api/admin/subscribers?export=csv";
+    }
+    window.exportCsv = exportCsv;
+    window.load = load;
+
+    let searchTimer;
+    document.getElementById("search-input").addEventListener("input", (e) => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        currentSearch = e.target.value.trim();
+        load();
+      }, 300);
+    });
+
+    load();
+  </script>
+</AdminShell>

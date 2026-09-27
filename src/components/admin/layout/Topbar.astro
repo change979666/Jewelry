@@ -1,0 +1,27 @@
+---
+// Topbar — 顶部工具栏（Breadcrumb + 标题）
+export interface Props {
+  title?: string;
+  breadcrumbs?: { label: string; href?: string }[];
+}
+const { breadcrumbs = [] } = Astro.props;
+---
+
+<div class="admin-topbar-root">
+  {
+    breadcrumbs.length > 0 && (
+      <nav class="admin-topbar-breadcrumb">
+        {breadcrumbs.map((crumb, i) => (
+          <>
+            {i > 0 && <span class="sep">/</span>}
+            {crumb.href ? (
+              <a href={crumb.href}>{crumb.label}</a>
+            ) : (
+              <span class="admin-topbar-current">{crumb.label}</span>
+            )}
+          </>
+        ))}
+      </nav>
+    )
+  }
+</div>

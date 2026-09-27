@@ -1,0 +1,433 @@
+---
+// Phase 4 — V2 Content Editor (Three-Column Layout)
+// Reads entity type, key, locale from query params: ?type=blog&key=xxx&locale=en
+import "../../../styles/admin-v2.css";
+import AdminShell from "../../../components/admin/layout/AdminShell.astro";
+import Sidebar from "../../../components/admin/layout/Sidebar.astro";
+import Topbar from "../../../components/admin/layout/Topbar.astro";
+import Toast from "../../../components/admin/shared/Toast.astro";
+import Skeleton from "../../../components/admin/shared/Skeleton.astro";
+---
+
+<AdminShell title="内容编辑" activeModule="content">
+  <Sidebar slot="sidebar" activeModule="content" />
+  <Topbar
+    slot="topbar-left"
+    title="内容编辑"
+    breadcrumbs={[
+      { label: "首页", href: "/admin-v2" },
+      { label: "内容", href: "/admin-v2/content" },
+      { label: "编辑" },
+    ]}
+  />
+  <Toast />
+
+  <div class="admin-flex admin-gap-4" style="height:calc(100vh - 120px);">
+    <!-- Left: Frontmatter -->
+    <div class="admin-card" style="flex:0 0 280px;overflow-y:auto;">
+      <div class="admin-card-header">
+        <span class="admin-card-title">属性字段</span>
+      </div>
+      <div class="admin-card-body" id="frontmatter-fields">
+        <Skeleton lines={8} height="28px" />
+      </div>
+    </div>
+
+    <!-- Center: Markdown Editor -->
+    <div class="admin-card" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <div class="admin-card-header">
+        <div class="admin-flex admin-gap-1">
+          <button class="editor-tab active" data-tab="edit">编辑</button>
+          <button class="editor-tab" data-tab="preview">预览</button>
+        </div>
+        <div class="admin-flex admin-gap-2">
+          <button class="admin-btn admin-btn-secondary" id="btn-save-draft">存草稿</button>
+          <button class="admin-btn admin-btn-primary" id="btn-publish">发布</button>
+        </div>
+      </div>
+      <div style="flex:1;position:relative;">
+        <textarea
+          id="markdown-editor"
+          class="admin-textarea"
+          style="width:100%;height:100%;border:none;border-radius:0;padding:var(--sp-4);font-family:monospace;font-size:var(--fs-md);resize:none;background:transparent;"
+          placeholder="Markdown 内容..."></textarea>
+        <div
+          id="markdown-preview"
+          style="display:none;width:100%;height:100%;padding:var(--sp-4);overflow-y:auto;font-size:var(--fs-md);line-height:1.6;"
+        >
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Meta + Publish Status + Versions -->
+    <div style="flex:0 0 260px;display:flex;flex-direction:column;gap:var(--sp-3);">
+      <!-- Publish Status -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <span class="admin-card-title">发布状态</span>
+        </div>
+        <div class="admin-card-body" id="publish-status">
+          <span class="admin-text-sm admin-text-muted"
+            ><span class="admin-skeleton-text"></span></span
+          >
+        </div>
+      </div>
+
+      <!-- Locale Selector -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <span class="admin-card-title">语言版本</span>
+        </div>
+        <div class="admin-card-body">
+          <div class="admin-flex admin-gap-1" id="locale-tabs">
+            <button class="locale-tab active" data-locale="en">EN</button>
+            <button class="locale-tab" data-locale="es">ES</button>
+            <button class="locale-tab" data-locale="de">DE</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Version History -->
+      <div class="admin-card" style="flex:1;overflow-y:auto;">
+        <div class="admin-card-header">
+          <span class="admin-card-title">版本历史</span>
+        </div>
+        <div class="admin-card-body" id="version-history">
+          <span class="admin-text-sm admin-text-muted"
+            ><span class="admin-skeleton-text"></span></span
+          >
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <span class="admin-card-title">快捷操作</span>
+        </div>
+        <div class="admin-card-body">
+          <div class="admin-flex-col admin-gap-2">
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" id="btn-ai-assist"
+              >AI 润色</button
+            >
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" id="btn-copy-assets"
+              >文案资产</button
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</AdminShell>
+
+<script>
+  const API = "/api/admin/v2/content";
+  const toast = (window as any).AromisoToast;
+
+  // Get entity info from query params
+  const urlParams = new URLSearchParams(window.location.search);
+  const entityType = urlParams.get("type") || "blog";
+  const entityKey = urlParams.get("key") || "";
+  let currentLocale = urlParams.get("locale") || "en";
+
+  let currentData: any = null;
+  let isDirty = false;
+
+  function esc(s: unknown): string {
+    if (s == null) return "";
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  async function loadContent() {
+    if (!entityKey) {
+      toast?.show?.("缺少内容 key", "error");
+      return;
+    }
+    try {
+      const res = await fetch(`${API}/${entityType}/${entityKey}?locale=${currentLocale}`);
+      if (res.status === 401) {
+        window.location.href = "/admin-v2/login";
+        return;
+      }
+      const json = (await res.json()) as any;
+      if (!json.success) {
+        toast?.show?.("加载失败", "error");
+        return;
+      }
+
+      currentData = json.data;
+      renderFrontmatter(currentData.frontmatter);
+      renderEditor(currentData.body);
+      renderPublishStatus(currentData.publish_status);
+      renderVersions(currentData.versions);
+    } catch {
+      toast?.show?.("网络错误", "error");
+    }
+  }
+
+  function renderFrontmatter(fm: Record<string, unknown>) {
+    const container = document.getElementById("frontmatter-fields")!;
+    const fields = [
+      "title",
+      "excerpt",
+      "category",
+      "moq",
+      "leadTime",
+      "origin",
+      "pubDate",
+      "country",
+      "clientType",
+    ];
+    let html = "";
+
+    for (const field of fields) {
+      const val = fm[field] ?? "";
+      if (typeof val === "string" || typeof val === "number") {
+        html += `<div class="admin-form-group">
+          <label class="admin-label" style="text-transform:uppercase;">${esc(field)}</label>
+          <input type="text" class="admin-input fm-input" data-field="${esc(field)}" value="${esc(val)}" style="width:100%;" />
+        </div>`;
+      }
+    }
+
+    container.innerHTML = html;
+    container.querySelectorAll(".fm-input").forEach((input) => {
+      input.addEventListener("input", () => {
+        isDirty = true;
+      });
+    });
+  }
+
+  function renderEditor(body: string) {
+    const editor = document.getElementById("markdown-editor") as HTMLTextAreaElement;
+    editor.value = body;
+    editor.addEventListener("input", () => {
+      isDirty = true;
+    });
+  }
+
+  function renderPublishStatus(status: any) {
+    const container = document.getElementById("publish-status")!;
+    if (!status) {
+      container.innerHTML = '<span class="admin-text-sm admin-text-muted">未发布</span>';
+      return;
+    }
+    const colors: Record<string, string> = {
+      deployed: "var(--admin-success)",
+      building: "var(--admin-info)",
+      build_failed: "var(--admin-danger)",
+      committing: "var(--admin-warning)",
+    };
+    const labels: Record<string, string> = {
+      deployed: "已部署",
+      building: "构建中",
+      build_failed: "构建失败",
+      committing: "提交中",
+    };
+    container.innerHTML = `
+      <div class="admin-font-semibold" style="font-size:var(--fs-base);color:${colors[status.status] ?? "var(--ink)"};">${labels[status.status] ?? status.status}</div>
+      ${status.github_commit_sha ? `<div style="font-size:var(--fs-xs);color:var(--stone);margin-top:var(--sp-1);">SHA: ${status.github_commit_sha.slice(0, 8)}</div>` : ""}
+      ${status.error_message ? `<div style="font-size:var(--fs-xs);color:var(--admin-danger);margin-top:var(--sp-1);">${esc(status.error_message)}</div>` : ""}
+      <div style="font-size:var(--fs-xs);color:var(--stone);margin-top:var(--sp-1);">${status.created_at ? new Date(status.created_at).toLocaleString("zh-CN") : ""}</div>
+    `;
+  }
+
+  function renderVersions(versions: any[]) {
+    const container = document.getElementById("version-history")!;
+    if (!versions || versions.length === 0) {
+      container.innerHTML = '<span class="admin-text-sm admin-text-muted">暂无版本记录</span>';
+      return;
+    }
+    container.innerHTML = versions
+      .slice(0, 10)
+      .map(
+        (v) => `
+      <div style="padding:var(--sp-2) 0;border-bottom:1px solid var(--line);cursor:pointer;" class="version-row" data-id="${v.id}" data-sha="${v.github_commit_sha || ""}">
+        <div style="font-size:var(--fs-sm);font-weight:500;color:var(--ink);">v${v.version} — ${esc(v.author)}</div>
+        <div style="font-size:var(--fs-xs);color:var(--stone);">${esc(v.source)} · ${v.created_at ? new Date(v.created_at).toLocaleDateString("zh-CN") : ""}</div>
+      </div>
+    `,
+      )
+      .join("");
+
+    container.querySelectorAll(".version-row").forEach((row) => {
+      row.addEventListener("click", async () => {
+        const versionId = (row as HTMLElement).dataset.id;
+        if (!confirm("回滚到此版本？")) return;
+        try {
+          const res = await fetch(`${API}/rollback`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              entity_type: entityType,
+              entity_key: entityKey,
+              locale: currentLocale,
+              target_version_id: versionId,
+            }),
+          });
+          const json = (await res.json()) as any;
+          if (json.success) {
+            toast?.show?.("回滚成功", "success");
+            loadContent();
+          } else toast?.show?.(json.error?.message || "回滚失败", "error");
+        } catch {
+          toast?.show?.("网络错误", "error");
+        }
+      });
+    });
+  }
+
+  // Locale tabs
+  document.getElementById("locale-tabs")?.addEventListener("click", (e) => {
+    const btn = (e.target as HTMLElement).closest(".locale-tab") as HTMLElement;
+    if (!btn) return;
+    document.querySelectorAll(".locale-tab").forEach((t) => t.classList.remove("active"));
+    btn.classList.add("active");
+    currentLocale = btn.dataset.locale!;
+    loadContent();
+  });
+
+  // Editor tabs (edit/preview)
+  document.querySelectorAll(".editor-tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".editor-tab").forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+      const mode = (tab as HTMLElement).dataset.tab;
+      const editor = document.getElementById("markdown-editor")!;
+      const preview = document.getElementById("markdown-preview")!;
+      if (mode === "preview") {
+        editor.style.display = "none";
+        preview.style.display = "block";
+        preview.innerHTML = `<div style="font-size:var(--fs-md);line-height:1.6;">${simpleMarkdown((document.getElementById("markdown-editor") as HTMLTextAreaElement).value)}</div>`;
+      } else {
+        editor.style.display = "block";
+        preview.style.display = "none";
+      }
+    });
+  });
+
+  function simpleMarkdown(md: string): string {
+    return esc(md)
+      .replace(
+        /^### (.+)$/gm,
+        '<h3 style="font-size:var(--fs-xl);font-weight:600;margin:var(--sp-4) 0 var(--sp-2);">$1</h3>',
+      )
+      .replace(
+        /^## (.+)$/gm,
+        '<h2 style="font-size:var(--fs-2xl);font-weight:600;margin:var(--sp-5) 0 var(--sp-3);">$1</h2>',
+      )
+      .replace(
+        /^# (.+)$/gm,
+        '<h1 style="font-size:var(--fs-3xl);font-weight:600;margin:var(--sp-6) 0 var(--sp-4);">$1</h1>',
+      )
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.+?)\*/g, "<em>$1</em>")
+      .replace(/\n\n/g, '</p><p style="margin:var(--sp-2) 0;">')
+      .replace(/\n/g, "<br>");
+  }
+
+  // Save draft
+  document.getElementById("btn-save-draft")?.addEventListener("click", async () => {
+    const fm = getFrontmatter();
+    const body = (document.getElementById("markdown-editor") as HTMLTextAreaElement).value;
+    try {
+      const res = await fetch(`${API}/${entityType}/${entityKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ frontmatter: fm, content: body, status: "draft" }),
+      });
+      const json = (await res.json()) as any;
+      if (json.success) {
+        toast?.show?.("草稿已保存", "success");
+        isDirty = false;
+      } else toast?.show?.(json.error?.message || "保存失败", "error");
+    } catch {
+      toast?.show?.("网络错误", "error");
+    }
+  });
+
+  // Publish
+  document.getElementById("btn-publish")?.addEventListener("click", async () => {
+    const fm = getFrontmatter();
+    const body = (document.getElementById("markdown-editor") as HTMLTextAreaElement).value;
+    if (!confirm(`确认发布 ${entityType}/${entityKey} (${currentLocale})？`)) return;
+    try {
+      const res = await fetch(`${API}/publish`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          entity_type: entityType,
+          entity_key: entityKey,
+          locale: currentLocale,
+          frontmatter: fm,
+          body,
+        }),
+      });
+      const json = (await res.json()) as any;
+      if (json.success) {
+        toast?.show?.("发布成功", "success");
+        isDirty = false;
+        loadContent();
+      } else toast?.show?.(json.error?.message || "发布失败", "error");
+    } catch {
+      toast?.show?.("网络错误", "error");
+    }
+  });
+
+  function getFrontmatter(): Record<string, unknown> {
+    const fm: Record<string, unknown> = {};
+    document.querySelectorAll(".fm-input").forEach((input) => {
+      const field = (input as HTMLInputElement).dataset.field!;
+      fm[field] = (input as HTMLInputElement).value;
+    });
+    return fm;
+  }
+
+  // Warn on unsaved changes
+  window.addEventListener("beforeunload", (e) => {
+    if (isDirty) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  });
+
+  // Init
+  loadContent();
+</script>
+
+<style>
+  .editor-tab {
+    padding: var(--sp-1) var(--sp-3);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    background: var(--card);
+    color: var(--stone);
+    font-size: var(--fs-sm);
+    cursor: pointer;
+  }
+  .editor-tab:hover {
+    border-color: var(--admin-primary);
+  }
+  .editor-tab.active {
+    background: var(--admin-primary-soft);
+    border-color: var(--admin-primary);
+    color: var(--admin-primary);
+  }
+  .locale-tab {
+    padding: var(--sp-1) var(--sp-3);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    background: var(--card);
+    color: var(--stone);
+    font-size: var(--fs-sm);
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .locale-tab:hover {
+    border-color: var(--admin-primary);
+  }
+  .locale-tab.active {
+    background: var(--admin-primary);
+    color: white;
+    border-color: var(--admin-primary);
+  }
+</style>

@@ -1,0 +1,243 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Icon from "../../components/Icon.astro";
+import { t, localeStaticPaths } from "../../i18n";
+import type { Locale } from "../../i18n";
+import { getBlogPosts } from "../../lib/content";
+import { getRelativeLocaleUrl } from "astro:i18n";
+
+export const getStaticPaths = localeStaticPaths;
+
+const locale = (Astro.props.locale as Locale) ?? "en";
+const posts = await getBlogPosts(locale);
+
+const dateFmt = new Intl.DateTimeFormat(
+  locale === "de" ? "de-DE" : locale === "es" ? "es-ES" : "en-US",
+  { year: "numeric", month: "short", day: "numeric" },
+);
+const postHref = (key: string) => getRelativeLocaleUrl(locale, `/blog/${key}`);
+
+// Latest post becomes the hero; the rest fill the filterable grid.
+const [latest, ...rest] = posts;
+
+// Unique categories across all posts for the filter pills.
+const categories = [...new Set(posts.map((p) => p.data.category).filter(Boolean))].sort((a, b) =>
+  a.localeCompare(b),
+);
+
+// Build a lowercase search haystack per post (title + excerpt + category + tags).
+const searchHaystack = (p: (typeof posts)[number]) =>
+  [p.data.title, p.data.excerpt, p.data.category, ...(p.data.tags ?? [])]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+---
+
+<BaseLayout
+  locale={locale}
+  title={t(locale, "blog.page_title")}
+  description={t(locale, "blog.page_subtitle")}
+>
+  <!-- Hero -->
+  <section class="container-x py-20 lg:py-28">
+    <div class="mx-auto max-w-2xl text-center reveal">
+      <p class="eyebrow">{t(locale, "blog.eyebrow")}</p>
+      <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
+        {t(locale, "blog.page_title")}
+      </h1>
+      <p class="mt-4 text-lg leading-relaxed text-stone">{t(locale, "blog.page_subtitle")}</p>
+    </div>
+  </section>
+
+  {
+    posts.length === 0 ? (
+      <section class="container-x pb-24">
+        <p class="reveal text-center text-stone">{t(locale, "blog.empty")}</p>
+      </section>
+    ) : (
+      <>
+        {/* Latest post hero */}
+        {latest && (
+          <section class="container-x pb-14">
+            <a
+              href={postHref(latest.data.key)}
+              class="reveal card-surface group grid overflow-hidden rounded-3xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_60px_-30px_rgba(33,31,27,0.5)] md:grid-cols-2"
+            >
+              <div class="relative aspect-[16/9] overflow-hidden bg-beige md:aspect-auto md:h-full">
+                {latest.data.cover ? (
+                  <img
+                    src={latest.data.cover}
+                    alt={latest.data.title}
+                    class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                    loading="eager"
+                  />
+                ) : (
+                  <div class="grid h-full place-items-center text-accent/30">
+                    <Icon name="drop" size={64} />
+                  </div>
+                )}
+                <span class="absolute left-5 top-5 inline-flex items-center gap-1.5 rounded-full bg-ink/85 px-3.5 py-1.5 text-xs font-semibold text-paper backdrop-blur">
+                  <Icon name="clock" size={13} />
+                  {t(locale, "blog.latest")}
+                </span>
+              </div>
+              <div class="flex flex-col justify-center p-8 lg:p-12">
+                <div class="mb-3 flex items-center gap-3 text-xs text-stone">
+                  <span class="rounded-full bg-beige px-3 py-1 font-medium text-accent">
+                    {latest.data.category}
+                  </span>
+                  <span>{dateFmt.format(latest.data.pubDate)}</span>
+                </div>
+                <h2 class="text-2xl font-semibold leading-snug tracking-tight sm:text-3xl">
+                  {latest.data.title}
+                </h2>
+                <p class="mt-4 line-clamp-3 leading-relaxed text-stone">{latest.data.excerpt}</p>
+                <span class="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-accent transition-colors group-hover:text-ink">
+                  {t(locale, "blog.read_more")}
+                </span>
+              </div>
+            </a>
+          </section>
+        )}
+
+        {/* Search + category filter */}
+        <section class="container-x pb-8">
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div class="relative w-full lg:max-w-xs">
+              <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-stone">
+                <Icon name="search" size={16} />
+              </span>
+              <input
+                id="blog-search"
+                type="search"
+                placeholder={t(locale, "blog.search_placeholder")}
+                autocomplete="off"
+                class="w-full rounded-full border border-line bg-card py-2.5 pl-11 pr-4 text-sm outline-none transition-colors focus:border-accent"
+              />
+            </div>
+            <div id="blog-cats" class="flex flex-wrap gap-2">
+              <button
+                data-cat="all"
+                class="blog-cat-btn active rounded-full border border-line px-4 py-2 text-sm font-medium transition-all hover:bg-beige"
+              >
+                {t(locale, "blog.all_categories")}
+              </button>
+              {categories.map((cat) => (
+                <button
+                  data-cat={cat}
+                  class="blog-cat-btn rounded-full border border-line px-4 py-2 text-sm font-medium transition-all hover:bg-beige"
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p class="mt-5 text-sm text-stone">
+            <span id="blog-count" class="font-semibold text-ink">
+              {rest.length}
+            </span>
+            {t(locale, "blog.articles_count")}
+          </p>
+        </section>
+
+        {/* Blog grid */}
+        <section class="container-x pb-24">
+          <div id="blog-grid" class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {rest.map((post) => (
+              <a
+                href={postHref(post.data.key)}
+                data-category={post.data.category}
+                data-search={searchHaystack(post)}
+                class="blog-card reveal card-surface group block overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_50px_-28px_rgba(33,31,27,0.45)]"
+              >
+                <div class="aspect-[16/9] bg-beige transition-transform duration-500 group-hover:scale-[1.02]">
+                  {post.data.cover ? (
+                    <img
+                      src={post.data.cover}
+                      alt={post.data.title}
+                      class="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div class="grid h-full place-items-center text-accent/30">
+                      <Icon name="drop" size={48} />
+                    </div>
+                  )}
+                </div>
+                <div class="p-6">
+                  <div class="mb-2 flex items-center gap-3 text-xs text-stone">
+                    <span class="rounded-full bg-beige px-3 py-1 font-medium text-accent">
+                      {post.data.category}
+                    </span>
+                    <span>{dateFmt.format(post.data.pubDate)}</span>
+                  </div>
+                  <h2 class="text-lg font-semibold leading-snug">{post.data.title}</h2>
+                  <p class="mt-2 line-clamp-3 text-sm leading-relaxed text-stone">
+                    {post.data.excerpt}
+                  </p>
+                  <span class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-accent transition-colors group-hover:text-ink">
+                    {t(locale, "blog.read_more")}
+                  </span>
+                </div>
+              </a>
+            ))}
+          </div>
+
+          {/* No results */}
+          <div id="blog-no-results" class="hidden py-16 text-center">
+            <p class="mx-auto max-w-md text-stone">{t(locale, "blog.no_results")}</p>
+          </div>
+        </section>
+      </>
+    )
+  }
+</BaseLayout>
+
+<script is:inline>
+  (function () {
+    const search = document.getElementById("blog-search");
+    const cards = Array.prototype.slice.call(document.querySelectorAll("#blog-grid .blog-card"));
+    const catBtns = Array.prototype.slice.call(document.querySelectorAll(".blog-cat-btn"));
+    const countEl = document.getElementById("blog-count");
+    const noResults = document.getElementById("blog-no-results");
+    const grid = document.getElementById("blog-grid");
+    if (!search || !cards.length) return;
+
+    let activeCat = "all";
+
+    function apply() {
+      const q = (search.value || "").trim().toLowerCase();
+      let visible = 0;
+      cards.forEach(function (card) {
+        const matchesCat = activeCat === "all" || card.getAttribute("data-category") === activeCat;
+        const matchesQ = !q || (card.getAttribute("data-search") || "").indexOf(q) !== -1;
+        const show = matchesCat && matchesQ;
+        card.style.display = show ? "" : "none";
+        if (show) visible++;
+      });
+      if (countEl) countEl.textContent = visible;
+      if (noResults) noResults.classList.toggle("hidden", visible !== 0);
+      if (grid) grid.classList.toggle("hidden", visible === 0);
+    }
+
+    search.addEventListener("input", apply);
+    catBtns.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        activeCat = this.getAttribute("data-cat");
+        catBtns.forEach(function (b) {
+          b.classList.remove("active");
+        });
+        this.classList.add("active");
+        apply();
+      });
+    });
+  })();
+</script>
+
+<style>
+  .blog-cat-btn.active {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+</style>

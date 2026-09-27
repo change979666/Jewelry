@@ -1,0 +1,322 @@
+---
+import { NAV, SITE_CFG } from "../consts";
+import { t } from "../i18n";
+import type { Locale } from "../i18n";
+import { LOCALE_LIST, stripLocale } from "../i18n";
+import { getRelativeLocaleUrl } from "astro:i18n";
+import Icon from "./Icon.astro";
+import SocialContactButtons from "./SocialContactButtons.astro";
+import settings from "../data/settings.json";
+import { getProducts, getBlogPosts } from "../lib/content";
+
+const _l = (Astro.props.locale as Locale) ?? (Astro.currentLocale as Locale) ?? "en";
+const locale = (LOCALE_LIST.includes(_l) ? _l : "en") as Locale;
+
+const base = stripLocale(Astro.url.pathname);
+const isActive = (href: string) =>
+  href === "/" ? base === "/" || base === "" : base === href || base.startsWith(href + "/");
+
+const href = (p: string) => getRelativeLocaleUrl(locale, p);
+const waNum = settings.social.whatsapp || SITE_CFG.whatsapp;
+const whatsappHref = waNum ? (waNum.startsWith("http") ? waNum : `https://wa.me/${waNum}`) : "";
+const _facebookUrl = (settings.social as Record<string, string>).facebook || "";
+
+// Flatten NAV for the footer sitemap: top-level pages only (children get their
+// own dedicated columns below), keeps the Explore column compact.
+const footerLinks = NAV.filter((item) => item.href).map((item) => ({
+  href: item.href as string,
+  labelKey: `nav.${item.key}`,
+}));
+
+// SEO internal-link columns. Popular products = featured-first; popular
+// articles = most recent. Categories link to the three product lines.
+const popularProducts = (await getProducts(locale)).slice(0, 4);
+const popularArticles = (await getBlogPosts(locale)).slice(0, 4);
+const categoryLinks = [
+  { href: "/products/essential-oils", labelKey: "products.essential-oils" },
+  { href: "/products/candles", labelKey: "products.candles" },
+  { href: "/products/reed-diffusers", labelKey: "products.reed-diffusers" },
+];
+
+// Build social links list from settings (only show platforms with URLs).
+// Facebook is excluded here — it is surfaced as a primary contact button below.
+const _socialLinks = [
+  { key: "linkedin", icon: "linkedin", label: "LinkedIn" },
+  { key: "instagram", icon: "instagram", label: "Instagram" },
+  { key: "messenger", icon: "chat", label: "Messenger" },
+  { key: "pinterest", icon: "pinterest", label: "Pinterest" },
+  { key: "youtube", icon: "youtube", label: "YouTube" },
+  { key: "tiktok", icon: "tiktok", label: "TikTok" },
+  { key: "x", icon: "x", label: "X" },
+].filter((s) => (settings.social as Record<string, string>)[s.key]);
+---
+
+<footer class="border-t border-line bg-beige">
+  <!-- Newsletter banner -->
+  <div class="border-b border-line">
+    <div
+      class="container-x flex flex-col items-start justify-between gap-4 py-8 lg:flex-row lg:items-center"
+    >
+      <div>
+        <p class="text-sm font-semibold">{t(locale, "footer.newsletter_title")}</p>
+        <p class="mt-1 text-xs text-stone">{t(locale, "footer.newsletter_subtitle")}</p>
+      </div>
+      <div class="w-full max-w-sm shrink-0">
+        <form
+          class="newsletter-form flex w-full overflow-hidden rounded-full border border-line bg-paper"
+          novalidate
+          data-locale={locale}
+          data-msg-ok={t(locale, "footer.newsletter_ok")}
+          data-msg-exists={t(locale, "footer.newsletter_exists")}
+          data-msg-invalid={t(locale, "footer.newsletter_invalid")}
+          data-msg-error={t(locale, "footer.newsletter_error")}
+        >
+          <input
+            type="email"
+            name="email"
+            placeholder={t(locale, "footer.placeholder")}
+            class="w-full bg-transparent px-5 py-3 text-sm outline-none placeholder:text-stone"
+            aria-label={t(locale, "a11y.newsletter_email")}
+          />
+          <!-- Honeypot: real users leave this empty; bots that fill it are ignored. -->
+          <input
+            type="text"
+            name="website"
+            tabindex="-1"
+            autocomplete="off"
+            class="hidden"
+            aria-hidden="true"
+          />
+          <button type="submit" class="btn btn-primary m-1 px-5 py-2"
+            >{t(locale, "footer.subscribe")}</button
+          >
+        </form>
+        <p class="newsletter-status mt-2 hidden px-2 text-xs" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="container-x grid grid-cols-2 gap-x-6 gap-y-10 py-14 md:grid-cols-3 lg:grid-cols-6">
+    <!-- Brand -->
+    <div class="col-span-2 md:col-span-3 lg:col-span-1">
+      <div class="flex items-center gap-2.5">
+        <span class="flex h-9 w-9 items-center justify-center rounded-full bg-ink text-paper">
+          <Icon name="leaf" size={18} />
+        </span>
+        <span class="text-lg font-semibold tracking-tight">{SITE_CFG.name}</span>
+      </div>
+      <p class="mt-4 text-xs leading-relaxed text-stone">
+        {t(locale, "footer.tagline").replace("{name}", SITE_CFG.name)}
+      </p>
+      <div class="mt-5">
+        <SocialContactButtons locale={locale} variant="full" refUrl={Astro.url.href} />
+      </div>
+    </div>
+
+    <!-- Explore -->
+    <div>
+      <h4 class="text-sm font-semibold">{t(locale, "footer.explore")}</h4>
+      <ul class="mt-4 space-y-2.5">
+        {
+          footerLinks.map((l) => (
+            <li>
+              <a
+                href={href(l.href)}
+                class={`text-sm transition-colors ${
+                  isActive(l.href) ? "font-medium text-ink" : "text-stone hover:text-ink"
+                }`}
+              >
+                {t(locale, l.labelKey)}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <!-- Popular Categories -->
+    <div>
+      <h4 class="text-sm font-semibold">{t(locale, "footer.popular_categories")}</h4>
+      <ul class="mt-4 space-y-2.5">
+        {
+          categoryLinks.map((c) => (
+            <li>
+              <a href={href(c.href)} class="text-sm text-stone transition-colors hover:text-ink">
+                {t(locale, c.labelKey)}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <!-- Popular Products -->
+    <div>
+      <h4 class="text-sm font-semibold">{t(locale, "footer.popular_products")}</h4>
+      <ul class="mt-4 space-y-2.5">
+        {
+          popularProducts.map((p) => (
+            <li>
+              <a
+                href={href(`/products/${p.data.key}`)}
+                class="text-sm text-stone transition-colors hover:text-ink"
+              >
+                {p.data.title}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <!-- Popular Articles -->
+    <div>
+      <h4 class="text-sm font-semibold">{t(locale, "footer.popular_articles")}</h4>
+      <ul class="mt-4 space-y-2.5">
+        {
+          popularArticles.map((b) => (
+            <li>
+              <a
+                href={href(`/blog/${b.data.key}`)}
+                class="text-sm text-stone transition-colors hover:text-ink"
+              >
+                {b.data.title}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <!-- Contact -->
+    <div>
+      <h4 class="text-sm font-semibold">{t(locale, "footer.contact")}</h4>
+      <ul class="mt-4 space-y-2.5 text-sm text-stone">
+        <li class="flex items-start gap-2">
+          <Icon name="pin" size={15} class="mt-0.5 shrink-0 text-accent" />
+          <span class="text-xs leading-relaxed">{SITE_CFG.address}</span>
+        </li>
+        <li class="flex items-center gap-2">
+          <Icon name="mail" size={15} class="shrink-0 text-accent" />
+          <a href={`mailto:${SITE_CFG.email}`} class="break-all transition-colors hover:text-ink"
+            >{SITE_CFG.email}</a
+          >
+        </li>
+        {
+          whatsappHref && (
+            <li class="flex items-center gap-2">
+              <Icon name="chat" size={15} class="shrink-0 text-accent" />
+              <a
+                href={whatsappHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="transition-colors hover:text-ink"
+              >
+                {t(locale, "footer.whatsapp")}
+              </a>
+            </li>
+          )
+        }
+        <li class="flex items-start gap-2">
+          <Icon name="monitor" size={15} class="mt-0.5 shrink-0 text-accent" />
+          <span class="text-xs leading-relaxed">{SITE_CFG.hours}</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="border-t border-line">
+    <div
+      class="container-x flex flex-col items-center justify-between gap-3 py-6 text-xs text-stone sm:flex-row"
+    >
+      <p>
+        {
+          t(locale, "footer.copyright")
+            .replace("{year}", String(new Date().getFullYear()))
+            .replace("{name}", SITE_CFG.name)
+        }
+      </p>
+      <nav class="flex flex-wrap items-center gap-x-5 gap-y-2">
+        <a href={href("/privacy")} class="transition-colors hover:text-ink"
+          >{t(locale, "footer.privacy")}</a
+        >
+        <a href={href("/terms")} class="transition-colors hover:text-ink"
+          >{t(locale, "footer.terms")}</a
+        >
+        <a href="/sitemap-index.xml" class="transition-colors hover:text-ink"
+          >{t(locale, "footer.sitemap")}</a
+        >
+      </nav>
+    </div>
+  </div>
+</footer>
+
+<script is:inline>
+  (function () {
+    const f = document.querySelector(".newsletter-form");
+    if (!f) return;
+    const input = f.querySelector('input[name="email"]');
+    const honey = f.querySelector('input[name="website"]');
+    const btn = f.querySelector("button[type=submit]");
+    const status = document.querySelector(".newsletter-status");
+    const btnLabel = btn ? btn.textContent : "";
+
+    function show(msg, ok) {
+      if (!status) return;
+      status.textContent = msg;
+      status.classList.remove("hidden", "text-red-600", "text-accent");
+      status.classList.add(ok ? "text-accent" : "text-red-600");
+    }
+
+    f.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const email = (input.value || "").trim();
+      if (!/\S+@\S+\.\S+/.test(email)) {
+        show(f.dataset.msgInvalid || "Please enter a valid email address.", false);
+        return;
+      }
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "…";
+      }
+      try {
+        const res = await fetch("/api/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: email,
+            locale: f.dataset.locale || "",
+            source: "footer",
+            website: honey ? honey.value : "",
+          }),
+        });
+        let out = {};
+        try {
+          out = await res.json();
+        } catch {
+          // ignore non-JSON responses
+        }
+        if (res.ok) {
+          if (out.exists) {
+            show(f.dataset.msgExists || "You're already subscribed — thanks!", true);
+          } else {
+            show(f.dataset.msgOk || "Thanks! You're on the list.", true);
+            input.value = "";
+          }
+        } else {
+          show(
+            (out && out.error) || f.dataset.msgError || "Something went wrong. Please try again.",
+            false,
+          );
+        }
+      } catch (_err) {
+        show(f.dataset.msgError || "Something went wrong. Please try again.", false);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = btnLabel;
+        }
+      }
+    });
+  })();
+</script>

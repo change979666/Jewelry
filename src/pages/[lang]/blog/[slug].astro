@@ -1,0 +1,330 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import Icon from "../../../components/Icon.astro";
+import TableOfContents from "../../../components/TableOfContents.astro";
+import ShareBar from "../../../components/ShareBar.astro";
+import AuthorCard from "../../../components/AuthorCard.astro";
+import RelatedPosts from "../../../components/RelatedPosts.astro";
+import BlogInternalLinks from "../../../components/BlogInternalLinks.astro";
+import FaqSection from "../../../components/FaqSection.astro";
+import CtaBand from "../../../components/CtaBand.astro";
+import { t, type Locale, LOCALE_LIST } from "../../../i18n";
+import { getRelativeLocaleUrl } from "astro:i18n";
+import { getCollection } from "astro:content";
+import { SITE } from "../../../consts";
+import { getBlogEntryResolved, getBlogPosts } from "../../../lib/content";
+import {
+  relatedProductsForBlog,
+  relatedGuidesForBlog,
+  resolveProductsByKeys,
+  resolveGuidesByKeys,
+  resolvePostsByKeys,
+} from "../../../lib/topic-cluster";
+import type { GetStaticPaths } from "astro";
+
+export const getStaticPaths = (async () => {
+  const entries = await getCollection("blog", ({ data }) => !data.draft);
+  const keys = [...new Set(entries.map((e) => e.data.key))];
+  const paths: {
+    params: { lang: string; slug: string };
+    props: { entry: any; isFallback: boolean };
+  }[] = [];
+  for (const lang of LOCALE_LIST) {
+    for (const key of keys) {
+      const resolved = await getBlogEntryResolved(lang as Locale, key);
+      if (!resolved) continue;
+      paths.push({
+        params: { lang, slug: key },
+        props: { entry: resolved.entry, isFallback: resolved.isFallback },
+      });
+    }
+  }
+  return paths;
+}) satisfies GetStaticPaths;
+
+const { entry, isFallback } = Astro.props;
+const { Content, headings } = await entry.render();
+// The page locale follows the URL so the chrome stays in the visitor's language,
+// even when the body falls back to English.
+const locale = (Astro.params.lang as Locale) ?? (entry.data.locale as Locale);
+
+const dateFmt = new Intl.DateTimeFormat(
+  locale === "de" ? "de-DE" : locale === "es" ? "es-ES" : "en-US",
+  { year: "numeric", month: "long", day: "numeric" },
+);
+const backHref = getRelativeLocaleUrl(locale, "/blog");
+const ctaHref = getRelativeLocaleUrl(locale, "/contact");
+const absUrl = new URL(Astro.url.pathname, SITE.url).href;
+
+// Reading time ≈ 200 words per minute, at least 1 minute.
+const words = (entry.body || "").trim().split(/\s+/).filter(Boolean).length;
+const readMin = Math.max(1, Math.round(words / 200));
+// Table of contents from level-2 headings (Astro already generates the slug).
+const toc = headings
+  .filter((h: any) => h.depth === 2)
+  .map((h: any) => ({ slug: h.slug, text: h.text }));
+
+const allPosts = await getBlogPosts(locale);
+const categoryRelated = allPosts
+  .filter((p) => p.data.key !== entry.data.key)
+  .sort((a, b) => {
+    const sameCat = (p: typeof a) => (p.data.category === entry.data.category ? 0 : 1);
+    return sameCat(a) - sameCat(b) || b.data.pubDate.getTime() - a.data.pubDate.getTime();
+  })
+  .slice(0, 3);
+
+// D4: prefer explicit relatedPosts (validated) then top up with category matches.
+const explicitPosts = await resolvePostsByKeys(
+  locale,
+  entry.data.relatedPosts ?? [],
+  entry.data.key,
+  3,
+);
+const relatedByKey = new Map<string, (typeof categoryRelated)[number]>();
+for (const p of [...explicitPosts, ...categoryRelated]) {
+  if (p.data.key !== entry.data.key && !relatedByKey.has(p.data.key)) {
+    relatedByKey.set(p.data.key, p as (typeof categoryRelated)[number]);
+  }
+}
+const related = [...relatedByKey.values()].slice(0, 3);
+
+// Build-time internal links: prefer explicit slug hints, else blog-category match.
+const explicitBlogProducts = await resolveProductsByKeys(
+  locale,
+  entry.data.relatedProducts ?? [],
+  3,
+);
+const explicitBlogGuides = await resolveGuidesByKeys(locale, entry.data.relatedGuides ?? [], 3);
+const blogProducts =
+  explicitBlogProducts.length > 0
+    ? explicitBlogProducts
+    : await relatedProductsForBlog(locale, entry.data.category, 3);
+const blogGuides =
+  explicitBlogGuides.length > 0
+    ? explicitBlogGuides
+    : await relatedGuidesForBlog(locale, entry.data.category, 3);
+
+// D4: buyer FAQ from explicit frontmatter (display + FAQPage JSON-LD).
+const faqItems: { q: string; a: string }[] = entry.data.faq ?? [];
+
+// Prev / next navigation (allPosts is newest-first).
+const curIdx = allPosts.findIndex((p) => p.data.key === entry.data.key);
+const newerPost = curIdx > 0 ? allPosts[curIdx - 1] : undefined;
+const olderPost = curIdx >= 0 && curIdx < allPosts.length - 1 ? allPosts[curIdx + 1] : undefined;
+
+const blogPostingLd = {
+  "@type": "BlogPosting",
+  headline: entry.data.title,
+  description: entry.data.excerpt,
+  datePublished: entry.data.pubDate.toISOString(),
+  dateModified: (entry.data.updatedDate ?? entry.data.pubDate).toISOString(),
+  author: { "@type": "Person", name: entry.data.author },
+  publisher: {
+    "@type": "Organization",
+    name: SITE.name,
+    logo: { "@type": "ImageObject", url: new URL("/favicon.svg", SITE.url).href },
+  },
+  mainEntityOfPage: { "@type": "WebPage", "@id": absUrl },
+  ...(entry.data.cover ? { image: new URL(entry.data.cover, SITE.url).href } : {}),
+};
+
+// B1: unify structured data — every detail page also emits a BreadcrumbList.
+const breadcrumbLd = {
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: t(locale, "nav.home"),
+      item: new URL(getRelativeLocaleUrl(locale, "/"), SITE.url).href,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: t(locale, "blog.page_title"),
+      item: new URL(backHref, SITE.url).href,
+    },
+    { "@type": "ListItem", position: 3, name: entry.data.title, item: absUrl },
+  ],
+};
+
+const faqLd =
+  faqItems.length > 0
+    ? {
+        "@type": "FAQPage",
+        mainEntity: faqItems.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: { "@type": "Answer", text: f.a },
+        })),
+      }
+    : null;
+
+const blogLd = {
+  "@context": "https://schema.org",
+  "@graph": faqLd ? [blogPostingLd, breadcrumbLd, faqLd] : [blogPostingLd, breadcrumbLd],
+};
+
+const fallbackNote: Record<string, string> = {
+  es: "Este artículo aún no está disponible en español. Lo estás viendo en inglés.",
+  de: "Dieser Artikel ist noch nicht auf Deutsch verfügbar. Sie lesen die englische Version.",
+};
+---
+
+<BaseLayout
+  locale={locale}
+  title={entry.data.seoTitle || entry.data.title}
+  description={entry.data.seoDescription || entry.data.excerpt}
+  image={entry.data.cover || undefined}
+>
+  <article class="py-16 lg:py-24">
+    <!-- Header -->
+    <header class="container-x">
+      <div class="mx-auto max-w-2xl text-center reveal">
+        <a
+          href={backHref}
+          class="inline-flex items-center gap-1 text-sm text-stone transition-colors hover:text-ink"
+        >
+          ← {t(locale, "blog.page_title")}
+        </a>
+        <p class="eyebrow mt-6">{entry.data.category}</p>
+        <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+          {entry.data.title}
+        </h1>
+        <div
+          class="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-stone"
+        >
+          <span>{dateFmt.format(entry.data.pubDate)}</span>
+          <span aria-hidden="true">·</span>
+          <span>{entry.data.author}</span>
+          <span aria-hidden="true">·</span>
+          <span class="inline-flex items-center gap-1"
+            ><Icon name="clock" size={14} /> {readMin} {t(locale, "blog.min_read")}</span
+          >
+        </div>
+      </div>
+    </header>
+
+    {
+      isFallback && fallbackNote[locale] && (
+        <div class="container-x mt-8">
+          <p class="mx-auto max-w-2xl rounded-xl border border-line bg-beige/60 px-5 py-3 text-center text-sm text-stone">
+            {fallbackNote[locale]}
+          </p>
+        </div>
+      )
+    }
+
+    <!-- Cover -->
+    {
+      entry.data.cover && (
+        <div class="container-x mt-10">
+          <img
+            src={entry.data.cover}
+            alt={entry.data.title}
+            loading="lazy"
+            class="mx-auto aspect-[16/9] w-full max-w-4xl rounded-2xl object-cover"
+          />
+        </div>
+      )
+    }
+
+    <!-- Body + sidebar -->
+    <div class="container-x mt-12">
+      <div class="mx-auto grid max-w-5xl gap-10 lg:grid-cols-[minmax(0,1fr)_260px]">
+        <div class="min-w-0">
+          <div class="article-prose reveal">
+            <Content />
+          </div>
+
+          {
+            entry.data.tags.length > 0 && (
+              <div class="mt-12 flex flex-wrap gap-2">
+                {entry.data.tags.map((tag: string) => (
+                  <span class="rounded-full bg-beige px-3 py-1 text-xs font-medium text-accent">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )
+          }
+
+          <div class="mt-10">
+            <AuthorCard
+              name={entry.data.author}
+              bio={entry.data.authorBio}
+              avatar={entry.data.authorAvatar}
+              label={t(locale, "blog.author_about")}
+            />
+          </div>
+        </div>
+
+        <aside class="hidden lg:block">
+          <div class="sticky top-24 space-y-4">
+            <TableOfContents headings={toc} title={t(locale, "blog.toc_title")} />
+            <ShareBar url={absUrl} title={entry.data.title} label={t(locale, "blog.share_title")} />
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- Mobile share bar -->
+    <div class="container-x mt-8 lg:hidden">
+      <div class="mx-auto max-w-2xl">
+        <ShareBar url={absUrl} title={entry.data.title} label={t(locale, "blog.share_title")} />
+      </div>
+    </div>
+  </article>
+
+  <!-- Internal links: recommended products + related guides -->
+  <BlogInternalLinks locale={locale} products={blogProducts} guides={blogGuides} />
+
+  <!-- Buyer FAQ (D4) -->
+  <FaqSection faqs={faqItems} />
+
+  <!-- Prev / Next navigation -->
+  {
+    (newerPost || olderPost) && (
+      <nav class="container-x pb-4" aria-label="Article navigation">
+        <div class="mx-auto grid max-w-5xl gap-4 sm:grid-cols-2">
+          {newerPost ? (
+            <a
+              href={getRelativeLocaleUrl(locale, `/blog/${newerPost.data.key}`)}
+              class="reveal card-surface group rounded-2xl p-6 transition-all hover:-translate-y-0.5"
+            >
+              <span class="text-xs font-semibold uppercase tracking-wider text-stone">
+                ← {t(locale, "blog.prev_article")}
+              </span>
+              <span class="mt-2 block text-base font-semibold leading-snug group-hover:text-accent">
+                {newerPost.data.title}
+              </span>
+            </a>
+          ) : (
+            <span class="hidden sm:block" />
+          )}
+          {olderPost && (
+            <a
+              href={getRelativeLocaleUrl(locale, `/blog/${olderPost.data.key}`)}
+              class="reveal card-surface group rounded-2xl p-6 text-right transition-all hover:-translate-y-0.5"
+            >
+              <span class="text-xs font-semibold uppercase tracking-wider text-stone">
+                {t(locale, "blog.next_article")} →
+              </span>
+              <span class="mt-2 block text-base font-semibold leading-snug group-hover:text-accent">
+                {olderPost.data.title}
+              </span>
+            </a>
+          )}
+        </div>
+      </nav>
+    )
+  }
+
+  <!-- Related articles -->
+  <RelatedPosts locale={locale} posts={related} />
+
+  <!-- CTA -->
+  <CtaBand locale={locale} href={ctaHref} />
+
+  <script type="application/ld+json" set:html={JSON.stringify(blogLd)} />
+</BaseLayout>

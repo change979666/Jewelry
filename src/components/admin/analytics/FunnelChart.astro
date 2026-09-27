@@ -1,0 +1,52 @@
+---
+// FunnelChart — 业务漏斗（展示漏斗各阶段数据）
+export interface FunnelStage {
+  label: string;
+  value: number | null;
+}
+export interface Props {
+  title: string;
+  stages: FunnelStage[] | null;
+}
+const { title, stages } = Astro.props;
+---
+
+<div
+  class="admin-funnel-card"
+  style="background:var(--card);border-radius:var(--radius-md);padding:var(--admin-gap-section);border:1px solid var(--line);"
+>
+  <h3 style="font-size:0.9375rem;font-weight:600;color:var(--ink);margin:0 0 16px;">{title}</h3>
+  {
+    stages ? (
+      <div style="display:flex;gap:4px;align-items:flex-end;height:120px;">
+        {stages.map((s, i) => {
+          const maxVal = Math.max(...stages.map((x) => x.value ?? 0), 1);
+          const height = s.value !== null ? Math.max(16, (s.value / maxVal) * 100) : 16;
+          return (
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <span style="font-size:0.75rem;font-weight:600;color:var(--ink);">
+                {s.value !== null ? s.value : "—"}
+              </span>
+              <div
+                style={{
+                  width: "100%",
+                  height: `${height}px`,
+                  background: i === 0 ? "var(--admin-accent)" : "var(--admin-accent-soft)",
+                  borderRadius: "4px 4px 0 0",
+                  transition: "height 0.3s",
+                }}
+              />
+              <span style="font-size:0.625rem;color:var(--stone);text-align:center;line-height:1.2;">
+                {s.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    ) : (
+      <div style="color:var(--stone);font-size:0.8125rem;text-align:center;padding:24px 0;">
+        暂无数据
+      </div>
+    )
+  }
+</div>

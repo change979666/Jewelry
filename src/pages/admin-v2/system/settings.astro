@@ -1,0 +1,156 @@
+---
+// Phase 11 — Site Settings Page
+import "../../../styles/admin-v2.css";
+import AdminShell from "../../../components/admin/layout/AdminShell.astro";
+import Sidebar from "../../../components/admin/layout/Sidebar.astro";
+import Topbar from "../../../components/admin/layout/Topbar.astro";
+import Toast from "../../../components/admin/shared/Toast.astro";
+import Skeleton from "../../../components/admin/shared/Skeleton.astro";
+---
+
+<AdminShell title="站点设置 Site Settings" activeModule="system">
+  <Sidebar slot="sidebar" activeModule="system" />
+  <Topbar
+    slot="topbar-left"
+    title="站点设置 Site Settings"
+    breadcrumbs={[{ label: "系统", href: "/admin-v2/system" }, { label: "站点设置" }]}
+  />
+  <Toast />
+
+  <div class="admin-page-header admin-flex admin-items-center admin-justify-between">
+    <h1 class="admin-page-title">站点设置 Site Settings</h1>
+    <div class="admin-flex admin-gap-2">
+      <select id="filter-category" class="admin-select" style="width:140px;">
+        <option value="">全部分类</option>
+        <option value="general">通用 General</option>
+        <option value="seo">SEO</option>
+        <option value="commerce">电商 Commerce</option>
+        <option value="ai">AI</option>
+        <option value="email">邮件 Email</option>
+        <option value="integration">集成 Integration</option>
+      </select>
+      <button class="admin-btn admin-btn-primary" id="btn-save-settings">保存设置</button>
+    </div>
+  </div>
+
+  <div id="settings-container">
+    <Skeleton lines={8} height="40px" />
+  </div>
+</AdminShell>
+
+<script>
+  const container = document.getElementById("settings-container")!;
+  const toast = (window as any).AromisoToast;
+  let allSettings: Record<string, { value: string; category: string; description: string }> = {};
+
+  function esc(s: unknown): string {
+    if (s == null) return "";
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  async function loadSettings() {
+    container.innerHTML =
+      '<div class="admin-skeleton" style="height:40px;margin-bottom:8px;"></div>'.repeat(8);
+    try {
+      const category = (document.getElementById("filter-category")! as unknown as HTMLSelectElement)
+        .value;
+      const url = category
+        ? `/api/admin/v2/system/settings?category=${category}`
+        : "/api/admin/v2/system/settings";
+      const res = await fetch(url);
+      const json: any = await res.json();
+      if (!json.success) {
+        container.innerHTML = `<div class="admin-error"><div class="admin-error-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="admin-error-title">加载失败</div><div class="admin-error-desc">${esc(json.error?.message)}</div></div>`;
+        return;
+      }
+
+      const settings = json.data || [];
+      if (settings.length === 0) {
+        container.innerHTML =
+          '<div class="admin-empty"><div class="admin-empty-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><div class="admin-empty-title">暂无设置项</div></div>';
+        return;
+      }
+
+      // Store all settings for save
+      allSettings = {};
+      for (const s of settings) {
+        allSettings[s.key] = { value: s.value, category: s.category, description: s.description };
+      }
+
+      // Group by category
+      const groups = new Map<string, typeof settings>();
+      for (const s of settings) {
+        if (!groups.has(s.category)) groups.set(s.category, []);
+        groups.get(s.category)!.push(s);
+      }
+
+      const categoryLabels: Record<string, string> = {
+        general:
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> 通用',
+        seo: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg> SEO',
+        commerce:
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> 电商 Commerce',
+        ai: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16.01"/><line x1="16" y1="16" x2="16" y2="16.01"/></svg> AI',
+        email:
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> 邮件 Email',
+        integration:
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> 集成',
+      };
+
+      let html = "";
+      for (const [cat, items] of groups) {
+        html += `<div class="admin-card">`;
+        html += `<div class="admin-card-header"><span class="admin-card-title">${categoryLabels[cat] || cat}</span></div>`;
+        html += `<div class="admin-card-body">`;
+        for (const s of items) {
+          const inputType =
+            s.key.includes("password") || s.key.includes("secret") || s.key.includes("token")
+              ? "password"
+              : "text";
+          html += `<div class="admin-form-group">
+            <label class="admin-label">${esc(s.key)}</label>
+            ${s.description ? `<div class="admin-form-help">${esc(s.description)}</div>` : ""}
+            <input type="${inputType}" data-key="${esc(s.key)}" value="${esc(s.value)}" class="admin-input setting-input" style="width:100%;" />
+          </div>`;
+        }
+        html += "</div></div>";
+      }
+      container.innerHTML = html;
+    } catch {
+      container.innerHTML =
+        '<div class="admin-error"><div class="admin-error-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="admin-error-title">网络错误</div></div>';
+    }
+  }
+
+  document.getElementById("filter-category")!.addEventListener("change", loadSettings);
+
+  document.getElementById("btn-save-settings")!.addEventListener("click", async () => {
+    const inputs = container.querySelectorAll(".setting-input") as NodeListOf<HTMLInputElement>;
+    const settings: Record<string, string> = {};
+    inputs.forEach((input) => {
+      const key = input.dataset.key;
+      if (key) settings[key] = input.value;
+    });
+
+    try {
+      const res = await fetch("/api/admin/v2/system/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings }),
+      });
+      const json: any = await res.json();
+      toast?.show({
+        message: json.success ? "设置已保存" : json.error?.message || "保存失败",
+        type: json.success ? "success" : "error",
+      });
+    } catch {
+      toast?.show({ message: "网络错误", type: "error" });
+    }
+  });
+
+  loadSettings();
+</script>

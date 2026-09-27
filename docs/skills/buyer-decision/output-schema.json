@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aromiso://skills/buyer-decision/output-schema.json",
+  "title": "Buyer Decision Audit — 输出契约（8 项产出 + 不要改什么）",
+  "description": "L1 审查报告结构。禁止数字评分；覆盖与风险只做三态判定；每个 partial/missing 必须有路由归属（BUYER_DECISION_FRAMEWORK §四/§七/§八/§十一）。",
+  "type": "object",
+  "required": [
+    "subject",
+    "buyerConcerns",
+    "coverage",
+    "ironTriangle",
+    "missingDecisionInfo",
+    "verifiedFacts",
+    "missingEvidence",
+    "minimumChanges",
+    "doNotChange"
+  ],
+  "properties": {
+    "subject": { "type": "string", "description": "被审查对象（路径 / 产品 slug）" },
+    "frameworkVersion": { "type": "string", "description": "如 0.1.0" },
+    "buyerConcerns": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "① 买家疑虑清单（按 Buyer Decision Chain 的决策节点组织）"
+    },
+    "coverage": {
+      "type": "array",
+      "description": "② 三层覆盖判定（可按页面类型裁剪判定项）",
+      "items": {
+        "type": "object",
+        "required": ["item", "verdict", "note"],
+        "properties": {
+          "item": { "type": "string", "description": "判定项（产品规格/MOQ/定制流程/样品流程/包装/交期/QC/文件支持/真实案例/认证归属/询盘CTA 或三层模型项）" },
+          "layer": { "type": "string", "enum": ["solution", "organization", "personal"] },
+          "verdict": { "type": "string", "enum": ["covered", "partial", "missing"] },
+          "note": { "type": "string", "description": "partial/missing 必填：缺什么 → 为什么影响采购决策 → 是否有可核实事实可补 → 补的动作归谁" },
+          "gapType": {
+            "type": "string",
+            "enum": ["Missing Asset", "Existing Asset Not Connected", "Existing Asset, Wrong Decision Stage"],
+            "description": "资产缺口三分类（partial/missing 时必填）"
+          },
+          "routeTo": { "type": "string", "enum": ["owner-confirmation", "content-after-observation", "routing-fix"], "description": "处置路由" }
+        }
+      }
+    },
+    "ironTriangle": {
+      "type": "object",
+      "description": "③ 订单铁三角风险标记（三态，不打分）",
+      "required": ["customer", "demand", "value", "primaryRisk"],
+      "properties": {
+        "customer": { "type": "string", "enum": ["covered", "partial", "missing"] },
+        "demand": { "type": "string", "enum": ["covered", "partial", "missing"] },
+        "value": { "type": "string", "enum": ["covered", "partial", "missing"] },
+        "primaryRisk": { "type": "string", "description": "结论直接写「当前主要风险：××」，不用评分" }
+      }
+    },
+    "missingDecisionInfo": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "④ 缺失的采购决策信息（按 Buyer Decision Chain 节点标注）"
+    },
+    "verifiedFacts": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "⑤a 可验证事实（引用事实宪法条目或已发布内容）"
+    },
+    "missingEvidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["claim", "status"],
+        "properties": {
+          "claim": { "type": "string", "description": "页面声称但无法核实的内容" },
+          "status": { "type": "string", "enum": ["missing-evidence", "attribution-needs-confirmation"], "description": "归属审查特例：合作工厂持有的能力 → attribution-needs-confirmation，不判 missing" },
+          "note": { "type": "string" }
+        }
+      },
+      "description": "⑤b Missing Evidence 清单——不生成、不推断、不包装成事实"
+    },
+    "minimumChanges": {
+      "type": "array",
+      "description": "⑥ 最小改动建议（Minimum Effective Change）",
+      "items": {
+        "type": "object",
+        "required": ["problem", "suggestion", "status"],
+        "properties": {
+          "problem": { "type": "string" },
+          "suggestion": { "type": "string", "description": "具体到区块/字段" },
+          "evidenceSource": { "type": "string", "description": "引用事实宪法条目或已发布内容；无事实依据时留空且 status 必须为 pending-business-confirmation" },
+          "status": { "type": "string", "enum": ["actionable", "pending-business-confirmation"] }
+        }
+      }
+    },
+    "suggestedContentForms": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "⑦ 建议内容形态（FAQ 条目 / PDP 区块 / 指南 / 案例连接等）"
+    },
+    "contentFactoryCandidate": {
+      "type": "boolean",
+      "description": "⑧ 是否值得进入后续 Content Factory"
+    },
+    "doNotChange": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "「不要改什么」清单：理论上可优化但证据不足的项明确不动（憋得住）"
+    }
+  }
+}

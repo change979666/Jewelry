@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.astro/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Env / Secrets
+.env
+.env.local
+.dev.vars
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary
+tmp/
+*.tmp
+
+# Cloudflare
+.wrangler/
+
+# Tool / workspace artifacts
+.codebuddy/
+.workbuddy/
+.reasonix/
+ChinaBridge_AI_Project_Docs/
+
+# Local-only development specs (for user review / retrospective, NEVER push to repo)
+docs/dev-specs/
+gsc-service-account.json
+.r2/
+
+# 浏览器自动化快照
+.playwright-mcp/

@@ -1,0 +1,297 @@
+---
+// V2 Login Page — standalone login form for admin-v2
+import "../../styles/admin-v2.css";
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aromiso Admin — 登录</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script is:inline>
+      // 主题引导：与 AdminShell 同策略（默认暗色驾驶舱），避免登录亮色→进入后台暗色的闪变。
+      (function () {
+        try {
+          if (localStorage.getItem("aro-admin-theme") !== "light") {
+            document.documentElement.classList.add("dark");
+          }
+        } catch (e) {
+          document.documentElement.classList.add("dark");
+        }
+      })();
+    </script>
+    <script is:inline>
+      (function () {
+        if (sessionStorage.getItem("v2_redirected")) {
+          sessionStorage.removeItem("v2_redirected");
+          return;
+        }
+        fetch("/api/admin/v2/auth/me", { credentials: "same-origin" })
+          .then(function (r) {
+            if (r.ok) {
+              sessionStorage.setItem("v2_redirected", "1");
+              window.location.replace("/admin-v2/");
+            }
+          })
+          .catch(function () {});
+      })();
+    </script>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--paper);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .login-container {
+        width: 100%;
+        max-width: 380px;
+        padding: var(--sp-6);
+      }
+      .login-card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: var(--r-lg);
+        padding: var(--sp-10) var(--sp-8);
+        box-shadow: var(--sh-md);
+      }
+      .login-brand {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--sp-3);
+        margin-bottom: var(--sp-2);
+      }
+      .login-brand-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: var(--r-lg);
+        background: var(--ink);
+        color: var(--paper);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--fs-xl);
+        font-weight: 700;
+      }
+      .login-brand-text {
+        font-size: var(--fs-2xl);
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        color: var(--ink);
+      }
+      .login-subtitle {
+        text-align: center;
+        font-size: var(--fs-md);
+        color: var(--stone);
+        margin: var(--sp-1) 0 var(--sp-8);
+      }
+      .form-group {
+        margin-bottom: var(--sp-5);
+      }
+      .form-label {
+        display: block;
+        font-size: var(--fs-sm);
+        font-weight: 600;
+        color: var(--stone);
+        margin-bottom: var(--sp-2);
+      }
+      .form-input {
+        width: 100%;
+        height: 40px;
+        padding: 0 var(--sp-4);
+        border: 1px solid var(--line);
+        border-radius: var(--r-md);
+        background: var(--paper);
+        font-size: var(--fs-md);
+        color: var(--ink);
+        outline: none;
+        transition:
+          border-color var(--tr-fast),
+          box-shadow var(--tr-fast);
+        box-sizing: border-box;
+      }
+      .form-input:focus {
+        border-color: var(--admin-primary);
+        box-shadow: 0 0 0 3px var(--admin-primary-soft);
+      }
+      .form-input::placeholder {
+        color: var(--stone);
+        opacity: 0.5;
+      }
+      .login-btn {
+        width: 100%;
+        height: 42px;
+        border: none;
+        border-radius: var(--r-md);
+        background: var(--admin-primary);
+        color: var(--card);
+        font-size: var(--fs-md);
+        font-weight: 600;
+        cursor: pointer;
+        transition: background var(--tr-fast);
+      }
+      .login-btn:hover {
+        background: var(--admin-primary-hover);
+      }
+      .login-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .login-error {
+        margin-top: var(--sp-4);
+        padding: var(--sp-3) var(--sp-4);
+        background: var(--admin-danger-soft);
+        border: 1px solid color-mix(in srgb, var(--danger) 28%, transparent);
+        border-radius: var(--r-md);
+        color: var(--admin-danger);
+        font-size: var(--fs-base);
+        text-align: center;
+        display: none;
+      }
+      .login-error.visible {
+        display: block;
+      }
+      .login-footer {
+        text-align: center;
+        margin-top: var(--sp-6);
+        font-size: var(--fs-sm);
+        color: var(--stone);
+        opacity: 0.6;
+      }
+      .spinner {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: var(--card);
+        animation: spin 0.6s linear infinite;
+        margin-right: var(--sp-2);
+        vertical-align: middle;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-container">
+      <div class="login-card">
+        <div class="login-brand">
+          <div class="login-brand-icon">A</div>
+          <span class="login-brand-text">Aromiso</span>
+        </div>
+        <p class="login-subtitle">后台管理系统</p>
+
+        <form id="loginForm" autocomplete="on">
+          <div class="form-group">
+            <label class="form-label" for="username">用户名</label>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              class="form-input"
+              placeholder="请输入用户名"
+              autocomplete="username"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="password">密码</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              class="form-input"
+              placeholder="请输入密码"
+              autocomplete="current-password"
+              required
+            />
+          </div>
+          <button type="submit" id="loginBtn" class="login-btn">登录</button>
+        </form>
+
+        <div id="loginError" class="login-error"></div>
+        <p class="login-footer">仅限授权访问 · Aromiso Admin V2</p>
+      </div>
+    </div>
+
+    <script>
+      async function checkAuth() {
+        try {
+          const res = await fetch("/api/admin/v2/auth/me");
+          if (res.ok) {
+            window.location.href = "/admin-v2/";
+            return true;
+          }
+        } catch {
+          /* not authenticated */
+        }
+        return false;
+      }
+      checkAuth();
+
+      const form = document.getElementById("loginForm") as HTMLFormElement;
+      const btn = document.getElementById("loginBtn") as HTMLButtonElement;
+      const errorEl = document.getElementById("loginError") as HTMLDivElement;
+      const usernameInput = document.getElementById("username") as HTMLInputElement;
+      const passwordInput = document.getElementById("password") as HTMLInputElement;
+
+      function showError(msg: string) {
+        errorEl.textContent = msg;
+        errorEl.classList.add("visible");
+      }
+      function hideError() {
+        errorEl.textContent = "";
+        errorEl.classList.remove("visible");
+      }
+      function setLoading(loading: boolean) {
+        btn.disabled = loading;
+        btn.innerHTML = loading ? '<span class="spinner"></span>登录中...' : "登录";
+      }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        hideError();
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value;
+        if (!username || !password) {
+          showError("请输入用户名和密码。");
+          return;
+        }
+        setLoading(true);
+        try {
+          const res = await fetch("/api/admin/v2/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password }),
+          });
+          const json = (await res.json()) as { success: boolean; error?: { message?: string } };
+          if (res.ok && json.success) {
+            window.location.href = "/admin-v2/";
+          } else {
+            showError(json?.error?.message || "登录失败，请检查用户名和密码。");
+            setLoading(false);
+            passwordInput.value = "";
+            passwordInput.focus();
+          }
+        } catch {
+          showError("网络错误，请稍后重试。");
+          setLoading(false);
+        }
+      });
+
+      passwordInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") form.dispatchEvent(new Event("submit"));
+      });
+    </script>
+  </body>
+</html>

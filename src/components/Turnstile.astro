@@ -1,0 +1,24 @@
+---
+// Cloudflare Turnstile widget (anti-abuse, zero-friction challenge).
+// Renders nothing when no site key is configured in settings.json, so the
+// forms keep working before Turnstile is set up (backend fails open too).
+// The widget auto-injects a hidden `cf-turnstile-response` input on solve,
+// which the form serializers already pick up via FormData / Object.fromEntries.
+import settings from "../data/settings.json";
+
+const siteKey = ((settings.site as Record<string, string>).turnstileSiteKey || "").trim();
+---
+
+{
+  siteKey && (
+    <>
+      <div
+        class="cf-turnstile mt-1"
+        data-sitekey={siteKey}
+        data-theme="light"
+        data-appearance="interaction-only"
+      />
+      <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+    </>
+  )
+}

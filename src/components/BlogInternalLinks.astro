@@ -1,0 +1,117 @@
+---
+/**
+ * BlogInternalLinks — build-time cross-links from blog posts to products and guides.
+ * Rendered between article body and RelatedPosts to create Blog → Product/Guide funnel.
+ */
+import { getRelativeLocaleUrl } from "astro:i18n";
+import type { Locale } from "../i18n";
+
+interface ProductLink {
+  data: {
+    key: string;
+    title: string;
+    excerpt: string;
+    category: string;
+    moq?: string;
+    cover?: string;
+  };
+}
+interface GuideLink {
+  data: { key: string; title: string; excerpt: string; category: string };
+}
+
+interface Props {
+  locale: Locale;
+  products: ProductLink[];
+  guides: GuideLink[];
+}
+
+const { locale, products, guides } = Astro.props;
+
+const labels: Record<string, { products: string; guides: string; viewAll: string }> = {
+  en: { products: "Recommended Products", guides: "Related Guides", viewAll: "View all" },
+  es: { products: "Productos recomendados", guides: "Guías relacionadas", viewAll: "Ver todo" },
+  de: { products: "Empfohlene Produkte", guides: "Passende Leitfäden", viewAll: "Alle ansehen" },
+};
+const l = labels[locale] ?? labels.en;
+---
+
+{
+  (products.length > 0 || guides.length > 0) && (
+    <section class="container-x mt-14">
+      <div class="mx-auto max-w-5xl space-y-10">
+        {products.length > 0 && (
+          <div>
+            <div class="flex items-center justify-between">
+              <h2 class="text-lg font-semibold tracking-tight">{l.products}</h2>
+              <a
+                href={getRelativeLocaleUrl(locale, "/products")}
+                class="text-sm font-medium text-accent hover:underline"
+              >
+                {l.viewAll} →
+              </a>
+            </div>
+            <div class="mt-4 grid gap-4 sm:grid-cols-3">
+              {products.map((p) => (
+                <a
+                  href={getRelativeLocaleUrl(locale, `/products/${p.data.key}`)}
+                  class="card-surface group rounded-xl p-5 transition-all hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  {p.data.cover && (
+                    <img
+                      src={p.data.cover}
+                      alt={p.data.title}
+                      loading="lazy"
+                      class="mb-3 aspect-[4/3] w-full rounded-lg object-cover"
+                    />
+                  )}
+                  <span class="text-xs font-medium uppercase tracking-wider text-stone">
+                    {p.data.category}
+                  </span>
+                  <h3 class="mt-1 text-sm font-semibold leading-snug group-hover:text-accent">
+                    {p.data.title}
+                  </h3>
+                  {p.data.moq && (
+                    <span class="mt-2 inline-block rounded-full bg-beige px-2 py-0.5 text-xs text-accent">
+                      MOQ: {p.data.moq}
+                    </span>
+                  )}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {guides.length > 0 && (
+          <div>
+            <div class="flex items-center justify-between">
+              <h2 class="text-lg font-semibold tracking-tight">{l.guides}</h2>
+              <a
+                href={getRelativeLocaleUrl(locale, "/resources")}
+                class="text-sm font-medium text-accent hover:underline"
+              >
+                {l.viewAll} →
+              </a>
+            </div>
+            <div class="mt-4 grid gap-3 sm:grid-cols-3">
+              {guides.map((g) => (
+                <a
+                  href={getRelativeLocaleUrl(locale, `/resources/${g.data.key}`)}
+                  class="group flex items-start gap-3 rounded-xl border border-line bg-white/60 p-4 transition-all hover:border-accent/30 hover:bg-beige/40"
+                >
+                  <span class="mt-0.5 text-accent">📖</span>
+                  <span>
+                    <span class="block text-sm font-medium leading-snug group-hover:text-accent">
+                      {g.data.title}
+                    </span>
+                    <span class="mt-1 block text-xs text-stone line-clamp-2">{g.data.excerpt}</span>
+                  </span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}

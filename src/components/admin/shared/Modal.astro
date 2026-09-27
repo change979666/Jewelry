@@ -1,0 +1,50 @@
+---
+// Modal — 居中弹窗
+export interface Props {
+  open: boolean;
+  onClose?: string;
+  title?: string;
+}
+const { open, onClose, title = "" } = Astro.props;
+---
+
+{
+  open && (
+    <div class="admin-modal-overlay" onclick={onClose ?? "void(0)"}>
+      <div class="admin-modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+        <div class="admin-modal-header">
+          <span>{title}</span>
+          {onClose && (
+            <button
+              onclick={onClose}
+              aria-label="关闭"
+              style="background:none;border:none;cursor:pointer;font-size:var(--fs-lg);color:var(--stone);padding:0;line-height:1;"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          )}
+        </div>
+        <div class="admin-modal-body">
+          <slot />
+        </div>
+        {Astro.slots.has("footer") && (
+          <div class="admin-modal-footer">
+            <slot name="footer" />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

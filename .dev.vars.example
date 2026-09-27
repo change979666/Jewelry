@@ -1,0 +1,16 @@
+# Copy this file to `.dev.vars` (gitignored) and fill in real values for local
+# `wrangler pages dev`. In PRODUCTION these become Cloudflare Pages
+# environment variables / secrets (Settings → Environment variables).
+# Never commit real secrets.
+
+# Password for the /admin-v2 CMS login
+ADMIN_PASSWORD=change_me
+
+# GitHub PAT with write access to the Jewelry repo (used to commit published content)
+ADMIN_GITHUB_TOKEN=ghp_xxx
+
+# owner/repo
+ADMIN_GITHUB_REPO=change979666/Jewelry
+
+# SiliconFlow API key (preferred AI provider, OpenAI-compatible)
+SILICONFLOW_API_KEY=change_me

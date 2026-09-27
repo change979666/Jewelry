@@ -1,0 +1,59 @@
+{
+  "name": "jewelry",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "ci": "npm run check && npm run lint && npm run format:check && npm run test && npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "studio:start": "node scripts/local-ai-start.mjs",
+    "studio:status": "node scripts/local-ai-status.mjs",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,astro,js,mjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,css,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.3",
+    "@tailwindcss/vite": "^4.0.0",
+    "astro": "^5.0.0",
+    "d3-geo": "^3.1.1",
+    "fflate": "^0.8.3",
+    "postcss": "^8.5.25",
+    "tailwindcss": "^4.0.0",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@cloudflare/workers-types": "^5.20260728.1",
+    "@eslint/js": "^10.0.1",
+    "@types/d3-geo": "^3.1.1",
+    "@types/topojson-client": "^3.1.5",
+    "eslint": "^10.8.0",
+    "eslint-plugin-astro": "^1.7.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.2.0",
+    "prettier": "^3.9.6",
+    "prettier-plugin-astro": "^0.14.1",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.65.0",
+    "vitest": "^4.1.10"
+  }
+}

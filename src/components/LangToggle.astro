@@ -1,0 +1,24 @@
+---
+import { LOCALES, nextLocale } from "../i18n";
+import type { Locale } from "../i18n";
+import { LOCALE_LIST, stripLocale } from "../i18n";
+import { getRelativeLocaleUrl } from "astro:i18n";
+
+const _l = (Astro.props.locale as Locale) ?? (Astro.currentLocale as Locale) ?? "en";
+const current = (LOCALE_LIST.includes(_l) ? _l : "en") as Locale;
+const nxt = nextLocale(current);
+const stripped = stripLocale(Astro.url.pathname);
+const href = getRelativeLocaleUrl(nxt, stripped);
+---
+
+<a
+  id="lang-toggle"
+  href={href}
+  class="inline-flex h-9 items-center gap-1.5 rounded-full border border-line px-3.5 text-xs font-medium tracking-wide text-ink transition-colors duration-300 hover:bg-beige"
+  aria-label={`Switch language to ${LOCALES[nxt]}`}
+  title={`Language: ${LOCALES[current]} → ${LOCALES[nxt]}`}
+>
+  <span>{current.toUpperCase()}</span>
+  <span class="text-stone">/</span>
+  <span class="text-accent">{nxt.toUpperCase()}</span>
+</a>

@@ -1,0 +1,13 @@
+-- 0085 — Quote-required / "Price on Request" support for B2B products.
+--
+-- Additive + backward-compatible (DEFAULT 0): existing rows and existing code
+-- are unaffected until the matching API code is deployed. APPLY THIS MIGRATION
+-- BEFORE deploying the code that reads/writes quote_required, so the schema
+-- always precedes the code (never code-before-schema).
+--
+-- Purpose: let a product be published active WITHOUT a fabricated price tier
+-- when quote_required = 1. The publish gate becomes: has_price OR quote_required.
+-- Frontend already renders "Contact for price" + hides the tier table when there
+-- are no price tiers, and the PDP SSR middleware already omits schema.org offers
+-- when no real price exists — so no fake price is ever produced.
+ALTER TABLE commerce_products ADD COLUMN quote_required INTEGER NOT NULL DEFAULT 0;

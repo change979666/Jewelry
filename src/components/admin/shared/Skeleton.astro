@@ -1,0 +1,17 @@
+---
+// Skeleton — 加载占位
+export interface Props {
+  lines?: number;
+  height?: string;
+}
+const { lines = 3, height = "16px" } = Astro.props;
+---
+
+{
+  Array.from({ length: lines }).map((_, i) => (
+    <div
+      class="admin-skeleton"
+      style={`height:${height};margin-bottom:var(--sp-2);width:${i === lines - 1 ? "60%" : "100%"};`}
+    />
+  ))
+}

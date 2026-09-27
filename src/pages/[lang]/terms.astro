@@ -1,0 +1,80 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
+import { t, localeStaticPaths } from "../../i18n";
+import type { Locale } from "../../i18n";
+
+export const getStaticPaths = localeStaticPaths;
+
+const locale = (Astro.props.locale as Locale) ?? "en";
+
+type Legal = { title: string; updated: string; sections: { h: string; p: string }[] };
+
+const legal: Record<"en", Legal> = {
+  en: {
+    title: "Terms of Service",
+    updated: "Last updated: 1 January 2026",
+    sections: [
+      {
+        h: "Acceptance of Terms",
+        p: "By accessing this website or placing an order you agree to these terms. If you do not agree, please do not use the site.",
+      },
+      {
+        h: "Orders & Pricing",
+        p: "Product prices are displayed in your local currency and include applicable VAT where required. An order is confirmed once we confirm availability and contact you; cash-on-delivery orders are paid to the courier on delivery.",
+      },
+      {
+        h: "Delivery",
+        p: "We aim to deliver within the estimated timeframe shown at checkout. Delivery times are indicative and may vary by city and courier.",
+      },
+      {
+        h: "Returns & Exchanges",
+        p: "If an item arrives damaged or is not as described, contact us within the stated return window for an exchange or refund. Items should be unworn and in their original packaging.",
+      },
+      {
+        h: "Product Information",
+        p: "We describe materials and care as accurately as possible. Colors may vary slightly by screen. We do not make unsubstantiated claims such as hypoallergenic, waterproof or tarnish-proof.",
+      },
+      {
+        h: "Intellectual Property",
+        p: "All content, trademarks and designs on this site are owned by the brand and may not be reused without written permission.",
+      },
+      {
+        h: "Governing Law",
+        p: "These terms are interpreted in accordance with the applicable consumer-protection laws of the Kingdom of Saudi Arabia or the United Arab Emirates, based on your delivery country, without prejudice to your mandatory consumer rights.",
+      },
+      { h: "Contact", p: "Questions about these terms can be sent to support@example.com." },
+    ],
+  },
+};
+
+// TODO(i18n): author native Arabic legal copy. Until reviewed by a native
+// speaker, Arabic intentionally reuses English rather than machine translation.
+const data: Legal = legal.en;
+---
+
+<BaseLayout locale={locale} title={data.title} description={data.title}>
+  <Breadcrumbs
+    locale={locale}
+    items={[
+      { label: t(locale, "nav.home"), href: "/" },
+      { label: data.title, href: "/terms" },
+    ]}
+  />
+  <article class="container-x py-16 lg:py-24">
+    <div class="mx-auto max-w-2xl">
+      <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">{data.title}</h1>
+      <p class="mt-3 text-sm text-stone">{data.updated}</p>
+      <div class="article-prose mt-10">
+        {
+          data.sections.map((s) => (
+            <div class="reveal">
+              <h2>{s.h}</h2>
+              <p>{s.p}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </article>
+</BaseLayout>

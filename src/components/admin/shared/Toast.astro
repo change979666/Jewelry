@@ -1,0 +1,185 @@
+---
+// Toast — 全局提示 + 降级横幅（M5/S12 出口）
+//
+// V5.67 关键修复：后台各页面历史上调用 `window.showToast(msg, type)`，但全局只
+// 定义了 `window.AromisoToast`——`showToast` 从未被定义，导致 `if (window.showToast)`
+// 与 `window.showToast?.()` 全部成为静默 no-op（用户「点了没反应」的根因之一）。
+// 这里在唯一的共享挂载点把 showToast 桥接到 AromisoToast，一次性恢复全站后台反馈。
+//
+// 同时提供 degraded 出口：后端返回 degraded / guard_state / state=ERROR /
+// kb_index_state=corrupt 等降级标记时，前端必须有可见提示（持久横幅，非 3s toast）。
+---
+
+<div
+  id="toast-container"
+  class="admin-toast-container"
+  role="status"
+  aria-live="polite"
+  aria-atomic="false"
+>
+</div>
+<div id="degraded-banner-container" class="admin-degraded-container"></div>
+
+<script is:inline>
+  (function () {
+    const toast = {
+      show: function (msg, type) {
+        type = type || "info";
+        const c = document.getElementById("toast-container");
+        if (!c) return;
+        const el = document.createElement("div");
+        el.className = "admin-toast " + type;
+        // 无障碍播报：错误级用强播报（alert），其余礼貌播报（status）。不改变显示时序与语义。
+        el.setAttribute("role", type === "error" ? "alert" : "status");
+        el.textContent = msg;
+        c.appendChild(el);
+        setTimeout(function () {
+          el.style.opacity = "0";
+          el.style.transform = "translateY(8px)";
+          el.style.transition = "all 200ms ease";
+          setTimeout(function () {
+            el.remove();
+          }, 200);
+        }, 3000);
+      },
+      success: function (msg) {
+        this.show(msg, "success");
+      },
+      error: function (msg) {
+        this.show(msg, "error");
+      },
+      warning: function (msg) {
+        this.show(msg, "warning");
+      },
+      info: function (msg) {
+        this.show(msg, "info");
+      },
+    };
+    window.AromisoToast = toast;
+
+    // 桥接：全站后台页面调用的 window.showToast（历史上未定义 → 静默）。
+    window.showToast = function (msg, type) {
+      toast.show(msg, type || "info");
+    };
+
+    // ---- 降级横幅（持久，直到手动关闭或下一次刷新）----
+    function showDegradedBanner(message, detail) {
+      const c = document.getElementById("degraded-banner-container");
+      if (!c) {
+        // 容器不存在时退化为 warning toast，至少不静默。
+        toast.show(message, "warning");
+        return;
+      }
+      // 去重：同一消息不重复堆叠。
+      const existing = c.querySelector('[data-msg="' + message.replace(/"/g, "") + '"]');
+      if (existing) return;
+      const el = document.createElement("div");
+      el.className = "admin-degraded-banner";
+      el.setAttribute("data-msg", message.replace(/"/g, ""));
+      el.setAttribute("role", "status");
+      const text = document.createElement("div");
+      text.className = "admin-degraded-text";
+      text.textContent = message + (detail ? "（" + detail + "）" : "");
+      const close = document.createElement("button");
+      close.className = "admin-degraded-close";
+      close.type = "button";
+      close.setAttribute("aria-label", "关闭");
+      close.textContent = "×";
+      close.addEventListener("click", function () {
+        el.remove();
+      });
+      el.appendChild(text);
+      el.appendChild(close);
+      c.appendChild(el);
+    }
+
+    /**
+     * M5/S12：检查任意 API JSON 载荷是否携带降级/错误标记，若有则显示持久横幅。
+     * 返回 true 表示检测到降级（调用方可据此决定是否继续把数据当正常渲染）。
+     * 识别的标记（覆盖本项目后端各出口）：
+     *   degraded:true · guard_state∈{WARNING,CRITICAL,CIRCUIT_OPEN} · mail_degraded:true
+     *   state:"ERROR" · kb_index_state∈{corrupt,error} · meta.degraded · error 字段（非空且 success/ok 为假）
+     */
+    window.AromisoNotifyDegraded = function (data, label) {
+      if (!data || typeof data !== "object") return false;
+      const reasons = [];
+      const prefix = label ? label + "：" : "";
+      try {
+        if (data.degraded === true) reasons.push(data.reason || data.guard_reason || "服务降级");
+        const gs = data.guard_state || (data.meta && data.meta.guard_state);
+        if (gs && gs !== "NORMAL" && gs !== "OK") reasons.push("数据库保护状态 " + gs);
+        if (data.mail_degraded === true)
+          reasons.push(
+            "邮件闸门降级" +
+              (Array.isArray(data.mail_degraded_reasons) && data.mail_degraded_reasons.length
+                ? "：" + data.mail_degraded_reasons.join(", ")
+                : ""),
+          );
+        if (data.state === "ERROR") reasons.push(data.error || "数据查询失败");
+        const kis = data.kb_index_state;
+        if (kis === "corrupt" || kis === "error")
+          reasons.push("知识库索引" + (kis === "corrupt" ? "损坏" : "读取失败"));
+        if (data.meta && data.meta.degraded === true)
+          reasons.push(data.meta.reason || "部分数据降级");
+        // errors[] 聚合（S13）：后端把失败块放进 errors[] 随 200 返回。
+        const errs = data.errors || (data.meta && data.meta.errors);
+        if (Array.isArray(errs) && errs.length) reasons.push(errs.length + " 项数据未能获取");
+        if (data.versions_error) reasons.push("版本历史读取失败");
+      } catch (_e) {
+        /* 检测本身不得抛错 */
+      }
+      if (!reasons.length) return false;
+      showDegradedBanner(prefix + "部分数据不可用，显示结果可能不完整", reasons.join("；"));
+      return true;
+    };
+
+    // 便捷别名
+    window.AromisoShowDegraded = showDegradedBanner;
+  })();
+</script>
+
+<style>
+  .admin-degraded-container {
+    position: fixed;
+    top: var(--sp-3, 12px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 400;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: min(720px, calc(100vw - 32px));
+    pointer-events: none;
+  }
+  .admin-degraded-banner {
+    pointer-events: auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid color-mix(in srgb, var(--warning, #b8860b) 45%, transparent);
+    background: color-mix(in srgb, var(--warning, #b8860b) 12%, var(--card, #fff));
+    color: var(--ink, #211f1b);
+    font-size: var(--fs-sm, 13px);
+    line-height: 1.5;
+    box-shadow: var(--sh-sm, 0 1px 3px rgba(0, 0, 0, 0.12));
+  }
+  .admin-degraded-text {
+    flex: 1;
+    min-width: 0;
+  }
+  .admin-degraded-close {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--stone, #9a958b);
+    font-size: 18px;
+    line-height: 1;
+    padding: 0 2px;
+  }
+  .admin-degraded-close:hover {
+    color: var(--ink, #211f1b);
+  }
+</style>

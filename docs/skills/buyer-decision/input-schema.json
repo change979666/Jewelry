@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aromiso://skills/buyer-decision/input-schema.json",
+  "title": "Buyer Decision Audit — 输入契约",
+  "description": "一次 L1 手工审查的输入。审查者必须实际读取 sources 列出的全部真实源，不凭记忆、不凭摘要假设（BUYER_DECISION_FRAMEWORK §九）。",
+  "type": "object",
+  "required": ["pageType", "path", "locale", "sources"],
+  "properties": {
+    "pageType": {
+      "type": "string",
+      "enum": ["pdp", "listing", "case-study", "guide", "blog", "landing"],
+      "description": "被审查页面的类型（PDP=产品详情页）"
+    },
+    "path": {
+      "type": "string",
+      "description": "站内路径或 URL，如 /en/products/amber-oud-soy-candle"
+    },
+    "productKey": {
+      "type": "string",
+      "description": "产品 slug（PDP 时必填）",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "locale": {
+      "type": "string",
+      "enum": ["en", "es", "de"]
+    },
+    "caseStudyLinks": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "该产品对应的已知真实案例 slug（featured + 真实案例对应关系）"
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 4,
+      "items": { "type": "string" },
+      "description": "实际读取过的真实源清单，必须包含：页面源码、内容集合字段、docs/SUPPLY_CHAIN_CAPABILITIES.md；FAQ/i18n/已发布案例按存在性列出"
+    },
+    "triggeredBy": {
+      "type": "string",
+      "enum": ["owner", "manual-audit"],
+      "description": "观察期只允许人工触发"
+    },
+    "inquiryContext": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "可选：客户询盘反向验证集中与本页相关的真实客户问题（Email/WhatsApp 记录）"
+    }
+  }
+}

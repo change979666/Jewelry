@@ -1,0 +1,46 @@
+---
+import Icon from "./Icon.astro";
+
+interface Props {
+  url: string;
+  title: string;
+  label: string;
+}
+const { url, title, label } = Astro.props;
+const encUrl = encodeURIComponent(url);
+const encTitle = encodeURIComponent(title);
+const links = [
+  {
+    name: "linkedin",
+    href: `https://www.linkedin.com/sharing/share-offsite/?url=${encUrl}`,
+    lbl: "LinkedIn",
+  },
+  { name: "x", href: `https://twitter.com/intent/tweet?url=${encUrl}&text=${encTitle}`, lbl: "X" },
+  {
+    name: "facebook",
+    href: `https://www.facebook.com/sharer/sharer.php?u=${encUrl}`,
+    lbl: "Facebook",
+  },
+  { name: "mail", href: `mailto:?subject=${encTitle}&body=${encUrl}`, lbl: "Email" },
+];
+---
+
+<div class="rounded-2xl border border-line bg-card p-5">
+  <p class="text-xs font-semibold uppercase tracking-wider text-stone">{label}</p>
+  <div class="mt-3 flex flex-wrap gap-2">
+    {
+      links.map((l) => (
+        <a
+          href={l.href}
+          target="_blank"
+          rel="noopener"
+          aria-label={l.lbl}
+          title={l.lbl}
+          class="grid h-9 w-9 place-items-center rounded-full border border-line bg-beige/50 text-stone transition-all hover:-translate-y-0.5 hover:border-accent hover:text-accent"
+        >
+          <Icon name={l.name} size={16} />
+        </a>
+      ))
+    }
+  </div>
+</div>

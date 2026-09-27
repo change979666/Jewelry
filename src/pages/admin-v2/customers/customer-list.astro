@@ -1,0 +1,309 @@
+---
+// Phase 6 — V2 Customer List
+import "../../../styles/admin-v2.css";
+import AdminShell from "../../../components/admin/layout/AdminShell.astro";
+import Sidebar from "../../../components/admin/layout/Sidebar.astro";
+import Topbar from "../../../components/admin/layout/Topbar.astro";
+import Toast from "../../../components/admin/shared/Toast.astro";
+---
+
+<AdminShell title="客户列表" activeModule="customers">
+  <Sidebar slot="sidebar" activeModule="customers" />
+  <Topbar
+    slot="topbar-left"
+    title="客户列表"
+    breadcrumbs={[
+      { label: "首页", href: "/admin-v2" },
+      { label: "客户", href: "/admin-v2/customers" },
+      { label: "客户列表" },
+    ]}
+  />
+  <Toast />
+
+  <div class="admin-flex-col admin-gap-6">
+    <!-- Page Header -->
+    <div class="admin-page-header admin-flex admin-items-center admin-justify-between">
+      <div>
+        <h1 class="admin-page-title">客户列表</h1>
+        <p class="admin-page-desc">管理所有客户信息，支持搜索、新建和编辑。</p>
+      </div>
+      <button class="admin-btn admin-btn-primary" id="btn-new" onclick="showCreateModal()"
+        >+ 新建客户</button
+      >
+    </div>
+
+    <!-- Search Bar -->
+    <div class="admin-flex admin-items-center admin-justify-between admin-gap-4">
+      <input
+        type="text"
+        id="search-input"
+        placeholder="搜索姓名/邮箱/公司/国家..."
+        class="admin-input"
+        style="max-width:320px;"
+      />
+    </div>
+
+    <!-- Customer Table -->
+    <div class="admin-table-wrapper">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>客户</th>
+            <th>公司</th>
+            <th>邮箱</th>
+            <th>国家</th>
+            <th>行业</th>
+            <th>线索评分</th>
+            <th>状态</th>
+            <th>更新时间</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="customer-list">
+          <tr><td colspan="9" class="admin-empty"><span class="admin-skeleton-text"></span></td></tr
+          >
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="admin-flex admin-items-center admin-justify-between">
+      <div id="pagination-info" class="admin-text-sm admin-text-muted"></div>
+      <div class="admin-flex admin-gap-1" id="pagination-controls"></div>
+    </div>
+  </div>
+
+  <!-- Create/Edit Modal -->
+  <div id="customer-modal" style="display:none;" class="admin-modal-overlay">
+    <div class="admin-modal" style="max-width:600px;">
+      <div class="admin-modal-header">
+        <span id="modal-title">新建客户</span>
+      </div>
+      <div class="admin-modal-body">
+        <input type="hidden" id="edit-id" />
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="admin-form-group">
+            <label class="admin-label" for="f-name">姓名</label>
+            <input type="text" id="f-name" class="admin-input" />
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-label" for="f-email">邮箱</label>
+            <input type="email" id="f-email" class="admin-input" />
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-label" for="f-company">公司</label>
+            <input type="text" id="f-company" class="admin-input" />
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-label" for="f-country">国家</label>
+            <input type="text" id="f-country" class="admin-input" />
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-label" for="f-whatsapp">WhatsApp</label>
+            <input type="text" id="f-whatsapp" class="admin-input" />
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-label" for="f-phone">电话</label>
+            <input type="text" id="f-phone" class="admin-input" />
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-label" for="f-industry">行业</label>
+            <input type="text" id="f-industry" class="admin-input" />
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-label" for="f-website">网站</label>
+            <input type="text" id="f-website" class="admin-input" />
+          </div>
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-label" for="f-notes">备注</label>
+          <textarea id="f-notes" class="admin-textarea"></textarea>
+        </div>
+      </div>
+      <div class="admin-modal-footer">
+        <button class="admin-btn admin-btn-secondary" onclick="hideModal()">取消</button>
+        <button class="admin-btn admin-btn-primary" onclick="saveCustomer()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+    const API = "/api/admin/v2/customers/customers";
+    let currentPage = 1;
+    let currentSearch = "";
+
+    async function load() {
+      const params = new URLSearchParams({ page: currentPage, limit: "20" });
+      if (currentSearch) params.set("search", currentSearch);
+
+      const res = await fetch(`${API}?${params}`);
+      const data = await res.json();
+      if (!data.ok) {
+        document.getElementById("customer-list").innerHTML =
+          '<tr><td colspan="9">加载失败</td></tr>';
+        return;
+      }
+
+      if (!data.data.length) {
+        document.getElementById("customer-list").innerHTML =
+          '<tr><td colspan="9" class="admin-empty">暂无客户</td></tr>';
+      } else {
+        // Keep the raw records in memory so edit controls never need to embed
+        // customer-provided values in inline JavaScript attributes.
+        window.__customers = data.data;
+        document.getElementById("customer-list").innerHTML = data.data
+          .map(
+            (c) => `
+          <tr>
+            <td><a href="/admin-v2/customers/customer-detail?id=${c.id}" style="color:var(--admin-accent);text-decoration:none;font-weight:600;">${esc(c.name)}</a></td>
+            <td>${esc(c.company)}</td>
+            <td>${esc(c.email)}</td>
+            <td>${esc(c.country)}</td>
+            <td>${esc(c.industry)}</td>
+            <td>${c.lead_score || 0}</td>
+            <td><span style="color:${c.status === "active" ? "var(--admin-success)" : "var(--stone)"};">${c.status === "active" ? "活跃" : "非活跃"}</span></td>
+            <td class="text-nowrap">${(c.updated_at || "").slice(0, 10)}</td>
+            <td style="white-space:nowrap;">
+              <a class="admin-btn admin-btn-sm" style="background:#e6f8e8;color:#1f8f35;border-color:#b9e8bf;" href="${esc(c.whatsapp ? `https://wa.me/${String(c.whatsapp).replace(/[^\d]/g, "")}` : "https://wa.me/message/6XKDZ5VGJ56DE1")}" target="_blank" rel="noopener" title="用 WhatsApp 联系该客户">WhatsApp</a>
+              <a class="admin-btn admin-btn-sm" style="background:#e8f1ff;color:#0866ff;border-color:#bcd8ff;" href="https://m.me/1299111856611532" target="_blank" rel="noopener" title="用 Facebook Messenger 联系该客户">Messenger</a>
+              <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm btn-edit" data-id="${esc(c.id)}">编辑</button>
+            </td>
+          </tr>
+        `,
+          )
+          .join("");
+
+        document.querySelectorAll("#customer-list .btn-edit").forEach((button) => {
+          button.addEventListener("click", () => {
+            const id = button.dataset.id;
+            const customer = (window.__customers || []).find((item) => item.id === id);
+            if (customer) editCustomer(customer);
+          });
+        });
+      }
+
+      const p = data.pagination;
+      const infoEl = document.getElementById("pagination-info");
+      const controlsEl = document.getElementById("pagination-controls");
+      if (window.AromisoPagination && controlsEl) {
+        window.AromisoPagination.render(infoEl, controlsEl, {
+          total: p.total,
+          page: p.page,
+          totalPages: p.pages,
+          showPageSize: false,
+          onChange: ({ page: np }) => goPage(np),
+        });
+      } else {
+        if (infoEl) infoEl.textContent = `第 ${p.page}/${p.pages} 页，共 ${p.total} 条`;
+        let btns = "";
+        for (let i = 1; i <= Math.min(p.pages, 5); i++) {
+          btns += `<button class="admin-btn admin-btn-sm ${i === p.page ? "admin-btn-primary" : "admin-btn-secondary"}" onclick="goPage(${i})">${i}</button>`;
+        }
+        if (controlsEl) controlsEl.innerHTML = btns;
+      }
+    }
+
+    function esc(s) {
+      return s
+        ? String(s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;")
+        : "";
+    }
+
+    function showCreateModal() {
+      document.getElementById("modal-title").textContent = "新建客户";
+      document.getElementById("edit-id").value = "";
+      [
+        "f-name",
+        "f-email",
+        "f-company",
+        "f-country",
+        "f-whatsapp",
+        "f-phone",
+        "f-industry",
+        "f-website",
+        "f-notes",
+      ].forEach((id) => (document.getElementById(id).value = ""));
+      document.getElementById("customer-modal").style.display = "flex";
+    }
+    window.showCreateModal = showCreateModal;
+
+    function editCustomer(customer) {
+      document.getElementById("modal-title").textContent = "编辑客户";
+      document.getElementById("edit-id").value = customer.id || "";
+      document.getElementById("f-name").value = customer.name || "";
+      document.getElementById("f-email").value = customer.email || "";
+      document.getElementById("f-company").value = customer.company || "";
+      document.getElementById("f-country").value = customer.country || "";
+      document.getElementById("f-whatsapp").value = customer.whatsapp || "";
+      document.getElementById("f-phone").value = customer.phone || "";
+      document.getElementById("f-industry").value = customer.industry || "";
+      document.getElementById("f-website").value = customer.website || "";
+      document.getElementById("f-notes").value = customer.notes || "";
+      document.getElementById("customer-modal").style.display = "flex";
+    }
+    window.editCustomer = editCustomer;
+
+    function hideModal() {
+      document.getElementById("customer-modal").style.display = "none";
+    }
+    window.hideModal = hideModal;
+
+    // Close modal on overlay click
+    document.getElementById("customer-modal").addEventListener("click", function (e) {
+      if (e.target === this) hideModal();
+    });
+
+    async function saveCustomer() {
+      const id = document.getElementById("edit-id").value;
+      const body = {
+        name: document.getElementById("f-name").value,
+        email: document.getElementById("f-email").value,
+        company: document.getElementById("f-company").value,
+        country: document.getElementById("f-country").value,
+        whatsapp: document.getElementById("f-whatsapp").value,
+        phone: document.getElementById("f-phone").value,
+        industry: document.getElementById("f-industry").value,
+        website: document.getElementById("f-website").value,
+        notes: document.getElementById("f-notes").value,
+      };
+      if (id) body.id = id;
+      const res = await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        hideModal();
+        if (window.showToast) window.showToast(id ? "客户已更新" : "客户已创建", "success");
+        load();
+      } else {
+        if (window.showToast) window.showToast(data.error || "保存失败", "error");
+      }
+    }
+    window.saveCustomer = saveCustomer;
+
+    function goPage(p) {
+      currentPage = p;
+      load();
+    }
+    window.goPage = goPage;
+
+    let searchTimer;
+    document.getElementById("search-input").addEventListener("input", (e) => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        currentSearch = e.target.value;
+        currentPage = 1;
+        load();
+      }, 300);
+    });
+
+    load();
+  </script>
+</AdminShell>

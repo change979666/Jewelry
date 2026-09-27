@@ -1,0 +1,66 @@
+---
+// ---------------------------------------------------------------------------
+//  Jewelry — About (placeholder for V1.0)
+//  A clean brand-story page. The designed About page (brand story, craft &
+//  materials, care, trust, contact) is built in the Commerce/Content phase.
+// ---------------------------------------------------------------------------
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Icon from "../../components/Icon.astro";
+import { SITE_CFG } from "../../consts";
+import { localeStaticPaths } from "../../i18n";
+import type { Locale } from "../../i18n";
+import { getRelativeLocaleUrl } from "astro:i18n";
+
+export const getStaticPaths = localeStaticPaths;
+
+const locale = (Astro.props.locale as Locale) ?? "en";
+const href = (p: string) => getRelativeLocaleUrl(locale, p);
+
+const values = [
+  { icon: "sparkle", title: "Everyday design", desc: "Pieces made to be worn daily, with a modern Gulf sensibility." },
+  { icon: "check", title: "Thoughtful quality", desc: "Honest materials and finishes, with clear care guidance." },
+  { icon: "box", title: "Gift-ready", desc: "Beautiful packaging for gifting moments, big and small." },
+  { icon: "chat", title: "Here for you", desc: "Cash on delivery, easy exchanges and friendly support." },
+];
+---
+
+<BaseLayout locale={locale} title={`About ${SITE_CFG.name}`} description={SITE_CFG.description}>
+  <!-- Hero -->
+  <section class="container-x py-20 text-center lg:py-28">
+    <div class="mx-auto max-w-3xl reveal">
+      <p class="eyebrow">About</p>
+      <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
+        {SITE_CFG.tagline}
+      </h1>
+      <p class="mt-6 text-lg leading-relaxed text-stone">{SITE_CFG.description}</p>
+    </div>
+  </section>
+
+  <!-- Values -->
+  <section class="bg-beige py-20">
+    <div class="container-x">
+      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {
+          values.map((v) => (
+            <div class="reveal card-surface rounded-2xl p-7">
+              <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-ink text-paper">
+                <Icon name={v.icon} size={20} />
+              </span>
+              <h3 class="mt-4 text-base font-semibold">{v.title}</h3>
+              <p class="mt-2 text-sm leading-relaxed text-stone">{v.desc}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="container-x py-20">
+    <div class="reveal card-surface rounded-2xl bg-ink p-12 text-center text-paper">
+      <h2 class="text-2xl font-semibold">Have a question?</h2>
+      <p class="mt-3 text-paper/70">We're happy to help with sizing, materials, orders and gifting.</p>
+      <a href={href("/contact")} class="btn mt-8 inline-flex bg-white text-ink hover:bg-beige">Contact us</a>
+    </div>
+  </section>
+</BaseLayout>

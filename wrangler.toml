@@ -1,0 +1,40 @@
+# ============================================================================
+#  Jewelry DTC — Cloudflare Pages configuration (V1.0)
+#  Completely isolated from the legacy Aromiso project: new D1 / R2 / KV.
+#
+#  STATUS: local template only. Before deploying, create the resources below
+#  (Free plan) and replace every REPLACE_WITH_* placeholder.
+#
+#  Create resources (run once, after `wrangler login`):
+#    wrangler d1 create jewelry-db
+#    wrangler r2 bucket create jewelry-images
+#    wrangler kv namespace create DRAFTS
+#  Then paste the returned ids into this file and set the secrets:
+#    wrangler pages secret put ADMIN_PASSWORD
+#    wrangler pages secret put SILICONFLOW_API_KEY
+# ============================================================================
+
+name = "jewelry"
+pages_build_output_dir = "dist"
+compatibility_date = "2024-11-01"
+
+# KV namespace for CMS drafts (create: wrangler kv namespace create DRAFTS)
+[[kv_namespaces]]
+binding = "DRAFTS"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# D1 database — Jewelry Commerce Core (create: wrangler d1 create jewelry-db)
+[[d1_databases]]
+binding = "DB"
+database_name = "jewelry-db"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+# R2 bucket — product & media images (create: wrangler r2 bucket create jewelry-images)
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "jewelry-images"
+
+# NOTE: the legacy Aromiso "KB" R2 binding (aromiso-kb knowledge base) is not
+# carried over. If a Jewelry knowledge/asset bucket is needed later it can be
+# added as a new binding without touching the Commerce Core.

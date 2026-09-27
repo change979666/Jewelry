@@ -1,0 +1,2139 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import Icon from "../../../components/Icon.astro";
+import CtaBand from "../../../components/CtaBand.astro";
+import Turnstile from "../../../components/Turnstile.astro";
+import { t, localeStaticPaths } from "../../../i18n";
+import type { Locale } from "../../../i18n";
+import { getRelativeLocaleUrl } from "astro:i18n";
+
+export const getStaticPaths = localeStaticPaths;
+
+const locale = (Astro.props.locale as Locale) ?? "en";
+const cartHref = getRelativeLocaleUrl(locale, "/cart");
+const contactHref = getRelativeLocaleUrl(locale, "/contact");
+const oemHref = getRelativeLocaleUrl(locale, "/oem");
+const resourcesHref = getRelativeLocaleUrl(locale, "/resources");
+---
+
+<BaseLayout
+  locale={locale}
+  title={t(locale, "shop.page_title")}
+  description={t(locale, "shop.page_subtitle")}
+>
+  <!-- Hero -->
+  <section class="container-x py-20 lg:py-28">
+    <div class="reveal mx-auto max-w-2xl text-center">
+      <p class="eyebrow">{t(locale, "shop.eyebrow")}</p>
+      <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
+        {t(locale, "shop.page_title")}
+      </h1>
+      <p class="mt-4 text-lg leading-relaxed text-stone">{t(locale, "shop.page_subtitle")}</p>
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
+        <a href="#shop-grid" class="btn btn-primary magnetic">{t(locale, "shop.browse_products")}</a
+        >
+        <a href={oemHref} class="btn btn-ghost magnetic">{t(locale, "shop.request_oem")}</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Shop 2.0 toolbar: quick filters / featured / search / sort (§2, §3) -->
+  <section class="container-x pb-6" id="shop-grid">
+    <!-- Quick Filters (§2): horizontal preset chips -->
+    <div class="flex gap-2 overflow-x-auto pb-1">
+      <button data-qf="all" class="shop-qf-btn shop-pill active whitespace-nowrap"
+        >{t(locale, "shop.all")}</button
+      >
+      <button data-qf="rts" class="shop-qf-btn shop-pill whitespace-nowrap"
+        >{t(locale, "shop.rts_label")}</button
+      >
+      <button data-qf="best" class="shop-qf-btn shop-pill whitespace-nowrap"
+        >{t(locale, "shop.best_sellers")}</button
+      >
+      <button data-qf="new" class="shop-qf-btn shop-pill whitespace-nowrap"
+        >{t(locale, "shop.new_arrivals")}</button
+      >
+      <button data-qf="lowmoq" class="shop-qf-btn shop-pill whitespace-nowrap"
+        >{t(locale, "shop.low_moq")}</button
+      >
+      <button data-qf="plabel" class="shop-qf-btn shop-pill whitespace-nowrap"
+        >{t(locale, "shop.need_private_label")}</button
+      >
+      <button data-qf="oem" class="shop-qf-btn shop-pill whitespace-nowrap"
+        >{t(locale, "shop.oem_odm")}</button
+      >
+    </div>
+
+    <!-- Browse by Category (§2): populated from live catalog facets -->
+    <div id="shop-category-row" class="mt-6 hidden flex-wrap gap-2">
+      <!-- Filled by JS from /api/commerce/products?meta=categories -->
+    </div>
+
+    <!-- Featured merchandising strip (§6): auto-scrolling marquee, hover pauses -->
+    <div id="shop-featured" class="mt-8 hidden">
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-stone">
+        {t(locale, "shop.featured_title")}
+      </h2>
+      <div id="shop-featured-strip" class="mt-3">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+
+    <!-- Toolbar: search + sort + mobile filter trigger -->
+    <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div class="relative w-full sm:max-w-xs">
+        <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-stone">
+          <Icon name="search" size={16} />
+        </span>
+        <input
+          id="shop-search"
+          type="search"
+          placeholder={t(locale, "shop.search_placeholder")}
+          autocomplete="off"
+          class="w-full rounded-full border border-line bg-card py-2.5 pl-11 pr-4 text-sm outline-none transition-colors focus:border-accent"
+        />
+      </div>
+      <div class="flex flex-1 items-center justify-between gap-3 sm:justify-end">
+        <button
+          type="button"
+          id="shop-filter-open"
+          class="btn btn-ghost inline-flex items-center gap-2 text-sm lg:hidden"
+          aria-controls="shop-filter-panel"
+          aria-expanded="false"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"></path></svg
+          >
+          {t(locale, "shop.filters")}
+        </button>
+        <label class="inline-flex items-center gap-2 text-sm text-stone">
+          <span class="hidden sm:inline">{t(locale, "shop.sort_by")}</span>
+          <select
+            id="shop-sort"
+            class="rounded-full border border-line bg-card px-4 py-2 text-sm text-ink outline-none transition-colors focus:border-accent"
+          >
+            <option value="featured">{t(locale, "shop.sort_featured")}</option>
+            <option value="newest">{t(locale, "shop.sort_newest")}</option>
+            <option value="price_asc">{t(locale, "shop.sort_price_asc")}</option>
+            <option value="price_desc">{t(locale, "shop.sort_price_desc")}</option>
+            <option value="moq_asc">{t(locale, "shop.sort_moq_asc")}</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <!-- Result count -->
+    <p class="mt-4 text-sm text-stone">
+      <span id="shop-count" class="font-semibold text-ink">–</span>
+      {t(locale, "shop.products_count")}
+    </p>
+    <!-- V5.69 audit: clarify dataset scope (Shop = full wholesale range; RTS subset in Download Center) -->
+    <p class="mt-1 text-xs text-stone">
+      {t(locale, "shop.scope_note")}
+      <a href={getRelativeLocaleUrl(locale, "/downloads/catalog")} class="underline hover:text-ink">
+        {t(locale, "shop.scope_note_link")}
+      </a>
+    </p>
+
+    <!-- Procurement-oriented hint (V5.25 §10.4): shown when searching/filtering -->
+    <div
+      id="shop-bulk-hint"
+      class="mt-4 hidden flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3"
+    >
+      <p class="text-sm font-medium text-ink">{t(locale, "shop.bulk_hint")}</p>
+      <button type="button" id="shop-bulk-hint-cta" class="btn btn-primary px-4 py-2 text-sm">
+        {t(locale, "shop.request_bulk_quote")} →
+      </button>
+    </div>
+  </section>
+
+  <!-- Filters + Product Grid -->
+  <section class="container-x pb-20">
+    <div class="lg:grid lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-10">
+      <!-- Mobile drawer backdrop -->
+      <div id="shop-filter-backdrop" class="fixed inset-0 z-40 hidden bg-ink/50 lg:hidden"></div>
+
+      <!-- 5-layer filter panel: left sidebar on desktop, drawer on mobile (§3/§9) -->
+      <aside
+        id="shop-filter-panel"
+        class="fixed inset-y-0 left-0 z-50 w-[300px] -translate-x-full overflow-y-auto bg-card p-5 shadow-xl transition-transform duration-300 lg:sticky lg:top-24 lg:self-start lg:inset-auto lg:z-auto lg:w-auto lg:translate-x-0 lg:overflow-visible lg:bg-transparent lg:p-0 lg:shadow-none lg:transition-none"
+      >
+        <div class="mb-4 flex items-center justify-between">
+          <span class="text-sm font-semibold uppercase tracking-wide"
+            >{t(locale, "shop.filters")}</span
+          >
+          <button
+            type="button"
+            id="shop-filter-close"
+            class="rounded-full p-1.5 text-stone hover:bg-beige hover:text-ink"
+            aria-label="Close"
+          >
+            <Icon name="close" size={18} />
+          </button>
+        </div>
+
+        <!-- Layer ① Category -->
+        <div class="border-b border-line pb-5">
+          <h3 class="text-xs font-semibold uppercase tracking-wide text-stone">
+            {t(locale, "shop.category_label")}
+          </h3>
+          <div id="shop-panel-cats" class="mt-3 flex flex-col gap-1.5">
+            <!-- Filled by JS from live facets -->
+          </div>
+        </div>
+
+        <!-- Layer ①b Fragrance Family (V5.66) -->
+        <div id="shop-ff-wrap" class="hidden border-b border-line py-5">
+          <h3 class="text-xs font-semibold uppercase tracking-wide text-stone">
+            {locale === "es" ? "Familia olfativa" : locale === "de" ? "Duftfamilie" : "Fragrance"}
+          </h3>
+          <div id="shop-panel-ff" class="mt-3 flex flex-col gap-1.5"></div>
+        </div>
+
+        <!-- Layer ①c Capacity (V5.66) -->
+        <div id="shop-cap-wrap" class="hidden border-b border-line py-5">
+          <h3 class="text-xs font-semibold uppercase tracking-wide text-stone">
+            {locale === "es" ? "Capacidad" : locale === "de" ? "Kapazität" : "Capacity"}
+          </h3>
+          <div id="shop-panel-cap" class="mt-3 flex flex-col gap-1.5"></div>
+        </div>
+
+        <!-- Layer ② Procurement options -->
+        <div class="border-b border-line py-5">
+          <h3 class="text-xs font-semibold uppercase tracking-wide text-stone">
+            {t(locale, "shop.purchasing_options")}
+          </h3>
+          <div class="mt-3 flex flex-col gap-2.5 text-sm">
+            <label class="flex cursor-pointer items-center gap-2.5">
+              <input
+                type="checkbox"
+                data-proc="rts"
+                class="shop-proc h-4 w-4 rounded border-line accent-[var(--ink)]"
+              />
+              {t(locale, "shop.rts_label")}
+            </label>
+            <label class="flex cursor-pointer items-center gap-2.5">
+              <input
+                type="checkbox"
+                data-proc="sample"
+                class="shop-proc h-4 w-4 rounded border-line accent-[var(--ink)]"
+              />
+              {t(locale, "shop.sample_available")}
+            </label>
+            <label class="flex cursor-pointer items-center gap-2.5">
+              <input
+                type="checkbox"
+                data-proc="plabel"
+                class="shop-proc h-4 w-4 rounded border-line accent-[var(--ink)]"
+              />
+              {t(locale, "shop.need_private_label")}
+            </label>
+            <label class="flex cursor-pointer items-center gap-2.5">
+              <input
+                type="checkbox"
+                data-proc="oem"
+                class="shop-proc h-4 w-4 rounded border-line accent-[var(--ink)]"
+              />
+              {t(locale, "shop.oem_odm")}
+            </label>
+            <label class="flex cursor-pointer items-center gap-2.5">
+              <input
+                type="checkbox"
+                data-proc="bulk"
+                class="shop-proc h-4 w-4 rounded border-line accent-[var(--ink)]"
+              />
+              {t(locale, "shop.bulk_pricing")}
+            </label>
+          </div>
+        </div>
+
+        <!-- Layer ③ MOQ -->
+        <div class="border-b border-line py-5">
+          <h3 class="text-xs font-semibold uppercase tracking-wide text-stone">
+            {t(locale, "shop.filter_moq")}
+          </h3>
+          <select
+            id="shop-filter-moq"
+            class="mt-3 w-full rounded-lg border border-line bg-card px-3 py-2 text-sm outline-none focus:border-accent"
+          >
+            <option value="all">{t(locale, "shop.filter_all")}</option>
+            <option value="le10">{t(locale, "shop.moq_le_10")}</option>
+            <option value="le50">{t(locale, "shop.moq_le_50")}</option>
+            <option value="le100">{t(locale, "shop.moq_le_100")}</option>
+            <option value="gt100">{t(locale, "shop.moq_100_plus")}</option>
+          </select>
+        </div>
+
+        <!-- Layer ④ Price -->
+        <div class="border-b border-line py-5">
+          <h3 class="text-xs font-semibold uppercase tracking-wide text-stone">
+            {t(locale, "shop.filter_price")}
+          </h3>
+          <select
+            id="shop-filter-price"
+            class="mt-3 w-full rounded-lg border border-line bg-card px-3 py-2 text-sm outline-none focus:border-accent"
+          >
+            <option value="all">{t(locale, "shop.filter_all")}</option>
+            <option value="under1">{t(locale, "shop.price_under_1")}</option>
+            <option value="b1_3">{t(locale, "shop.price_1_3")}</option>
+            <option value="b3_5">{t(locale, "shop.price_3_5")}</option>
+            <option value="b5_10">{t(locale, "shop.price_5_10")}</option>
+            <option value="over10">{t(locale, "shop.price_over_10")}</option>
+          </select>
+        </div>
+
+        <!-- Layer ⑤ Availability -->
+        <div class="py-5">
+          <h3 class="text-xs font-semibold uppercase tracking-wide text-stone">
+            {t(locale, "shop.filter_availability")}
+          </h3>
+          <select
+            id="shop-filter-availability"
+            class="mt-3 w-full rounded-lg border border-line bg-card px-3 py-2 text-sm outline-none focus:border-accent"
+          >
+            <option value="all">{t(locale, "shop.filter_all")}</option>
+            <option value="rts">{t(locale, "shop.rts_label")}</option>
+            <option value="instock">{t(locale, "shop.in_stock")}</option>
+          </select>
+        </div>
+
+        <!-- Mobile drawer apply button (§9: Show N Products) -->
+        <button type="button" id="shop-filter-apply" class="btn btn-primary w-full lg:hidden">
+          {t(locale, "shop.show_n_products").replace("{n}", "…")}
+        </button>
+      </aside>
+
+      <!-- Right column: active filters + grid + pagination -->
+      <div class="mt-8 lg:mt-0">
+        <!-- Active Filters chips (§3.3) -->
+        <div id="shop-active-filters" class="mb-4 hidden flex-wrap items-center gap-2">
+          <span class="text-xs font-semibold uppercase tracking-wide text-stone"
+            >{t(locale, "shop.active_filters")}:</span
+          >
+          <span id="shop-active-chips" class="flex flex-wrap items-center gap-2"></span>
+          <button
+            type="button"
+            id="shop-clear-all"
+            class="text-xs font-medium text-accent underline-offset-2 hover:underline"
+          >
+            {t(locale, "shop.clear_all")}
+          </button>
+        </div>
+
+        <div id="shop-product-grid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <!-- Products injected by JS -->
+        </div>
+
+        <!-- Pagination controls -->
+        <div
+          id="shop-pagination"
+          class="hidden mt-10 flex flex-wrap items-center justify-center gap-3"
+        >
+          <button
+            id="shop-prev-btn"
+            onclick="shopGoPage(-1)"
+            class="px-5 py-2.5 rounded-lg border border-line text-sm font-medium hover:bg-stone/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled
+          >
+            ← {t(locale, "shop.prev_page")}
+          </button>
+          <div class="text-sm text-stone">
+            {t(locale, "shop.page_label")}
+            <span id="shop-page-info">1</span>
+            {t(locale, "shop.of_label")}
+            <span id="shop-total-pages">1</span>
+          </div>
+          <button
+            id="shop-next-btn"
+            onclick="shopGoPage(1)"
+            class="px-5 py-2.5 rounded-lg border border-line text-sm font-medium hover:bg-stone/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled
+          >
+            {t(locale, "shop.next_page")} →
+          </button>
+          <div class="flex items-center gap-2 text-sm text-stone">
+            <label for="shop-jump-input">{t(locale, "shop.go_to_page")}</label>
+            <input
+              id="shop-jump-input"
+              type="text"
+              inputmode="numeric"
+              autocomplete="off"
+              class="w-16 rounded-lg border border-line px-2 py-2 text-center text-sm text-ink outline-none focus:border-clay"
+              placeholder="1"
+            />
+            <button
+              id="shop-jump-btn"
+              onclick="shopJumpToPage()"
+              class="px-4 py-2.5 rounded-lg border border-line text-sm font-medium hover:bg-stone/10 transition-colors"
+            >
+              {t(locale, "shop.go_label")}
+            </button>
+          </div>
+        </div>
+
+        <!-- Loading skeleton -->
+        <div id="shop-loading" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {
+            [1, 2, 3, 4, 5, 6, 7, 8].map(() => (
+              <div class="animate-pulse overflow-hidden rounded-xl border border-line">
+                <div class="aspect-square bg-beige" />
+                <div class="space-y-2 p-3">
+                  <div class="h-4 w-3/4 rounded bg-beige" />
+                  <div class="h-3 w-full rounded bg-beige" />
+                  <div class="h-3 w-1/2 rounded bg-beige" />
+                </div>
+              </div>
+            ))
+          }
+        </div>
+
+        <!-- Empty state -->
+        <div id="shop-empty" class="hidden py-16">
+          <div class="mx-auto max-w-2xl text-center">
+            <div
+              class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-beige text-stone"
+            >
+              <Icon name="box" size={26} />
+            </div>
+            <p class="mx-auto max-w-md text-stone">{t(locale, "shop.no_products")}</p>
+            <a href={contactHref} class="btn btn-primary mt-6 inline-flex">{t(locale, "cta")}</a>
+          </div>
+          <div class="mx-auto mt-10 grid max-w-3xl gap-4 sm:grid-cols-2">
+            <a
+              href={oemHref}
+              class="card-surface group rounded-2xl p-6 transition-shadow hover:shadow-md"
+            >
+              <div
+                class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-beige text-ink"
+              >
+                <Icon name="sparkle" size={18} />
+              </div>
+              <h3 class="text-base font-semibold tracking-tight">
+                {t(locale, "shop.empty_oem_title")}
+              </h3>
+              <p class="mt-1.5 text-sm text-stone">{t(locale, "shop.empty_oem_desc")}</p>
+              <span
+                class="mt-3 inline-flex items-center gap-1 text-sm font-medium text-accent group-hover:gap-2 transition-all"
+              >
+                {t(locale, "shop.empty_oem_btn")}
+                <Icon name="arrow" size={14} />
+              </span>
+            </a>
+            <a
+              href={resourcesHref}
+              class="card-surface group rounded-2xl p-6 transition-shadow hover:shadow-md"
+            >
+              <div
+                class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-beige text-ink"
+              >
+                <Icon name="file" size={18} />
+              </div>
+              <h3 class="text-base font-semibold tracking-tight">
+                {t(locale, "shop.empty_guides_title")}
+              </h3>
+              <p class="mt-1.5 text-sm text-stone">{t(locale, "shop.empty_guides_desc")}</p>
+              <span
+                class="mt-3 inline-flex items-center gap-1 text-sm font-medium text-accent group-hover:gap-2 transition-all"
+              >
+                {t(locale, "shop.empty_guides_btn")}
+                <Icon name="arrow" size={14} />
+              </span>
+            </a>
+          </div>
+        </div>
+
+        <!-- No search results -->
+        <div id="shop-no-results" class="hidden py-16 text-center">
+          <p class="mx-auto max-w-md text-stone">{t(locale, "shop.no_results")}</p>
+          <button type="button" id="shop-no-results-clear" class="btn btn-ghost mt-5 text-sm">
+            {t(locale, "shop.clear_all")}
+          </button>
+        </div>
+
+        <!-- API failure state: a failed request is not an empty catalog. -->
+        <div id="shop-error" class="hidden py-16 text-center">
+          <div
+            class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-beige text-stone"
+          >
+            <Icon name="refresh" size={26} />
+          </div>
+          <p class="mx-auto max-w-md text-stone">{t(locale, "shop.catalog_error")}</p>
+          <button
+            type="button"
+            id="shop-retry"
+            class="btn btn-primary mt-6 inline-flex items-center gap-2"
+          >
+            <Icon name="refresh" size={16} />
+            {t(locale, "shop.retry")}
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Can't Find It? — conversion fallback (V5.25 §10.3) -->
+  <section class="container-x pb-20">
+    <div class="reveal overflow-hidden rounded-2xl bg-ink text-paper">
+      <div class="grid items-center gap-8 p-8 sm:p-12 lg:grid-cols-[1fr_auto]">
+        <div>
+          <h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">
+            {t(locale, "shop.cantfind_title")}
+          </h2>
+          <p class="mt-3 max-w-xl leading-relaxed text-paper/70">
+            {t(locale, "shop.cantfind_text")}
+          </p>
+        </div>
+        <div class="flex shrink-0 flex-wrap items-center gap-3">
+          <a
+            href="https://wa.me/message/6XKDZ5VGJ56DE1"
+            target="_blank"
+            rel="noopener"
+            class="btn inline-flex"
+            style="background: #25d366; color: #fff"
+          >
+            <Icon name="whatsapp" class="h-4 w-4" />
+            {t(locale, "shop.whatsapp_us")}
+          </a>
+          <a href={oemHref} class="btn btn-primary magnetic inline-flex">
+            {t(locale, "shop.request_oem_odm")}
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <CtaBand locale={locale} />
+
+  <!-- Product Detail Modal -->
+  <div
+    id="shop-modal"
+    class="fixed inset-0 z-50 hidden items-center justify-center p-4"
+    role="dialog"
+    aria-modal="true"
+  >
+    <div id="shop-modal-backdrop" class="absolute inset-0 bg-ink/60 backdrop-blur-sm"></div>
+    <div
+      class="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-card p-8 shadow-2xl"
+    >
+      <button
+        id="shop-modal-close"
+        class="absolute right-4 top-4 rounded-full p-2 text-stone transition-colors hover:bg-beige hover:text-ink"
+        aria-label="Close"
+      >
+        <Icon name="close" size={20} />
+      </button>
+      <div id="shop-modal-content">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Compare Bar (shown when 2+ products selected) -->
+  <div
+    id="shop-compare-bar"
+    class="fixed inset-x-0 bottom-0 z-40 hidden border-t border-line bg-card/95 shadow-[0_-12px_30px_-18px_rgba(33,31,27,0.4)] backdrop-blur"
+  >
+    <div class="container-x flex items-center justify-between gap-4 py-4">
+      <p class="text-sm text-stone">
+        <span id="shop-compare-count" class="font-semibold text-ink">0</span>
+        {t(locale, "shop.products_count")}
+      </p>
+      <div class="flex items-center gap-3">
+        <button id="shop-compare-clear" class="btn btn-ghost text-sm">
+          {t(locale, "shop.compare_clear")}
+        </button>
+        <button id="shop-compare-btn" class="btn btn-primary text-sm">
+          {t(locale, "shop.compare")}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Inquiry Modal -->
+  <div
+    id="shop-inquiry-modal"
+    class="fixed inset-0 z-50 hidden items-center justify-center p-4"
+    role="dialog"
+    aria-modal="true"
+  >
+    <div id="shop-inquiry-backdrop" class="absolute inset-0 bg-ink/60 backdrop-blur-sm"></div>
+    <div
+      class="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-card p-8 shadow-2xl"
+    >
+      <button
+        id="shop-inquiry-close"
+        class="absolute right-4 top-4 rounded-full p-2 text-stone transition-colors hover:bg-beige hover:text-ink"
+        aria-label="Close"
+      >
+        <Icon name="close" size={20} />
+      </button>
+      <h3 class="text-xl font-semibold tracking-tight">{t(locale, "shop.quick_inquiry")}</h3>
+      <form id="shop-inquiry-form" class="mt-6 space-y-4" novalidate>
+        <div>
+          <label for="shop-inq-product" class="mb-1.5 block text-sm font-medium text-ink"
+            >{t(locale, "shop.inquiry_product")}</label
+          >
+          <input
+            id="shop-inq-product"
+            name="product_name"
+            type="text"
+            readonly
+            class="w-full rounded-xl border border-line bg-beige/50 px-4 py-2.5 text-sm text-stone outline-none"
+          />
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label for="shop-inq-quantity" class="mb-1.5 block text-sm font-medium text-ink"
+              >{t(locale, "shop.inquiry_quantity")}</label
+            >
+            <input
+              id="shop-inq-quantity"
+              name="quantity"
+              type="number"
+              min="1"
+              inputmode="numeric"
+              class="w-full rounded-xl border border-line bg-card px-4 py-2.5 text-sm outline-none transition-colors focus:border-accent"
+            />
+          </div>
+          <div>
+            <label for="shop-inq-country" class="mb-1.5 block text-sm font-medium text-ink"
+              >{t(locale, "shop.inquiry_country")}</label
+            >
+            <input
+              id="shop-inq-country"
+              name="country"
+              type="text"
+              autocomplete="country-name"
+              class="w-full rounded-xl border border-line bg-card px-4 py-2.5 text-sm outline-none transition-colors focus:border-accent"
+            />
+          </div>
+        </div>
+        <div>
+          <label for="shop-inq-email" class="mb-1.5 block text-sm font-medium text-ink"
+            >{t(locale, "shop.inquiry_email")}</label
+          >
+          <input
+            id="shop-inq-email"
+            name="email"
+            type="email"
+            required
+            autocomplete="email"
+            class="w-full rounded-xl border border-line bg-card px-4 py-2.5 text-sm outline-none transition-colors focus:border-accent"
+          />
+        </div>
+        <div>
+          <label for="shop-inq-message" class="mb-1.5 block text-sm font-medium text-ink"
+            >{t(locale, "shop.inquiry_message")}</label
+          >
+          <textarea
+            id="shop-inq-message"
+            name="message"
+            rows="4"
+            required
+            placeholder={t(locale, "shop.inquiry_message_placeholder")}
+            class="w-full resize-y rounded-xl border border-line bg-card px-4 py-2.5 text-sm outline-none transition-colors focus:border-accent"
+          ></textarea>
+        </div>
+        <Turnstile />
+        <button type="submit" id="shop-inq-submit" class="btn btn-primary w-full">
+          {t(locale, "shop.inquiry_submit")}
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div
+    id="shop-toast"
+    class="pointer-events-none fixed bottom-24 left-1/2 z-[60] -translate-x-1/2 rounded-full bg-ink px-5 py-3 text-sm font-medium text-paper opacity-0 shadow-lg transition-opacity duration-300"
+    role="status"
+    aria-live="polite"
+  >
+  </div>
+
+  <!-- Floating Cart Button -->
+  <a
+    href={cartHref}
+    id="shop-cart-fab"
+    class="fixed bottom-6 right-6 z-40 hidden items-center gap-2 rounded-full bg-ink px-5 py-3 text-sm font-medium text-paper shadow-lg transition-transform hover:scale-105"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.6"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <circle cx="9" cy="21" r="1"></circle>
+      <circle cx="20" cy="21" r="1"></circle>
+      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+    </svg>
+    <span id="shop-cart-count">0</span>
+  </a>
+</BaseLayout>
+
+<script
+  is:inline
+  define:vars={{
+    locale,
+
+    i18n: {
+      from_price: t(locale, "shop.from_price"),
+      moq: t(locale, "shop.moq"),
+      lead_time: t(locale, "shop.lead_time"),
+      stock_status: t(locale, "shop.stock_status"),
+      in_stock: t(locale, "shop.in_stock"),
+      limited_stock: t(locale, "shop.limited_stock"),
+      ready_to_ship: t(locale, "shop.ready_to_ship"),
+      out_of_stock: t(locale, "shop.out_of_stock"),
+      add_to_cart: t(locale, "shop.add_to_cart"),
+      view_details: t(locale, "shop.view_details"),
+      price_tiers: t(locale, "shop.price_tiers"),
+      qty: t(locale, "shop.qty"),
+      unit_price: t(locale, "shop.unit_price"),
+      specifications: t(locale, "shop.specifications"),
+      certifications: t(locale, "shop.certifications"),
+      need_bulk: t(locale, "shop.need_bulk"),
+      request_oem_quote: t(locale, "shop.request_oem_quote"),
+      oem_cta: t(locale, "shop.oem_cta"),
+      compare: t(locale, "shop.compare"),
+      compare_clear: t(locale, "shop.compare_clear"),
+      compare_limit: t(locale, "shop.compare_limit"),
+      products_count: t(locale, "shop.products_count"),
+      per_pc: t(locale, "shop.per_pc"),
+      pcs: t(locale, "shop.pcs"),
+      oem_badge: t(locale, "shop.oem_badge"),
+      inquiry_submit: t(locale, "shop.inquiry_submit"),
+      inquiry_submitting: t(locale, "shop.inquiry_submitting"),
+      inquiry_success: t(locale, "shop.inquiry_success"),
+      inquiry_error: t(locale, "shop.inquiry_error"),
+      required: t(locale, "shop.required"),
+      sample_available: t(locale, "shop.sample_available"),
+      low_moq: t(locale, "shop.low_moq"),
+      tag_best_seller: t(locale, "shop.tag_best_seller"),
+      tag_hot_europe: t(locale, "shop.tag_hot_europe"),
+      tag_hot_usa: t(locale, "shop.tag_hot_usa"),
+      tag_fast_delivery: t(locale, "shop.tag_fast_delivery"),
+      tag_new_arrival: t(locale, "shop.tag_new_arrival"),
+      tag_amazon_fba: t(locale, "shop.tag_amazon_fba"),
+      need_private_label: t(locale, "shop.need_private_label"),
+      view_product: t(locale, "shop.view_product"),
+      bulk_pricing_available: t(locale, "shop.bulk_pricing_available"),
+      // V5.26 — five-layer filter chrome
+      rts_label: t(locale, "shop.rts_label"),
+      best_sellers: t(locale, "shop.best_sellers"),
+      show_n_products: t(locale, "shop.show_n_products"),
+      bulk_pricing: t(locale, "shop.bulk_pricing"),
+      oem_odm: t(locale, "shop.oem_odm"),
+      moq_le_10: t(locale, "shop.moq_le_10"),
+      moq_le_50: t(locale, "shop.moq_le_50"),
+      moq_le_100: t(locale, "shop.moq_le_100"),
+      moq_100_plus: t(locale, "shop.moq_100_plus"),
+      price_under_1: t(locale, "shop.price_under_1"),
+      price_1_3: t(locale, "shop.price_1_3"),
+      price_3_5: t(locale, "shop.price_3_5"),
+      price_5_10: t(locale, "shop.price_5_10"),
+      price_over_10: t(locale, "shop.price_over_10"),
+    },
+  }}
+>
+  (function () {
+    const API = "/api/commerce/products";
+    const grid = document.getElementById("shop-product-grid");
+    const loading = document.getElementById("shop-loading");
+    const emptyEl = document.getElementById("shop-empty");
+    const noResults = document.getElementById("shop-no-results");
+    const errorEl = document.getElementById("shop-error");
+    const retryBtn = document.getElementById("shop-retry");
+    const countEl = document.getElementById("shop-count");
+    const searchInput = document.getElementById("shop-search");
+    const sortSel = document.getElementById("shop-sort");
+    const modal = document.getElementById("shop-modal");
+    const cartFab = document.getElementById("shop-cart-fab");
+    const cartCountEl = document.getElementById("shop-cart-count");
+    const moqFilter = document.getElementById("shop-filter-moq");
+    const priceFilter = document.getElementById("shop-filter-price");
+    const availFilter = document.getElementById("shop-filter-availability");
+    const compareBar = document.getElementById("shop-compare-bar");
+    const compareBtn = document.getElementById("shop-compare-btn");
+    const compareClearBtn = document.getElementById("shop-compare-clear");
+    const compareCountEl = document.getElementById("shop-compare-count");
+    const inquiryModal = document.getElementById("shop-inquiry-modal");
+    const inquiryForm = document.getElementById("shop-inquiry-form");
+    const inquirySubmit = document.getElementById("shop-inq-submit");
+    const toastEl = document.getElementById("shop-toast");
+    const filterPanel = document.getElementById("shop-filter-panel");
+    const filterBackdrop = document.getElementById("shop-filter-backdrop");
+    const filterApplyBtn = document.getElementById("shop-filter-apply");
+    const activeFiltersRow = document.getElementById("shop-active-filters");
+    const activeChipsEl = document.getElementById("shop-active-chips");
+
+    // Localized base path for product detail pages, e.g. "/en/shop/".
+    const detailBase = "/" + locale + "/shop/";
+    const compareBase = "/" + locale + "/shop/compare";
+    const MAX_COMPARE = 4;
+
+    // ------------------------------------------------------------------
+    // Shop 2.0: Parse URL params on init for deep links (?category, ?q, etc.)
+    // NOTE: client-side script — must use window.location, NOT Astro.url
+    // (Astro globals are undefined in the browser and would throw here).
+    // ------------------------------------------------------------------
+    const url = new URL(window.location.href);
+    const catParam = url.searchParams.get("category") || "";
+    const qParam = url.searchParams.get("q") || "";
+    const tagParam = url.searchParams.get("tag") || "";
+    const _moqMaxParam = url.searchParams.get("moq_max") || "";
+    const _priceMaxParam = url.searchParams.get("price_max") || "";
+    const rtsParam = url.searchParams.get("rts");
+    const pageParam = Math.max(1, Number(url.searchParams.get("page")) || 1);
+
+    // Map moq/price quick-filter values to internal state
+    let moqState = "all";
+    if (url.searchParams.get("moq") === "le10") moqState = "le10";
+    else if (url.searchParams.get("moq") === "le50") moqState = "le50";
+    else if (url.searchParams.get("moq") === "le100") moqState = "le100";
+    else if (url.searchParams.get("moq") === "gt100") moqState = "gt100";
+
+    let priceState = "all";
+    if (url.searchParams.get("price") === "under1") priceState = "under1";
+    else if (url.searchParams.get("price") === "b1_3") priceState = "b1_3";
+    else if (url.searchParams.get("price") === "b3_5") priceState = "b3_5";
+    else if (url.searchParams.get("price") === "b5_10") priceState = "b5_10";
+
+    const rtsState = rtsParam === "1";
+
+    // ------------------------------------------------------------------
+    // Shop 2.0 state — single source of truth, always fetched server-side
+    // ------------------------------------------------------------------
+    const state = {
+      q: qParam,
+      cat: catParam,
+      ff: "",
+      cap: "",
+      tag: tagParam,
+      rts: rtsState,
+      sample: false,
+      plabel: false,
+      oem: false,
+      bulk: false,
+      avail: "all",
+      moq: moqState,
+      price: priceState,
+      sort: "featured",
+      page: pageParam,
+    };
+    let compareList = []; // slugs selected for comparison
+    let toastTimer = null;
+
+    // Pagination state
+    let shopPage = pageParam;
+    const shopPageSize = 30;
+    let shopTotal = 0;
+    let loadSeq = 0; // ignore out-of-order responses
+
+    // ---- GA4 commerce events ----
+    function trackEvent(name, params) {
+      if (typeof gtag === "function") gtag("event", name, params || {});
+    }
+    trackEvent("shop_view", { locale: locale });
+
+    // ---- Cart helpers (localStorage) ----
+    function getCart() {
+      try {
+        return JSON.parse(localStorage.getItem("aromiso_cart") || "[]");
+      } catch (_e) {
+        return [];
+      }
+    }
+    function saveCart(cart) {
+      localStorage.setItem("aromiso_cart", JSON.stringify(cart));
+      updateCartFab();
+    }
+    function updateCartFab() {
+      const cart = getCart();
+      let total = 0;
+      for (let i = 0; i < cart.length; i++) total += cart[i].quantity || 0;
+      if (cartCountEl) cartCountEl.textContent = total;
+      if (cartFab) cartFab.style.display = cart.length > 0 ? "flex" : "none";
+    }
+    function _addToCart(productId, variantId, quantity) {
+      const cart = getCart();
+      let found = false;
+      for (let i = 0; i < cart.length; i++) {
+        if (cart[i].productId === productId && cart[i].variantId === variantId) {
+          cart[i].quantity += quantity;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        cart.push({ productId: productId, variantId: variantId || null, quantity: quantity });
+      }
+      saveCart(cart);
+      trackEvent("add_to_cart", { product_id: productId, quantity: quantity, locale: locale });
+    }
+
+    // ---- Stock status label ----
+    function _stockLabel(status) {
+      if (status === "in_stock") return i18n.in_stock;
+      if (status === "limited_stock") return i18n.limited_stock;
+      if (status === "ready_to_ship") return i18n.rts_label;
+      if (status === "out_of_stock") return i18n.out_of_stock;
+      return status || "";
+    }
+
+    // ---- HTML escape (safe interpolation of API strings in text & attributes) ----
+    function esc(str) {
+      return String(str == null ? "" : str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    // ---- "Ready to Ship" condition (column backfilled from stock_status) ----
+    function isReadyToShip(p) {
+      return (
+        !!p.ready_to_ship || p.stock_status === "in_stock" || p.stock_status === "ready_to_ship"
+      );
+    }
+
+    // ---- Render product cards (B2B purchasing card, §8) ----
+    function renderGrid(products) {
+      if (!grid) return;
+      grid.innerHTML = "";
+      for (let i = 0; i < products.length; i++) {
+        const p = products[i];
+        const card = document.createElement("article");
+        card.className =
+          "reveal card-surface group relative overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_-20px_rgba(33,31,27,0.4)]";
+
+        // Use short_id for URL if available, fall back to slug
+        const urlKey = p.short_id || p.slug || "";
+        // V5.69 locale integrity: never render a CJK short_name on public pages.
+        const title = esc(
+          p.short_name && !/[\u4e00-\u9fff]/.test(p.short_name)
+            ? p.short_name
+            : p.title || p.short_name || "",
+        );
+        const detailUrl = detailBase + encodeURIComponent(urlKey);
+        const compareKey = p.slug || "";
+        const isChecked = compareList.indexOf(compareKey) !== -1;
+
+        const imgHtml = p.cover_image
+          ? '<img src="' +
+            esc(p.cover_image) +
+            '" alt="' +
+            title +
+            '" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />'
+          : '<div class="absolute inset-0 grid place-items-center text-accent/30"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg></div>';
+
+        // ---- Badges (§7.3/§7.4): priority procurement > sales >
+        // customization > logistics; max 2; only real data (no fabrication) ----
+        const tagLabels = {
+          best_seller: i18n.tag_best_seller,
+          hot_europe: i18n.tag_hot_europe,
+          hot_usa: i18n.tag_hot_usa,
+          fast_delivery: i18n.tag_fast_delivery,
+          new_arrival: i18n.tag_new_arrival,
+          amazon_fba: i18n.tag_amazon_fba,
+        };
+        const badgeCandidates = [];
+        // ① Procurement: READY TO SHIP / LOW MOQ / SAMPLE AVAILABLE
+        if (isReadyToShip(p))
+          badgeCandidates.push({ label: i18n.rts_label, cls: "bg-emerald-600 text-white" });
+        if (Number(p.moq) > 0 && Number(p.moq) <= 50)
+          badgeCandidates.push({ label: i18n.low_moq, cls: "bg-blue-600 text-white" });
+        if (p.sample_available)
+          badgeCandidates.push({ label: i18n.sample_available, cls: "bg-amber-500 text-white" });
+        // ② Sales: manual marketing tags + auto NEW (created_at < 30 days)
+        let tags = p.tags || [];
+        if (typeof tags === "string") {
+          try {
+            tags = JSON.parse(tags);
+          } catch (_e) {
+            tags = [];
+          }
+        }
+        if (!Array.isArray(tags)) tags = [];
+        for (let ti = 0; ti < tags.length; ti++) {
+          const lbl = tagLabels[tags[ti]];
+          if (lbl)
+            badgeCandidates.push({
+              label: lbl,
+              cls:
+                tags[ti] === "fast_delivery"
+                  ? "bg-cyan-600 text-white"
+                  : "bg-violet-600/90 text-white",
+            });
+        }
+        const ageDays = p.created_at
+          ? (Date.now() / 1000 - Number(p.created_at)) / 86400
+          : Infinity;
+        if (ageDays < 30)
+          badgeCandidates.push({ label: i18n.tag_new_arrival, cls: "bg-ink/85 text-paper" });
+        // ③ Customization: PRIVATE LABEL / OEM
+        if (p.private_label)
+          badgeCandidates.push({ label: i18n.need_private_label, cls: "bg-ink/80 text-paper" });
+        else if (p.oem_available)
+          badgeCandidates.push({ label: i18n.oem_badge, cls: "bg-ink/80 text-paper" });
+
+        let badgesHtml = "";
+        for (let bi = 0; bi < Math.min(badgeCandidates.length, 2); bi++) {
+          badgesHtml +=
+            '<span class="rounded-md px-1.5 py-0.5 text-[10px] font-semibold ' +
+            badgeCandidates[bi].cls +
+            '">' +
+            badgeCandidates[bi].label +
+            "</span>";
+        }
+        badgesHtml = badgesHtml
+          ? '<div class="pointer-events-none absolute left-2 top-2 z-10 flex flex-wrap gap-1">' +
+            badgesHtml +
+            "</div>"
+          : "";
+
+        // ---- Price block (§8.3: From $X.XX / pc + bulk note, no tier dump) ----
+        const priceHtml = p.price_from
+          ? '<div class="flex flex-wrap items-baseline gap-x-1.5"><span class="text-[10px] uppercase tracking-wide text-stone">' +
+            i18n.from_price +
+            '</span><span class="text-base font-bold text-ink">$' +
+            Number(p.price_from).toFixed(2) +
+            '</span><span class="text-[10px] text-stone">' +
+            i18n.per_pc +
+            "</span></div>"
+          : "";
+        const bulkHtml =
+          Number(p.tiers_count) >= 2
+            ? '<p class="mt-0.5 text-[10px] text-stone">' + i18n.bulk_pricing_available + "</p>"
+            : "";
+
+        // ---- Procurement strip (§8.2): MOQ │ Ready to Ship │ Private Label ──
+        const stripItems = [
+          '<span class="font-semibold text-ink">' +
+            i18n.moq +
+            " " +
+            (p.moq || 1) +
+            " " +
+            i18n.pcs +
+            "</span>",
+        ];
+        if (isReadyToShip(p))
+          stripItems.push(
+            '<span><span class="text-emerald-600">✓</span> ' + i18n.rts_label + "</span>",
+          );
+        if (p.private_label)
+          stripItems.push(
+            '<span><span class="text-emerald-600">✓</span> ' + i18n.need_private_label + "</span>",
+          );
+        if (p.sample_available)
+          stripItems.push(
+            '<span><span class="text-emerald-600">✓</span> ' + i18n.sample_available + "</span>",
+          );
+
+        card.innerHTML =
+          // Stretched link
+          '<a href="' +
+          detailUrl +
+          '" class="absolute inset-0 z-10" aria-label="' +
+          title +
+          " — " +
+          i18n.view_details +
+          '"><span class="sr-only">' +
+          i18n.view_details +
+          "</span></a>" +
+          // Image + overlay badges (square aspect)
+          '<div class="aspect-square bg-beige relative overflow-hidden">' +
+          imgHtml +
+          badgesHtml +
+          "</div>" +
+          // Body: B2B purchasing card (§8.1)
+          '<div class="p-3">' +
+          '<h3 class="text-sm font-semibold leading-snug line-clamp-2">' +
+          title +
+          "</h3>" +
+          // Audit D01: when the short description is missing we omit the whole <p>
+          // instead of rendering a blank line that pretends to be a description.
+          (typeof p.short_description === "string" && p.short_description.trim()
+            ? '<p class="mt-1 line-clamp-1 text-[11px] leading-relaxed text-stone">' +
+              esc(p.short_description.trim()) +
+              "</p>"
+            : "") +
+          '<div class="mt-2">' +
+          priceHtml +
+          bulkHtml +
+          "</div>" +
+          '<div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-line pt-2 text-[10px] text-stone">' +
+          stripItems.join("") +
+          "</div>" +
+          '<div class="mt-2 flex items-center justify-between">' +
+          '<label class="flex cursor-pointer items-center gap-1.5 text-[11px] text-stone">' +
+          '<input type="checkbox" class="shop-compare-check h-3.5 w-3.5 cursor-pointer" data-slug="' +
+          esc(compareKey) +
+          '"' +
+          (isChecked ? " checked" : "") +
+          " />" +
+          i18n.compare +
+          "</label>" +
+          '<span class="text-[11px] font-medium text-accent">' +
+          i18n.view_product +
+          " →</span>" +
+          "</div>" +
+          "</div>";
+
+        grid.appendChild(card);
+      }
+      // Trigger reveal animation
+      if (window.__initReveal) window.__initReveal();
+    }
+
+    // ------------------------------------------------------------------
+    // Query building — translate state into server-side filter params
+    // ------------------------------------------------------------------
+    function buildParams() {
+      const p = ["limit=" + shopPageSize, "offset=" + (shopPage - 1) * shopPageSize];
+      if (state.q) p.push("q=" + encodeURIComponent(state.q));
+      if (state.cat) p.push("category=" + encodeURIComponent(state.cat));
+      if (state.ff) p.push("ff=" + encodeURIComponent(state.ff));
+      if (state.cap) p.push("cap=" + encodeURIComponent(state.cap));
+      if (state.tag) p.push("tag=" + encodeURIComponent(state.tag));
+      if (state.rts || state.avail === "rts") p.push("rts=1");
+      if (state.sample) p.push("sample=1");
+      if (state.plabel) p.push("plabel=1");
+      if (state.oem) p.push("oem=1");
+      if (state.bulk) p.push("bulk=1");
+      if (state.avail === "instock") p.push("instock=1");
+      if (state.moq === "le10") p.push("moq_max=10");
+      else if (state.moq === "le50") p.push("moq_max=50");
+      else if (state.moq === "le100") p.push("moq_max=100");
+      else if (state.moq === "gt100") p.push("moq_min=101");
+      if (state.price === "under1") p.push("price_max=1");
+      else if (state.price === "b1_3") p.push("price_min=1&price_max=3");
+      else if (state.price === "b3_5") p.push("price_min=3&price_max=5");
+      else if (state.price === "b5_10") p.push("price_min=5&price_max=10");
+      else if (state.price === "over10") p.push("price_min=10");
+      p.push("sort=" + state.sort);
+      return p.join("&");
+    }
+
+    function anyFilterActive() {
+      return (
+        !!state.q ||
+        !!state.cat ||
+        !!state.ff ||
+        !!state.cap ||
+        !!state.tag ||
+        state.rts ||
+        state.sample ||
+        state.plabel ||
+        state.oem ||
+        state.bulk ||
+        state.avail !== "all" ||
+        state.moq !== "all" ||
+        state.price !== "all"
+      );
+    }
+
+    function resetFilters() {
+      state.q = "";
+      state.cat = "";
+      state.ff = "";
+      state.cap = "";
+      state.tag = "";
+      state.rts = false;
+      state.sample = false;
+      state.plabel = false;
+      state.oem = false;
+      state.bulk = false;
+      state.avail = "all";
+      state.moq = "all";
+      state.price = "all";
+    }
+
+    // ------------------------------------------------------------------
+    // Server fetch — every filter/sort/search change round-trips to API
+    // ------------------------------------------------------------------
+    function loadProducts() {
+      const seq = ++loadSeq;
+      if (loading) loading.classList.remove("hidden");
+      if (errorEl) errorEl.classList.add("hidden");
+      fetch(API + "?" + buildParams())
+        .then(function (res) {
+          return res.json().then(function (data) {
+            if (!res.ok) {
+              throw new Error((data && data.error) || "Catalog request failed");
+            }
+            return data;
+          });
+        })
+        .then(function (data) {
+          if (seq !== loadSeq) return; // stale response — a newer request wins
+          const items = data.products || [];
+          shopTotal = data.total || 0;
+          if (loading) loading.classList.add("hidden");
+          if (errorEl) errorEl.classList.add("hidden");
+          renderGrid(items);
+          if (countEl) countEl.textContent = shopTotal;
+          if (grid) grid.classList.toggle("hidden", items.length === 0);
+          const filtered = anyFilterActive();
+          if (emptyEl) emptyEl.classList.toggle("hidden", !(shopTotal === 0 && !filtered));
+          if (noResults) noResults.classList.toggle("hidden", !(shopTotal === 0 && filtered));
+          updateShopPagination();
+          renderActiveChips();
+          syncControls();
+          updateBulkHint();
+          updateDrawerApply();
+        })
+        .catch(function () {
+          if (seq !== loadSeq) return;
+          if (loading) loading.classList.add("hidden");
+          shopTotal = 0;
+          if (grid) {
+            grid.innerHTML = "";
+            grid.classList.add("hidden");
+          }
+          if (emptyEl) emptyEl.classList.add("hidden");
+          if (noResults) noResults.classList.add("hidden");
+          if (errorEl) errorEl.classList.remove("hidden");
+          if (countEl) countEl.textContent = "–";
+          updateShopPagination();
+          updateDrawerApply();
+        });
+    }
+
+    function applyState() {
+      shopPage = 1;
+      state.page = 1;
+      syncPageUrl(1, true);
+      loadProducts();
+    }
+
+    // ------------------------------------------------------------------
+    // Quick Filters presets (§2): radio-style one-shot states
+    // ------------------------------------------------------------------
+    const QF_PRESETS = {
+      all: {},
+      rts: { rts: true },
+      best: { tag: "best_seller" },
+      new: { sort: "newest" },
+      lowmoq: { moq: "le50" },
+      plabel: { plabel: true },
+      oem: { oem: true },
+    };
+    function currentQuickFilter() {
+      // Which preset (if any) exactly matches the current state?
+      if (anyFilterActive()) {
+        const names = ["rts", "best", "lowmoq", "plabel", "oem"];
+        for (let i = 0; i < names.length; i++) {
+          const name = names[i];
+          const probe = QF_PRESETS[name];
+          let match = true;
+          for (const k in probe) {
+            if (state[k] !== probe[k]) {
+              match = false;
+              break;
+            }
+          }
+          // Exact match also requires no other filter to be active
+          if (match) {
+            const clone = {};
+            for (const k2 in probe) clone[k2] = probe[k2];
+            const otherActive =
+              !!state.q ||
+              !!state.cat ||
+              state.sample ||
+              state.bulk ||
+              state.avail !== "all" ||
+              state.price !== "all" ||
+              (state.moq !== "all" && !clone.moq) ||
+              (clone.moq && state.moq !== clone.moq) ||
+              (!!state.tag && !clone.tag) ||
+              (clone.tag && state.tag !== clone.tag) ||
+              (state.rts && !clone.rts);
+            if (!otherActive) return name;
+          }
+        }
+        return "";
+      }
+      if (state.sort === "newest") return "new";
+      if (state.sort === "featured") return "all";
+      return "";
+    }
+    function syncQuickFilters() {
+      const active = currentQuickFilter();
+      const btns = document.querySelectorAll(".shop-qf-btn");
+      for (let i = 0; i < btns.length; i++) {
+        btns[i].classList.toggle("active", btns[i].getAttribute("data-qf") === active);
+      }
+    }
+    const qfBtns = document.querySelectorAll(".shop-qf-btn");
+    for (let qi = 0; qi < qfBtns.length; qi++) {
+      qfBtns[qi].addEventListener("click", function () {
+        const name = this.getAttribute("data-qf");
+        const preset = QF_PRESETS[name] || {};
+        resetFilters();
+        if (name === "all") state.sort = "featured";
+        if (name === "new") state.sort = "newest";
+        for (const k in preset) {
+          if (k !== "sort") state[k] = preset[k];
+        }
+        if (searchInput) searchInput.value = "";
+        trackEvent("shop_quick_filter", { preset: name, locale: locale });
+        if (window.__aroTrack) window.__aroTrack("filter_use", { label: `preset:${name}` });
+        applyState();
+      });
+    }
+
+    // ------------------------------------------------------------------
+    // Category facets (§3.1 layer ①) — rendered from live catalog data
+    // ------------------------------------------------------------------
+    function buildCatButtons(cats) {
+      const row = document.getElementById("shop-category-row");
+      const panel = document.getElementById("shop-panel-cats");
+      let rowHtml = "";
+      let panelHtml = "";
+      for (let i = 0; i < cats.length; i++) {
+        const c = cats[i].category;
+        const n = cats[i].n;
+        rowHtml +=
+          '<button data-catbtn="' +
+          esc(c) +
+          '" class="shop-cat-chip shop-pill whitespace-nowrap">' +
+          esc(c) +
+          ' <span class="opacity-60">(' +
+          n +
+          ")</span></button>";
+        panelHtml +=
+          '<button data-catbtn="' +
+          esc(c) +
+          '" class="shop-cat-chip flex items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-beige">' +
+          "<span>" +
+          esc(c) +
+          '</span><span class="text-xs text-stone">' +
+          n +
+          "</span></button>";
+      }
+      if (row) {
+        row.innerHTML = rowHtml;
+        row.classList.remove("hidden");
+        row.classList.add("flex");
+      }
+      if (panel) panel.innerHTML = panelHtml;
+      syncCategoryButtons();
+    }
+    function syncCategoryButtons() {
+      const btns = document.querySelectorAll("[data-catbtn]");
+      for (let i = 0; i < btns.length; i++) {
+        const on = btns[i].getAttribute("data-catbtn") === state.cat;
+        btns[i].classList.toggle("active", on);
+        btns[i].classList.toggle("bg-beige", on);
+        btns[i].classList.toggle("font-medium", on);
+      }
+    }
+    document.addEventListener("click", function (e) {
+      const catBtn = e.target.closest ? e.target.closest("[data-catbtn]") : null;
+      if (!catBtn) return;
+      const val = catBtn.getAttribute("data-catbtn");
+      state.cat = state.cat === val ? "" : val; // toggle
+      trackEvent("shop_filter", { type: "category", value: state.cat, locale: locale });
+      applyState();
+    });
+    fetch(API + "?meta=categories")
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (data) {
+        if (data && data.categories && data.categories.length) buildCatButtons(data.categories);
+      })
+      .catch(function () {
+        /* facets are progressive enhancement — grid works without them */
+      });
+
+    // ------------------------------------------------------------------
+    // V5.66 facets: fragrance family + capacity buckets (progressive)
+    // ------------------------------------------------------------------
+    function buildFacetButtons(list, panelId, wrapId, key, labelFn) {
+      const panel = document.getElementById(panelId);
+      const wrap = document.getElementById(wrapId);
+      if (!panel || !wrap) return;
+      if (!list || !list.length) {
+        wrap.classList.add("hidden");
+        return;
+      }
+      wrap.classList.remove("hidden");
+      panel.innerHTML = list
+        .map(function (it) {
+          const val = it.slug !== undefined ? it.slug : it.value;
+          const on = state[key] === val;
+          return (
+            '<button data-facet="' +
+            key +
+            '" data-val="' +
+            esc(val) +
+            '" class="shop-cat-chip flex items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-beige' +
+            (on ? " active bg-beige font-medium" : "") +
+            '"><span>' +
+            esc(labelFn(it)) +
+            '</span><span class="text-xs text-stone">' +
+            it.n +
+            "</span></button>"
+          );
+        })
+        .join("");
+    }
+    function syncFacetButtons() {
+      document.querySelectorAll("[data-facet]").forEach(function (b) {
+        const on = state[b.getAttribute("data-facet")] === b.getAttribute("data-val");
+        b.classList.toggle("active", on);
+        b.classList.toggle("bg-beige", on);
+        b.classList.toggle("font-medium", on);
+      });
+    }
+    fetch(API + "?meta=facets")
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data || !data.ok) return;
+        buildFacetButtons(
+          data.fragrance_families,
+          "shop-panel-ff",
+          "shop-ff-wrap",
+          "ff",
+          function (it) {
+            if (locale === "es") return it.name_es || it.name_en;
+            return it.name_en;
+          },
+        );
+        buildFacetButtons(
+          data.capacity_buckets,
+          "shop-panel-cap",
+          "shop-cap-wrap",
+          "cap",
+          function (it) {
+            return it.value;
+          },
+        );
+      })
+      .catch(function () {
+        /* progressive enhancement */
+      });
+    document.addEventListener("click", function (e) {
+      const btn = e.target.closest ? e.target.closest("[data-facet]") : null;
+      if (!btn) return;
+      const key = btn.getAttribute("data-facet");
+      const val = btn.getAttribute("data-val");
+      state[key] = state[key] === val ? "" : val;
+      trackEvent("shop_filter", { type: key, value: state[key], locale: locale });
+      syncFacetButtons();
+      applyState();
+    });
+
+    // ------------------------------------------------------------------
+    // Featured merchandising strip (§6) — only shown when placements exist
+    // ------------------------------------------------------------------
+    (function loadFeatured() {
+      const sec = document.getElementById("shop-featured");
+      const strip = document.getElementById("shop-featured-strip");
+      if (!sec || !strip) return;
+      fetch(API + "?featured=1&limit=8&sort=featured")
+        .then(function (res) {
+          return res.json();
+        })
+        .then(function (data) {
+          const items = data.products || [];
+          if (!items.length) {
+            sec.classList.add("hidden");
+            return;
+          }
+          let html = "";
+          for (let i = 0; i < items.length; i++) {
+            const p = items[i];
+            const urlKey = p.short_id || p.slug || "";
+            // V5.69 locale integrity: never render a CJK short_name on public pages.
+            const title = esc(
+              p.short_name && !/[\u4e00-\u9fff]/.test(p.short_name)
+                ? p.short_name
+                : p.title || p.short_name || "",
+            );
+            html +=
+              '<a href="' +
+              detailBase +
+              encodeURIComponent(urlKey) +
+              '" class="card-surface group mr-4 w-48 shrink-0 overflow-hidden rounded-xl transition-shadow hover:shadow-md">' +
+              '<div class="aspect-square overflow-hidden bg-beige">' +
+              (p.cover_image
+                ? '<img src="' +
+                  esc(p.cover_image) +
+                  '" alt="' +
+                  title +
+                  '" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />'
+                : "") +
+              "</div>" +
+              '<div class="p-3">' +
+              '<h3 class="text-xs font-semibold leading-snug line-clamp-2">' +
+              title +
+              "</h3>" +
+              (p.price_from
+                ? '<p class="mt-1 text-xs text-stone">' +
+                  i18n.from_price +
+                  ' <span class="font-bold text-ink">$' +
+                  Number(p.price_from).toFixed(2) +
+                  "</span>" +
+                  i18n.per_pc +
+                  "</p>"
+                : "") +
+              "</div></a>";
+          }
+          // ---- Marquee: duplicate content for a seamless right-to-left loop ----
+          sec.classList.remove("hidden");
+          const track = document.createElement("div");
+          track.className = "shop-marquee-track";
+          track.innerHTML = html;
+          strip.innerHTML = "";
+          strip.appendChild(track);
+          // Each half of the track must be >= viewport width for a gapless -50% loop.
+          const oneW = track.scrollWidth || 1;
+          const viewW = strip.clientWidth || 1;
+          const pairs = Math.max(1, Math.ceil(viewW / oneW));
+          let full = "";
+          for (let c = 0; c < pairs * 2; c++) full += html;
+          track.innerHTML = full;
+          // Constant speed ~60px/s, based on one half's width.
+          const halfW = oneW * pairs;
+          track.style.animationDuration = Math.max(20, Math.round(halfW / 60)) + "s";
+        })
+        .catch(function () {
+          sec.classList.add("hidden");
+        });
+    })();
+
+    // ------------------------------------------------------------------
+    // Active Filters chips (§3.3)
+    // ------------------------------------------------------------------
+    const MOQ_CHIP_LABELS = {
+      le10: i18n.moq_le_10,
+      le50: i18n.moq_le_50,
+      le100: i18n.moq_le_100,
+      gt100: i18n.moq_100_plus,
+    };
+    const PRICE_CHIP_LABELS = {
+      under1: i18n.price_under_1,
+      b1_3: i18n.price_1_3,
+      b3_5: i18n.price_3_5,
+      b5_10: i18n.price_5_10,
+      over10: i18n.price_over_10,
+    };
+    function renderActiveChips() {
+      if (!activeFiltersRow || !activeChipsEl) return;
+      const chips = [];
+      if (state.q) chips.push({ field: "q", label: "“" + state.q + "”" });
+      if (state.cat) chips.push({ field: "cat", label: state.cat });
+      if (state.tag === "best_seller") chips.push({ field: "tag", label: i18n.best_sellers });
+      if (state.rts) chips.push({ field: "rts", label: i18n.rts_label });
+      if (state.sample) chips.push({ field: "sample", label: i18n.sample_available });
+      if (state.plabel) chips.push({ field: "plabel", label: i18n.need_private_label });
+      if (state.oem) chips.push({ field: "oem", label: i18n.oem_odm });
+      if (state.bulk) chips.push({ field: "bulk", label: i18n.bulk_pricing });
+      if (state.moq !== "all")
+        chips.push({ field: "moq", label: i18n.moq + " " + MOQ_CHIP_LABELS[state.moq] });
+      if (state.price !== "all")
+        chips.push({ field: "price", label: PRICE_CHIP_LABELS[state.price] });
+      if (state.avail === "rts") chips.push({ field: "avail", label: i18n.rts_label });
+      if (state.avail === "instock") chips.push({ field: "avail", label: i18n.in_stock });
+
+      if (!chips.length) {
+        activeFiltersRow.classList.add("hidden");
+        activeFiltersRow.classList.remove("flex");
+        return;
+      }
+      let html = "";
+      for (let i = 0; i < chips.length; i++) {
+        html +=
+          '<button type="button" data-clear="' +
+          chips[i].field +
+          '" class="inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1 text-xs font-medium transition-colors hover:bg-beige">' +
+          esc(chips[i].label) +
+          ' <span class="text-stone">×</span></button>';
+      }
+      activeChipsEl.innerHTML = html;
+      activeFiltersRow.classList.remove("hidden");
+      activeFiltersRow.classList.add("flex");
+    }
+    function clearField(field) {
+      if (field === "q") {
+        state.q = "";
+        if (searchInput) searchInput.value = "";
+      } else if (field === "cat") state.cat = "";
+      else if (field === "tag") state.tag = "";
+      else if (field === "rts") state.rts = false;
+      else if (field === "sample") state.sample = false;
+      else if (field === "plabel") state.plabel = false;
+      else if (field === "oem") state.oem = false;
+      else if (field === "bulk") state.bulk = false;
+      else if (field === "moq") state.moq = "all";
+      else if (field === "price") state.price = "all";
+      else if (field === "avail") state.avail = "all";
+      applyState();
+    }
+    document.addEventListener("click", function (e) {
+      const chip = e.target.closest ? e.target.closest("[data-clear]") : null;
+      if (chip) clearField(chip.getAttribute("data-clear"));
+    });
+    const clearAllBtn = document.getElementById("shop-clear-all");
+    if (clearAllBtn)
+      clearAllBtn.addEventListener("click", function () {
+        resetFilters();
+        if (searchInput) searchInput.value = "";
+        applyState();
+      });
+    const noResultsClear = document.getElementById("shop-no-results-clear");
+    if (noResultsClear)
+      noResultsClear.addEventListener("click", function () {
+        resetFilters();
+        if (searchInput) searchInput.value = "";
+        applyState();
+      });
+    if (retryBtn) retryBtn.addEventListener("click", loadProducts);
+
+    // ------------------------------------------------------------------
+    // Control sync — reflect state in every input after any change
+    // ------------------------------------------------------------------
+    function syncControls() {
+      const procs = document.querySelectorAll(".shop-proc");
+      for (let i = 0; i < procs.length; i++) {
+        const f = procs[i].getAttribute("data-proc");
+        procs[i].checked = !!state[f];
+      }
+      if (moqFilter) moqFilter.value = state.moq;
+      if (priceFilter) priceFilter.value = state.price;
+      if (availFilter) availFilter.value = state.avail;
+      if (sortSel) sortSel.value = state.sort;
+      syncCategoryButtons();
+      syncQuickFilters();
+    }
+
+    // ---- Procurement-oriented hint (§10.4): appears when searching/filtering ----
+    const bulkHint = document.getElementById("shop-bulk-hint");
+    function updateBulkHint() {
+      if (!bulkHint) return;
+      const active = anyFilterActive();
+      bulkHint.classList.toggle("hidden", !active);
+      bulkHint.classList.toggle("flex", active);
+    }
+    const bulkHintCta = document.getElementById("shop-bulk-hint-cta");
+    if (bulkHintCta)
+      bulkHintCta.addEventListener("click", function () {
+        openInquiry("");
+      });
+
+    // ---- Mobile filter drawer (§9) ----
+    function openDrawer() {
+      if (!filterPanel) return;
+      filterPanel.classList.remove("-translate-x-full");
+      if (filterBackdrop) filterBackdrop.classList.remove("hidden");
+      if (filterOpenBtn) filterOpenBtn.setAttribute("aria-expanded", "true");
+      document.body.style.overflow = "hidden";
+    }
+    function closeDrawer() {
+      if (!filterPanel) return;
+      filterPanel.classList.add("-translate-x-full");
+      if (filterBackdrop) filterBackdrop.classList.add("hidden");
+      if (filterOpenBtn) filterOpenBtn.setAttribute("aria-expanded", "false");
+      if (!modal || modal.classList.contains("hidden")) document.body.style.overflow = "";
+    }
+    function updateDrawerApply() {
+      if (!filterApplyBtn) return;
+      filterApplyBtn.textContent = i18n.show_n_products.replace("{n}", String(shopTotal));
+    }
+    const filterOpenBtn = document.getElementById("shop-filter-open");
+    const filterCloseBtn = document.getElementById("shop-filter-close");
+    if (filterOpenBtn) filterOpenBtn.addEventListener("click", openDrawer);
+    if (filterCloseBtn) filterCloseBtn.addEventListener("click", closeDrawer);
+    if (filterBackdrop) filterBackdrop.addEventListener("click", closeDrawer);
+    if (filterApplyBtn) filterApplyBtn.addEventListener("click", closeDrawer);
+
+    // ---- Toast ----
+    function showToast(msg, isError) {
+      if (!toastEl) return;
+      toastEl.textContent = msg || "";
+      toastEl.classList.toggle("bg-red-600", !!isError);
+      toastEl.classList.toggle("bg-ink", !isError);
+      toastEl.classList.add("opacity-100");
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () {
+        toastEl.classList.remove("opacity-100");
+      }, 3200);
+    }
+
+    // ---- Compare selection ----
+    function updateCompareBar() {
+      const n = compareList.length;
+      if (compareCountEl) compareCountEl.textContent = n;
+      if (compareBtn) compareBtn.textContent = i18n.compare + " " + n + " " + i18n.products_count;
+      if (compareBar) compareBar.classList.toggle("hidden", n < 2);
+    }
+    function setCheckbox(slug, checked) {
+      if (!grid) return;
+      const checks = grid.querySelectorAll(".shop-compare-check");
+      for (let i = 0; i < checks.length; i++) {
+        if (checks[i].getAttribute("data-slug") === slug) checks[i].checked = checked;
+      }
+    }
+    function toggleCompare(slug, checked) {
+      if (!slug) return;
+      const idx = compareList.indexOf(slug);
+      if (checked) {
+        if (idx !== -1) return;
+        if (compareList.length >= MAX_COMPARE) {
+          setCheckbox(slug, false);
+          showToast(i18n.compare_limit, true);
+          return;
+        }
+        compareList.push(slug);
+      } else if (idx !== -1) {
+        compareList.splice(idx, 1);
+      }
+      updateCompareBar();
+    }
+    function clearCompare() {
+      compareList = [];
+      if (grid) {
+        const checks = grid.querySelectorAll(".shop-compare-check");
+        for (let i = 0; i < checks.length; i++) checks[i].checked = false;
+      }
+      updateCompareBar();
+    }
+    function goCompare() {
+      if (compareList.length < 2) return;
+      const query = compareList.map(encodeURIComponent).join(",");
+      window.location.href = compareBase + "?products=" + query;
+    }
+
+    // ---- Quick Inquiry modal ----
+    function openInquiry(title) {
+      if (!inquiryModal) return;
+      if (inquiryForm) inquiryForm.reset();
+      const productField = document.getElementById("shop-inq-product");
+      if (productField) productField.value = title || "";
+      inquiryModal.classList.remove("hidden");
+      inquiryModal.classList.add("flex");
+      document.body.style.overflow = "hidden";
+      const emailField = document.getElementById("shop-inq-email");
+      if (emailField)
+        setTimeout(function () {
+          emailField.focus();
+        }, 60);
+      trackEvent("shop_quick_inquiry_open", { product_name: title || "", locale: locale });
+    }
+    function closeInquiry() {
+      if (!inquiryModal) return;
+      inquiryModal.classList.add("hidden");
+      inquiryModal.classList.remove("flex");
+      if (!modal || modal.classList.contains("hidden")) document.body.style.overflow = "";
+    }
+    function submitInquiry(e) {
+      e.preventDefault();
+      const product = (document.getElementById("shop-inq-product").value || "").trim();
+      const quantity = (document.getElementById("shop-inq-quantity").value || "").trim();
+      const country = (document.getElementById("shop-inq-country").value || "").trim();
+      const email = (document.getElementById("shop-inq-email").value || "").trim();
+      const message = (document.getElementById("shop-inq-message").value || "").trim();
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !message) {
+        showToast(i18n.required, true);
+        return;
+      }
+
+      const payload = {
+        product_name: product,
+        quantity: quantity,
+        country: country,
+        email: email,
+        message: message,
+        source_type: "quick_inquiry",
+        source_url: window.location.href,
+        // Aliases expected by the existing /api/inquiry endpoint.
+        product: product,
+        source: "quick_inquiry",
+        name: email.split("@")[0] || "Customer",
+        // Turnstile challenge token (empty string when not configured).
+        "cf-turnstile-response":
+          (document.querySelector("#shop-inquiry-form [name='cf-turnstile-response']") || {})
+            .value || "",
+      };
+      // V4.1 + Studio V1: attribution fields
+      try {
+        payload.session_id = localStorage.getItem("_aro_sid") || "";
+      } catch (_e) {
+        /* noop */
+      }
+      if (window.__aroVideoAttribution) {
+        Object.assign(payload, window.__aroVideoAttribution());
+      }
+
+      inquirySubmit.disabled = true;
+      const originalLabel = inquirySubmit.textContent;
+      inquirySubmit.textContent = i18n.inquiry_submitting;
+      function done() {
+        inquirySubmit.disabled = false;
+        inquirySubmit.textContent = originalLabel;
+      }
+
+      fetch("/api/inquiry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+        .then(function (res) {
+          return res
+            .json()
+            .catch(function () {
+              return {};
+            })
+            .then(function (data) {
+              if (res.ok && data && data.ok !== false) {
+                showToast(i18n.inquiry_success);
+                closeInquiry();
+                trackEvent("generate_lead", {
+                  product_name: product,
+                  source: "quick_inquiry",
+                  locale: locale,
+                });
+                // Studio V1 §16.4: Pixel Lead (independent naming from GA4/behavior events)
+                if (window.__aroFbq) window.__aroFbq("Lead");
+              } else {
+                showToast(i18n.inquiry_error, true);
+              }
+              done();
+            });
+        })
+        .catch(function () {
+          showToast(i18n.inquiry_error, true);
+          done();
+        });
+    }
+
+    // ---- Pagination controls ----
+    function shopTotalPages() {
+      return Math.ceil(shopTotal / shopPageSize) || 1;
+    }
+
+    // 把当前页码写进 URL(?page=)，保留其它筛选参数；刷新/前进后退/分享均可复现。
+    function syncPageUrl(page, replace) {
+      try {
+        const u = new URL(window.location.href);
+        if (page > 1) u.searchParams.set("page", String(page));
+        else u.searchParams.delete("page");
+        const method = replace ? "replaceState" : "pushState";
+        window.history[method]({ shopPage: page }, "", u.toString());
+      } catch {
+        /* URL 同步失败不应阻断翻页 */
+      }
+    }
+
+    function shopNotify(msg, type) {
+      // 前台 shop 有自己的本地 showToast(#shop-toast)；后台全局在公开页不存在。
+      if (typeof showToast === "function") {
+        showToast(msg, type === "warning" || type === "error");
+        return;
+      }
+      if (typeof window.showToast === "function") window.showToast(msg, type || "info");
+      else if (window.AromisoToast) window.AromisoToast.show(msg, type || "info");
+    }
+
+    // 绝对翻页：clamp 到 [1, totalPages]，单次触发请求 + URL 同步。
+    function shopGoToPage(target, opts) {
+      opts = opts || {};
+      const totalPages = shopTotalPages();
+      let n = Math.round(Number(target));
+      if (!isFinite(n)) n = 1;
+      const clamped = Math.min(Math.max(n, 1), totalPages);
+      if (clamped === shopPage && !opts.force) {
+        // 已在目标页：仅同步 URL，避免重复请求。
+        syncPageUrl(clamped, true);
+        return;
+      }
+      shopPage = clamped;
+      state.page = clamped;
+      syncPageUrl(clamped, !!opts.replace);
+      if (loading) loading.classList.remove("hidden");
+      if (grid) grid.classList.add("hidden");
+      loadProducts();
+      if (grid) grid.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    window.shopGoPage = function (delta) {
+      shopGoToPage(shopPage + delta);
+    };
+
+    // 跳页输入：空/非整数 -> 提示且不翻页；越界 -> clamp 并提示。Enter 单次触发。
+    window.shopJumpToPage = function () {
+      const input = document.getElementById("shop-jump-input");
+      if (!input) return;
+      const totalPages = shopTotalPages();
+      const raw = String(input.value || "").trim();
+      if (raw === "") {
+        shopNotify("请输入页码（1-" + totalPages + "）", "warning");
+        return;
+      }
+      const n = Number(raw);
+      if (!isFinite(n) || Math.floor(n) !== n) {
+        shopNotify("请输入有效页码（1-" + totalPages + "）", "warning");
+        input.focus();
+        return;
+      }
+      if (n < 1 || n > totalPages) {
+        const c = Math.min(Math.max(n, 1), totalPages);
+        shopNotify("页码超出范围，已跳转到第 " + c + " 页", "info");
+      }
+      input.value = "";
+      shopGoToPage(n, { force: true });
+    };
+
+    function updateShopPagination() {
+      const pagination = document.getElementById("shop-pagination");
+      const pageInfo = document.getElementById("shop-page-info");
+      const totalPagesEl = document.getElementById("shop-total-pages");
+      const prevBtn = document.getElementById("shop-prev-btn");
+      const nextBtn = document.getElementById("shop-next-btn");
+      const jumpInput = document.getElementById("shop-jump-input");
+
+      const totalPages = shopTotalPages();
+
+      // 深链越界保护（如 ?page=999999）：clamp 回有效页，必要时重载一次；绝不崩溃/死循环。
+      if (shopPage > totalPages) {
+        shopPage = totalPages;
+        state.page = totalPages;
+        syncPageUrl(totalPages, true);
+        if (shopTotal > 0) {
+          loadProducts();
+          return;
+        }
+      }
+
+      if (pagination) {
+        if (shopTotal > shopPageSize) {
+          pagination.classList.remove("hidden");
+          pagination.style.display = "flex";
+        } else {
+          pagination.classList.add("hidden");
+          pagination.style.display = "none";
+        }
+      }
+      if (pageInfo) pageInfo.textContent = shopPage;
+      if (totalPagesEl) totalPagesEl.textContent = totalPages;
+      if (prevBtn) prevBtn.disabled = shopPage <= 1;
+      if (nextBtn) nextBtn.disabled = shopPage >= totalPages;
+      if (jumpInput) jumpInput.placeholder = "1-" + totalPages;
+    }
+
+    // 跳页输入 Enter 单次触发（与点击「Go」等效）。
+    (function bindJumpEnter() {
+      const input = document.getElementById("shop-jump-input");
+      if (!input) return;
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          window.shopJumpToPage();
+        }
+      });
+    })();
+
+    // 浏览器前进/后退：从 URL 重新读取 ?page= 并加载对应页。
+    window.addEventListener("popstate", function () {
+      try {
+        const u = new URL(window.location.href);
+        const p = Number(u.searchParams.get("page")) || 1;
+        if (p !== shopPage) shopGoToPage(p, { replace: true, force: true });
+      } catch {
+        /* ignore */
+      }
+    });
+
+    // ---- Product detail modal ----
+    function closeModal() {
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+      document.body.style.overflow = "";
+    }
+
+    // ---- Event delegation ----
+    // Quick Inquiry button on each card (sits above the stretched link).
+    document.addEventListener("click", function (e) {
+      const inquiryBtn = e.target.closest(".shop-inquiry-btn");
+      if (inquiryBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        openInquiry(inquiryBtn.getAttribute("data-title"));
+        return;
+      }
+    });
+    // Compare checkboxes (change events bubble).
+    document.addEventListener("change", function (e) {
+      const check = e.target.closest ? e.target.closest(".shop-compare-check") : null;
+      if (check) {
+        toggleCompare(check.getAttribute("data-slug"), check.checked);
+      }
+    });
+
+    // Panel: procurement checkboxes (layer ②)
+    const procChecks = document.querySelectorAll(".shop-proc");
+    for (let pi = 0; pi < procChecks.length; pi++) {
+      procChecks[pi].addEventListener("change", function () {
+        const f = this.getAttribute("data-proc");
+        state[f] = this.checked;
+        trackEvent("shop_filter", {
+          type: "procurement",
+          value: f,
+          on: this.checked,
+          locale: locale,
+        });
+        applyState();
+      });
+    }
+    // Panel: MOQ / Price / Availability selects (layers ③④⑤)
+    if (moqFilter)
+      moqFilter.addEventListener("change", function () {
+        state.moq = this.value;
+        applyState();
+      });
+    if (priceFilter)
+      priceFilter.addEventListener("change", function () {
+        state.price = this.value;
+        applyState();
+      });
+    if (availFilter)
+      availFilter.addEventListener("change", function () {
+        state.avail = this.value;
+        applyState();
+      });
+    // Sort dropdown
+    if (sortSel)
+      sortSel.addEventListener("change", function () {
+        state.sort = this.value;
+        trackEvent("shop_sort", { sort: state.sort, locale: locale });
+        applyState();
+      });
+
+    // Search — debounced server round-trip (§4)
+    let searchTimer = null;
+    if (searchInput) {
+      searchInput.addEventListener("input", function () {
+        const val = this.value;
+        if (searchTimer) clearTimeout(searchTimer);
+        searchTimer = setTimeout(function () {
+          state.q = (val || "").trim();
+          if (state.q) {
+            trackEvent("shop_search", { search_term: state.q, locale: locale });
+            if (window.__aroTrack) window.__aroTrack("shop_search", { label: state.q });
+          }
+          applyState();
+        }, 350);
+      });
+      searchInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          if (searchTimer) clearTimeout(searchTimer);
+          state.q = (this.value || "").trim();
+          applyState();
+        }
+      });
+    }
+
+    // Compare bar
+    if (compareBtn) compareBtn.addEventListener("click", goCompare);
+    if (compareClearBtn) compareClearBtn.addEventListener("click", clearCompare);
+
+    // Quick Inquiry modal close + submit
+    const inquiryClose = document.getElementById("shop-inquiry-close");
+    const inquiryBackdrop = document.getElementById("shop-inquiry-backdrop");
+    if (inquiryClose) inquiryClose.addEventListener("click", closeInquiry);
+    if (inquiryBackdrop) inquiryBackdrop.addEventListener("click", closeInquiry);
+    if (inquiryForm) inquiryForm.addEventListener("submit", submitInquiry);
+
+    // Modal close
+    document.getElementById("shop-modal-close").addEventListener("click", closeModal);
+    document.getElementById("shop-modal-backdrop").addEventListener("click", closeModal);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        closeModal();
+        closeInquiry();
+        closeDrawer();
+      }
+    });
+
+    // Init
+    updateCartFab();
+    updateCompareBar();
+    loadProducts();
+  })();
+</script>
+
+<style is:global>
+  .shop-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    border-radius: 9999px;
+    border: 1px solid var(--line);
+    padding: 0.375rem 0.875rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--card);
+    transition: all 0.15s ease;
+    cursor: pointer;
+  }
+  .shop-pill:hover {
+    background: var(--beige);
+  }
+  .shop-pill.active {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+
+  /* Featured marquee: continuous right-to-left loop, hover/focus pauses */
+  #shop-featured-strip {
+    overflow: hidden;
+  }
+  .shop-marquee-track {
+    display: flex;
+    width: max-content;
+    animation: shop-marquee 40s linear infinite;
+  }
+  #shop-featured-strip:hover .shop-marquee-track,
+  #shop-featured-strip:focus-within .shop-marquee-track {
+    animation-play-state: paused;
+  }
+  @keyframes shop-marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .shop-marquee-track {
+      animation: none;
+    }
+    #shop-featured-strip {
+      overflow-x: auto;
+    }
+  }
+</style>

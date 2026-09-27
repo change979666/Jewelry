@@ -1,0 +1,75 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
+import { t, localeStaticPaths } from "../../i18n";
+import type { Locale } from "../../i18n";
+
+export const getStaticPaths = localeStaticPaths;
+
+const locale = (Astro.props.locale as Locale) ?? "en";
+
+type Legal = { title: string; updated: string; sections: { h: string; p: string }[] };
+
+const legal: Record<"en", Legal> = {
+  en: {
+    title: "Privacy Policy",
+    updated: "Last updated: 1 January 2026",
+    sections: [
+      {
+        h: "Information We Collect",
+        p: "We collect information you provide directly — such as your name, email, phone number, shipping address and any message when you place an order or contact us. We also collect basic, anonymous analytics about how the site is used.",
+      },
+      {
+        h: "How We Use Your Information",
+        p: "We use your details to process and deliver orders, arrange cash-on-delivery and returns, provide support, and improve our products and website. We never sell your data to third parties.",
+      },
+      {
+        h: "Cookies",
+        p: "We use a minimal cookie to remember your theme preference (light/dark). No advertising or cross-site tracking cookies are used.",
+      },
+      {
+        h: "Data Retention",
+        p: "Order and customer data is retained only as long as necessary to serve your order and meet legal and tax obligations. You may request deletion at any time.",
+      },
+      {
+        h: "Your Rights",
+        p: "You may request access to, correction of, or deletion of your personal data by contacting support@example.com.",
+      },
+      {
+        h: "Contact",
+        p: "For any privacy question, email support@example.com.",
+      },
+    ],
+  },
+};
+
+// TODO(i18n): author native Arabic legal copy. Until reviewed by a native
+// speaker, Arabic intentionally reuses English rather than machine translation.
+const data: Legal = locale === "en" ? legal.en : legal.en;
+---
+
+<BaseLayout locale={locale} title={data.title} description={data.title}>
+  <Breadcrumbs
+    locale={locale}
+    items={[
+      { label: t(locale, "nav.home"), href: "/" },
+      { label: data.title, href: "/privacy" },
+    ]}
+  />
+  <article class="container-x py-16 lg:py-24">
+    <div class="mx-auto max-w-2xl">
+      <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">{data.title}</h1>
+      <p class="mt-3 text-sm text-stone">{data.updated}</p>
+      <div class="article-prose mt-10">
+        {
+          data.sections.map((s) => (
+            <div class="reveal">
+              <h2>{s.h}</h2>
+              <p>{s.p}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </article>
+</BaseLayout>

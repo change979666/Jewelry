@@ -1,0 +1,187 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
+import CtaBand from "../../components/CtaBand.astro";
+import Icon from "../../components/Icon.astro";
+import { t, localeStaticPaths } from "../../i18n";
+import { c } from "../../i18n-content";
+import type { Locale } from "../../i18n";
+import { getRelativeLocaleUrl } from "astro:i18n";
+
+export const getStaticPaths = localeStaticPaths;
+
+const locale = (Astro.props.locale as Locale) ?? "en";
+const href = (p: string) => getRelativeLocaleUrl(locale, p);
+const faq = c(locale, "faq") as { q: string; a: string }[];
+
+const faqLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faq.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
+
+// V5.27: where-to-next cross-links (FAQ is a high-exit page — route visitors deeper)
+const nextLinks: {
+  icon: string;
+  href: string;
+  label: string;
+  desc: Record<Locale, string>;
+}[] = [
+  {
+    icon: "truck",
+    href: "/shop/?rts=1",
+    label: t(locale, "shop.rts_label"),
+    desc: {
+      en: "Browse in-stock products with 48-hour dispatch.",
+      es: "Explore productos en stock con envío en 48 horas.",
+      de: "Lagerware mit 48-Stunden-Versand entdecken.",
+    },
+  },
+  {
+    icon: "palette",
+    href: "/oem",
+    label: t(locale, "nav.oem"),
+    desc: {
+      en: "Private label and custom manufacturing from ~100 units.",
+      es: "Marca blanca y fabricación a medida desde ~100 unidades.",
+      de: "Private Label und Custom-Fertigung ab ca. 100 Einheiten.",
+    },
+  },
+  {
+    icon: "download",
+    href: "/downloads",
+    label: t(locale, "nav.solutions_downloads"),
+    desc: {
+      en: "SDS/MSDS, transport reports and compliance documents.",
+      es: "SDS/MSDS, informes de transporte y documentos de cumplimiento.",
+      de: "SDS/MSDS, Transportberichte und Konformitätsdokumente.",
+    },
+  },
+  {
+    icon: "globe",
+    href: "/sourcing",
+    label: t(locale, "nav.sourcing"),
+    desc: {
+      en: "Consolidated sourcing across 8 partner factories.",
+      es: "Abastecimiento consolidado en 8 fábricas asociadas.",
+      de: "Konsolidierte Beschaffung über 8 Partnerfabriken.",
+    },
+  },
+];
+const nextTitle: Record<Locale, string> = {
+  en: "Where to Next?",
+  es: "¿A Dónde Ir Ahora?",
+  de: "Wie Geht Es Weiter?",
+};
+---
+
+<BaseLayout
+  locale={locale}
+  title={t(locale, "nav.faq")}
+  description={locale === "de"
+    ? "Häufige Fragen zu MOQ, Lieferzeit, OEM/ODM, Private Label, Versand und Zertifikaten."
+    : locale === "es"
+      ? "Preguntas frecuentes sobre MOQ, tiempos de entrega, OEM/ODM, private label, envíos y certificados."
+      : "Frequently asked questions about MOQ, lead time, OEM/ODM, private label, shipping and certificates."}
+>
+  <Breadcrumbs
+    locale={locale}
+    items={[
+      { label: t(locale, "nav.home"), href: "/" },
+      { label: t(locale, "nav.faq"), href: "/faq" },
+    ]}
+  />
+
+  <section class="container-x py-16 lg:py-24">
+    <div class="mx-auto max-w-2xl text-center reveal">
+      <p class="eyebrow">{t(locale, "nav.faq")}</p>
+      <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
+        {
+          locale === "de"
+            ? "Häufig gestellte Fragen"
+            : locale === "es"
+              ? "Preguntas Frecuentes"
+              : "Frequently Asked Questions"
+        }
+      </h1>
+      <p class="mt-4 text-lg leading-relaxed text-stone">
+        {
+          locale === "de"
+            ? "Antworten auf die wichtigsten Fragen zu Fertigung, MOQ und Versand."
+            : locale === "es"
+              ? "Respuestas a las preguntas clave sobre fabricación, MOQ y envíos."
+              : "Answers to the key questions about manufacturing, MOQ and shipping."
+        }
+      </p>
+    </div>
+  </section>
+
+  <section class="container-x pb-12">
+    <div class="mx-auto max-w-3xl space-y-4">
+      {
+        faq.map((item, i) => (
+          <details
+            id={`faq-${i}`}
+            class="reveal faq-item group scroll-mt-24 rounded-2xl border border-line bg-card p-6 transition-colors open:border-accent/40"
+          >
+            <summary class="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-medium">
+              <span>{item.q}</span>
+              <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-beige text-accent transition-transform duration-300 group-open:rotate-45">
+                <Icon name="close" size={14} />
+              </span>
+            </summary>
+            <p class="mt-3 text-sm leading-relaxed text-stone">{item.a}</p>
+          </details>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- Where to next (V5.27) -->
+  <section class="container-x pb-16">
+    <h2 class="mb-8 text-center text-2xl font-semibold">{nextTitle[locale]}</h2>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {
+        nextLinks.map((l) => (
+          <a
+            href={href(l.href)}
+            class="card-surface group rounded-xl p-5 transition-shadow hover:shadow-md"
+          >
+            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-accent/10 text-accent">
+              <Icon name={l.icon} size={18} />
+            </span>
+            <h3 class="mt-3 text-sm font-semibold group-hover:text-accent transition-colors">
+              {l.label}
+            </h3>
+            <p class="mt-1.5 text-xs leading-relaxed text-stone">{l.desc[locale]}</p>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <CtaBand locale={locale} />
+
+  <script type="application/ld+json" set:html={JSON.stringify(faqLd)} />
+
+  <!-- Auto-expand the question targeted by a #faq-N anchor (global search deep links) -->
+  <script is:inline>
+    (function () {
+      const h = location.hash;
+      if (/^#faq-\d+$/.test(h)) {
+        const el = document.querySelector(h);
+        if (el) el.setAttribute("open", "");
+      }
+    })();
+  </script>
+</BaseLayout>
+
+<style>
+  .faq-item summary::-webkit-details-marker {
+    display: none;
+  }
+</style>

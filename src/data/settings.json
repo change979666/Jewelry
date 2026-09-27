@@ -1,0 +1,24 @@
+{
+  "site": {
+    "name": "Jewelry",
+    "tagline": "Everyday fine jewelry, designed for the Gulf.",
+    "email": "support@example.com",
+    "whatsapp": "",
+    "address": "",
+    "hours": "",
+    "footerNote": "Modern everyday jewelry for KSA and the UAE.",
+    "turnstileSiteKey": ""
+  },
+  "social": {
+    "instagram": "",
+    "tiktok": "",
+    "pinterest": "",
+    "facebook": "",
+    "x": "",
+    "youtube": "",
+    "whatsapp": ""
+  },
+  "page": {
+    "heroImage": "/images/hero.jpg"
+  }
+}

@@ -1,0 +1,19 @@
+---
+// KPICard — 指标卡片
+export interface Props {
+  label: string;
+  value: string | number;
+  change?: string;
+  changeDir?: "up" | "down";
+  href?: string;
+}
+const { label, value, change, changeDir, href } = Astro.props;
+const _tag = href ? "a" : "div";
+const cls = href ? "admin-kpi-card clickable" : "admin-kpi-card";
+---
+
+<tag class={cls} href={href}>
+  <div class="admin-kpi-label">{label}</div>
+  <div class="admin-kpi-value">{value != null ? value : "—"}</div>
+  {change && <div class={`admin-kpi-change ${changeDir || ""}`}>{change}</div>}
+</tag>

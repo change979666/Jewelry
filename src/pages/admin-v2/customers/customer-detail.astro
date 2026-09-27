@@ -1,0 +1,271 @@
+---
+// Phase 6 — V2 Customer 360 Detail (query param: ?id=xxx)
+import "../../../styles/admin-v2.css";
+import AdminShell from "../../../components/admin/layout/AdminShell.astro";
+import Sidebar from "../../../components/admin/layout/Sidebar.astro";
+import Topbar from "../../../components/admin/layout/Topbar.astro";
+import Toast from "../../../components/admin/shared/Toast.astro";
+---
+
+<AdminShell title="客户详情" activeModule="customers">
+  <Sidebar slot="sidebar" activeModule="customers" />
+  <Topbar
+    slot="topbar-left"
+    title="客户 360"
+    breadcrumbs={[
+      { label: "首页", href: "/admin-v2" },
+      { label: "客户", href: "/admin-v2/customers/customer-list" },
+      { label: "详情" },
+    ]}
+  />
+  <Toast />
+
+  <div id="loading" class="admin-text-center admin-text-muted" style="padding:64px;">
+    <span class="admin-skeleton-text"></span>
+  </div>
+  <div id="content" style="display:none;">
+    <!-- Page Header -->
+    <div class="admin-page-header admin-mb-6">
+      <h1 class="admin-page-title">客户详情</h1>
+      <p class="admin-page-desc">客户 360 完整信息视图</p>
+    </div>
+
+    <!-- Customer Info Card -->
+    <section class="admin-card admin-mb-6">
+      <div class="admin-card-body">
+        <div
+          class="admin-flex admin-justify-between admin-items-center"
+          style="flex-wrap:wrap;gap:var(--sp-3);"
+        >
+          <div>
+            <h2 id="cust-name" class="admin-font-bold" style="margin:0;"></h2>
+            <div id="cust-company" class="admin-text-muted" style="margin-top:4px;"></div>
+          </div>
+          <div class="admin-flex admin-gap-2 admin-items-center" style="flex-wrap:wrap;">
+            <a id="btn-email" class="admin-btn admin-btn-primary admin-btn-sm" href="#">✉ 写邮件</a>
+            <a
+              id="btn-whatsapp"
+              class="admin-btn admin-btn-sm"
+              style="background:#e6f8e8;color:#1f8f35;border-color:#b9e8bf;"
+              href="#"
+              target="_blank"
+              rel="noopener">WhatsApp</a
+            >
+            <a
+              id="btn-messenger"
+              class="admin-btn admin-btn-sm"
+              style="background:#e8f1ff;color:#0866ff;border-color:#bcd8ff;"
+              href="https://m.me/1299111856611532"
+              target="_blank"
+              rel="noopener">Messenger</a
+            >
+            <span id="cust-status" class="admin-badge"></span>
+          </div>
+        </div>
+        <div class="admin-flex admin-gap-4" style="flex-wrap:wrap;margin-top:16px;">
+          <div style="flex:1;min-width:180px;">
+            <span class="admin-text-xs admin-text-muted">邮箱</span><div id="cust-email"></div>
+          </div>
+          <div style="flex:1;min-width:180px;">
+            <span class="admin-text-xs admin-text-muted">国家</span><div id="cust-country"></div>
+          </div>
+          <div style="flex:1;min-width:180px;">
+            <span class="admin-text-xs admin-text-muted">WhatsApp</span><div id="cust-whatsapp">
+            </div>
+          </div>
+          <div style="flex:1;min-width:180px;">
+            <span class="admin-text-xs admin-text-muted">电话</span><div id="cust-phone"></div>
+          </div>
+          <div style="flex:1;min-width:180px;">
+            <span class="admin-text-xs admin-text-muted">行业</span><div id="cust-industry"></div>
+          </div>
+          <div style="flex:1;min-width:180px;">
+            <span class="admin-text-xs admin-text-muted">线索评分</span><div
+              id="cust-score"
+              class="admin-font-bold"
+              style="font-size:1.2rem;"
+            >
+            </div>
+          </div>
+        </div>
+        <div id="cust-notes-wrap" style="margin-top:12px;display:none;">
+          <span class="admin-text-xs admin-text-muted">备注</span>
+          <div id="cust-notes" class="admin-card-body admin-text-muted" style="margin-top:4px;">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tabs -->
+    <div class="admin-tabs admin-mb-4" id="detail-tabs">
+      <button class="admin-tab active" data-tab="inquiries">询盘</button>
+      <button class="admin-tab" data-tab="orders">订单</button>
+      <button class="admin-tab" data-tab="oem">OEM 项目</button>
+    </div>
+
+    <!-- Tab Content -->
+    <section id="tab-inquiries" class="admin-card admin-mb-4">
+      <div class="admin-table-wrapper">
+        <table class="admin-table">
+          <thead><tr><th>日期</th><th>产品</th><th>数量</th><th>状态</th><th>来源</th></tr></thead>
+          <tbody id="inquiries-list"></tbody>
+        </table>
+      </div>
+    </section>
+    <section id="tab-orders" class="admin-card admin-mb-4" style="display:none;">
+      <div class="admin-table-wrapper">
+        <table class="admin-table">
+          <thead><tr><th>订单号</th><th>日期</th><th>金额</th><th>状态</th></tr></thead>
+          <tbody id="orders-list"></tbody>
+        </table>
+      </div>
+    </section>
+    <section id="tab-oem" class="admin-card admin-mb-4" style="display:none;">
+      <div class="admin-card-body">
+        <a id="btn-new-oem" class="admin-btn admin-btn-primary admin-mb-4">+ 新建 OEM 项目</a>
+      </div>
+      <div class="admin-table-wrapper">
+        <table class="admin-table">
+          <thead><tr><th>项目名</th><th>阶段</th><th>状态</th><th>创建时间</th></tr></thead>
+          <tbody id="oem-list"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script is:inline>
+    const STAGE_LABELS = {
+      inquiry: "询盘",
+      requirement: "需求",
+      sampling: "打样",
+      quotation: "报价",
+      negotiation: "谈判",
+      confirmed: "确认",
+      production: "生产",
+      shipping: "发货",
+      completed: "完成",
+      cancelled: "取消",
+    };
+
+    async function load() {
+      const id = new URLSearchParams(location.search).get("id");
+      if (!id) {
+        document.getElementById("loading").textContent = "缺少客户 ID";
+        return;
+      }
+
+      const res = await fetch(`/api/admin/v2/customers/customers?id=${id}`);
+      const data = await res.json();
+      if (!data.ok) {
+        document.getElementById("loading").textContent = data.error || "加载失败";
+        return;
+      }
+
+      const c = data.data;
+      document.getElementById("cust-name").textContent = c.name || "未命名";
+      document.getElementById("cust-company").textContent = c.company || "";
+      document.getElementById("cust-email").textContent = c.email || "-";
+      document.getElementById("cust-country").textContent = c.country || "-";
+      document.getElementById("cust-whatsapp").textContent = c.whatsapp || "-";
+      document.getElementById("cust-phone").textContent = c.phone || "-";
+      document.getElementById("cust-industry").textContent = c.industry || "-";
+      document.getElementById("cust-score").textContent = c.lead_score || 0;
+      const statusEl = document.getElementById("cust-status");
+      statusEl.textContent = c.status === "active" ? "活跃" : "非活跃";
+      statusEl.className =
+        "admin-badge " + (c.status === "active" ? "admin-badge-success" : "admin-badge-neutral");
+
+      // V5.73：客户详情页增加一键写邮件 / WhatsApp / Messenger 导流入口。
+      // V5.81 修复：inquiry 参数必须传「询盘 id」（inq-...），此前误传客户 id
+      // （cust_...），后端按 inquiries.id 查询必然 404，导致此处发出的邮件永远失败。
+      // 无询盘时传空串，由 email-send 按收件人邮箱自动解析/创建会话。
+      const emailBtn = document.getElementById("btn-email");
+      if (emailBtn) {
+        if (c.email) {
+          const latestInq =
+            Array.isArray(c.inquiries) && c.inquiries.length && c.inquiries[0].id
+              ? c.inquiries[0].id
+              : "";
+          const params = new URLSearchParams({
+            inquiry: latestInq,
+            to: c.email,
+            name: c.name || "",
+            subject: c.company ? `${c.company} inquiry — Aromiso` : `Inquiry — Aromiso`,
+          });
+          emailBtn.href = `/admin-v2/customers/emails?${params.toString()}`;
+        } else {
+          emailBtn.style.display = "none";
+        }
+      }
+      const waBtn = document.getElementById("btn-whatsapp");
+      if (waBtn) {
+        waBtn.href = c.whatsapp
+          ? `https://wa.me/${String(c.whatsapp).replace(/[^\d]/g, "")}`
+          : "https://wa.me/message/6XKDZ5VGJ56DE1";
+      }
+
+      if (c.notes) {
+        document.getElementById("cust-notes-wrap").style.display = "block";
+        document.getElementById("cust-notes").textContent = c.notes;
+      }
+      document.getElementById("btn-new-oem").href =
+        `/admin-v2/customers/oem-detail?new=1&customer_id=${id}`;
+
+      // Inquiries
+      const inqHtml = (c.inquiries || []).length
+        ? c.inquiries
+            .map(
+              (i) =>
+                `<tr><td>${(i.created_at || "").slice(0, 10)}</td><td>${esc(i.product)}</td><td>${esc(i.quantity)}</td><td>${esc(i.status)}</td><td>${esc(i.source)}</td></tr>`,
+            )
+            .join("")
+        : '<tr><td colspan="5" class="admin-text-center admin-text-muted" style="padding:16px;">暂无询盘</td></tr>';
+      document.getElementById("inquiries-list").innerHTML = inqHtml;
+
+      // Orders
+      const ordHtml = (c.orders || []).length
+        ? c.orders
+            .map(
+              (o) =>
+                `<tr><td>${esc(o.order_number)}</td><td>${(o.created_at || "").slice(0, 10)}</td><td>${o.total || 0} ${esc(o.currency)}</td><td>${esc(o.status)}</td></tr>`,
+            )
+            .join("")
+        : '<tr><td colspan="4" class="admin-text-center admin-text-muted" style="padding:16px;">暂无订单</td></tr>';
+      document.getElementById("orders-list").innerHTML = ordHtml;
+
+      // OEM
+      const oemHtml = (c.oem_projects || []).length
+        ? c.oem_projects
+            .map(
+              (p) =>
+                `<tr><td><a href="/admin-v2/customers/oem-detail?id=${p.id}" class="admin-font-semibold" style="color:var(--admin-accent);text-decoration:none;">${esc(p.project_name)}</a></td><td>${STAGE_LABELS[p.stage] || p.stage}</td><td>${esc(p.status)}</td><td>${(p.created_at || "").slice(0, 10)}</td></tr>`,
+            )
+            .join("")
+        : '<tr><td colspan="4" class="admin-text-center admin-text-muted" style="padding:16px;">暂无 OEM 项目</td></tr>';
+      document.getElementById("oem-list").innerHTML = oemHtml;
+
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("content").style.display = "block";
+    }
+
+    function esc(s) {
+      return s ? String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
+    }
+
+    document.getElementById("detail-tabs").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-tab]");
+      if (!btn) return;
+      document
+        .querySelectorAll("#detail-tabs .admin-tab")
+        .forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      ["inquiries", "orders", "oem"].forEach(
+        (t) =>
+          (document.getElementById("tab-" + t).style.display =
+            t === btn.dataset.tab ? "block" : "none"),
+      );
+    });
+
+    load();
+  </script>
+</AdminShell>

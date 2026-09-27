@@ -1,0 +1,1807 @@
+# Middle East Jewelry DTC V1.0
+
+## Aromiso Commerce OS Fork — 一次性架构定案与开发总指令
+
+> 项目性质：独立于 Aromiso 的全新 B2C Jewelry DTC 项目
+> 目标市场：KSA（第一市场）+ UAE（第二市场），架构兼容 GCC
+> 首发品类：女性日常轻奢饰品
+> 腰带：暂不进入首发商业范围，但底层商品模型不得阻塞未来扩展
+> 首发商品规模：20–30 SKU
+> 后续商品：持续逐个/小批量上架，不采用 Aromiso 式一次性导入数百/上千 SKU
+> 技术策略：Fork Aromiso 成熟 OS，不复制 Aromiso 香薰业务层
+> 部署策略：首期优先 Cloudflare Free，严格做资源保护
+> 架构策略：本 V1.0 定案后，后续禁止因为“小功能”反复推倒重构
+
+---
+
+# 一、项目总原则
+
+这个项目不是“复制一个 Aromiso 改成卖饰品”。
+
+正确关系：
+
+```text
+Aromiso
+   │
+   ├── 通用技术 OS
+   │     ├── Astro
+   │     ├── Cloudflare
+   │     ├── D1
+   │     ├── R2
+   │     ├── KV
+   │     ├── Admin
+   │     ├── Auth
+   │     ├── Media
+   │     ├── SEO
+   │     ├── i18n
+   │     ├── AI
+   │     ├── Automation
+   │     ├── Analytics
+   │     ├── Testing
+   │     └── Deployment
+   │
+   └── Aromiso 香薰业务层
+           ❌ 不复制
+
+
+Jewelry
+   │
+   ├── 继承成熟 OS
+   │
+   └── 新建 Jewelry Commerce Core
+          ├── Product
+          ├── Variant
+          ├── Collection
+          ├── Bundle
+          ├── Gift
+          ├── Cart
+          ├── Order
+          ├── Payment
+          ├── Fulfillment
+          ├── Customer
+          ├── Promotion
+          ├── Review
+          └── Jewelry Content
+```
+
+核心思想：
+
+> **复制“操作系统”，重建“生意”。**
+
+---
+
+# 二、项目必须彻底隔离
+
+Jewelry 必须成为完全独立项目。
+
+禁止共享：
+
+* Git repository
+* Cloudflare project
+* D1 database
+* R2 bucket
+* KV namespace
+* production secrets
+* domain
+* auth cookies
+* production environment variables
+* Aromiso business data
+
+允许复制：
+
+* 通用代码
+* 架构思想
+* 通用组件
+* 通用工具
+* 通用测试模式
+* 通用部署脚本
+* 通用 AI pipeline framework
+
+Jewelry 项目内部不得出现 Aromiso 品牌、香薰商品、香型、精油、B2B 询盘等业务残留。
+
+---
+
+# 三、不要迁移整个 Aromiso Admin
+
+从 Aromiso 复制的是能力，不是所有页面。
+
+## 直接继承
+
+* Auth
+* 权限
+* Admin shell
+* Media Library
+* SEO framework
+* i18n framework
+* API framework
+* D1 access layer
+* R2 access layer
+* KV utilities
+* logging
+* error handling
+* deployment
+* test infrastructure
+* analytics base
+* AI invocation / provider abstraction
+* automation base
+* settings system
+
+## Jewelry 重新实现 Admin
+
+只保留：
+
+```text
+Dashboard
+Products
+Collections
+Orders
+Customers
+Media
+Content
+SEO
+Promotions
+Settings
+```
+
+首版不迁移 Aromiso 中明显属于 B2B/知识库/香薰审核的复杂模块。
+
+Admin 默认面向中文操作者设计。
+
+---
+
+# 四、商业定位冻结
+
+品牌不是：
+
+* SHEIN 中国白牌版
+* 低价饰品批发站
+* Ounass 平替
+* “大量中国货铺满网站”
+
+品牌定位：
+
+> 面向 Gulf 年轻女性的日常轻奢设计饰品品牌。
+
+核心价格带：
+
+```text
+Entry      SAR 79–129
+Core       SAR 149–249
+Statement  SAR 299–399
+Set/Gift   SAR 249–399
+```
+
+战略价格区间是 SAR 99–399，但价格系统不得写死上下限，未来必须允许自然扩展到 SAR 499+。
+
+## 当前调研显示，Namshi 的饰品流量实际上被太阳镜、手表、箱包等占据，站内 jewellery 搜索甚至没有形成有效货架；Ounass 的实测珠宝最低入口约 475 AED；L'azurde 的年轻线最低入口也在 SAR 629 以上；Noon 则存在大量中国白牌、机翻 listing。由此确定 Jewelry V1 的商业切入区间为 SAR 99–399。
+
+# 五、首发产品策略冻结
+
+首发不是 90–100 SKU。
+
+首发：
+
+> **20–30 个真实可售 SKU。**
+
+但是数据库和 CMS 不得为“20–30”做任何硬编码限制。
+
+产品规模必须天然支持：
+
+```text
+1
+→ 10
+→ 30
+→ 50
+→ 100
+→ 300
+→ 1000+
+```
+
+区别在于：
+
+> Jewelry 是“持续上新型目录”，不是 Aromiso 那种“大批量产品数据库”。
+
+因此：
+
+* 支持单商品创建
+* 支持单商品发布
+* 支持小批量创建
+* 支持未来批量导入
+* 不把批量导入作为首版核心能力
+* 不依赖“商品数量达到某个数字”才能正常运行
+
+---
+
+# 六、产品分类体系冻结
+
+保留四条长期产品线：
+
+## A. Everyday
+
+* Earrings
+* Studs
+* Necklaces
+* Bracelets
+* Rings
+
+价格主要：
+
+SAR 79–169
+
+角色：
+
+> 引流 + 基础销售 + 复购
+
+## B. Gulf Design
+
+* Arabic lettering
+* Name jewelry
+* Geometric Gulf-inspired design
+* Layering pieces
+
+价格：
+
+SAR 149–299
+
+角色：
+
+> 差异化核心产品
+
+## C. Gift
+
+* Necklace + Earrings
+* Layered sets
+* Gift box
+* Ramadan / Eid seasonal collections
+
+价格：
+
+SAR 249–399
+
+角色：
+
+> 提升 AOV + 礼赠
+
+## D. Statement
+
+更明显的设计感款式：
+
+SAR 299–399+
+
+角色：
+
+> 品牌视觉 + 价格锚点
+
+该四层结构与当前调研规划保持一致。
+
+---
+
+# 七、产品模型必须一次设计成长期模型
+
+核心：
+
+```text
+Product
+ ├── ProductVariant
+ ├── ProductMedia
+ ├── ProductCollection
+ ├── ProductMaterial
+ ├── ProductPlating
+ ├── ProductSize
+ ├── ProductCare
+ ├── ProductPrice
+ ├── ProductInventory
+ ├── ProductSEO
+ ├── ProductPersonalization
+ └── ProductBundleMembership
+```
+
+不要把：
+
+* Material
+* Color
+* Size
+* Plating
+* Personalization
+
+全部塞进一个 JSON 大字段。
+
+核心交易属性必须结构化。
+
+---
+
+# 八、Bundle 必须从数据库层面成为一级能力
+
+Bundle 不是以后“临时加一个组合商品”。
+
+必须从第一天支持：
+
+```text
+Single Product
+      ↓
+Bundle
+      ↓
+Gift Set
+      ↓
+Personalized Set
+```
+
+示例：
+
+```text
+Necklace
+SAR 149
+
+Necklace + Earrings
+SAR 229
+
+Gift Set
+SAR 279
+
+Personalized Gift Set
+SAR 329
+```
+
+但：
+
+> 首版前台只需要实现简单 Bundle。
+
+不要为了 V1 开发复杂的动态组合引擎。
+
+数据库先把未来空间留好。
+
+---
+
+# 九、Personalization / 刻字
+
+数据库必须支持：
+
+```text
+personalization_type
+personalization_value
+production_status
+```
+
+但 V1 默认关闭。
+
+原因：
+
+刻字不是单纯前端输入框，而是：
+
+```text
+Customer
+ ↓
+Personalization
+ ↓
+Order
+ ↓
+Production Instruction
+ ↓
+Yiwu Supplier
+ ↓
+Laser Engraving
+ ↓
+QC
+ ↓
+Packing
+```
+
+所以：
+
+> **模型预留，商业功能后置。**
+
+未来启用刻字，不应该重新设计 Product 或 Order。
+
+---
+
+# 十、Gift 系统也预留，但不要做复杂
+
+支持：
+
+```text
+is_gift
+gift_wrap
+gift_message
+gift_box
+```
+
+未来可以扩展：
+
+* Ramadan
+* Eid
+* Mother's Day
+* Graduation
+* Wedding
+* Birthday
+
+V1 不做复杂礼品定制后台。
+
+只需：
+
+> 商品 + 简单礼盒/贺卡能力。
+
+---
+
+# 十一、语言架构冻结为 English + Arabic
+
+首发：
+
+```text
+/en/
+ /ar/
+```
+
+Arabic 必须：
+
+> 原生 RTL。
+
+不是：
+
+> 英文生成后再做 Google Translate。
+
+Product Facts 是唯一事实源：
+
+```text
+Material
+Plating
+Color
+Size
+Weight
+Care
+Origin
+```
+
+然后：
+
+```text
+Facts
+ ├── English Content
+ └── Arabic Content
+```
+
+Admin 可以中文操作。
+
+最终三种角色：
+
+```text
+Admin UI → 中文
+Public → English / Arabic
+Arabic → RTL native
+```
+
+不要首发做西班牙语、德语等 Aromiso 的语言体系迁移。
+
+未来可以加语言，但架构不得重写。
+
+---
+
+# 十二、品牌视觉方向冻结
+
+视觉不是“中国跨境独立站”。
+
+不是：
+
+* 促销黄
+* 大量 badge
+* 廉价 SKU 瀑布流
+* 1688 图片直接搬运
+* 过度阿拉伯化
+
+目标：
+
+> 国际现代轻奢视觉 + Gulf identity。
+
+比例：
+
+```text
+80% International Modern Luxury
+20% Gulf Localization
+```
+
+视觉参考：
+
+* Ounass 的编辑部高级感
+* L'azurde 的产品线分层和系列节奏
+* 本地设计师品牌的文化感
+* 但必须具备真正的商品货架和购买闭环
+
+调研中 Ounass 的强项正是极简编辑部视觉和服务体验，而本地设计师品牌则体现 Gulf 文化叙事，但很多缺少完整交易货架。
+
+---
+
+# 十三、Commerce Core 必须自己拥有订单模型
+
+Aromiso 原项目没有真正的 B2C Checkout，因此以下部分：
+
+> **不得假装是复制完成。**
+
+必须新建：
+
+```text
+Customer
+Cart
+CartItem
+
+Order
+OrderItem
+OrderAddress
+OrderPayment
+OrderShipment
+OrderEvent
+OrderNote
+
+Refund
+Return
+```
+
+---
+
+# 十四、Order Lifecycle 一次设计完整
+
+订单状态：
+
+```text
+DRAFT
+PENDING_CONFIRMATION
+CONFIRMED
+PROCESSING
+SHIPPED
+OUT_FOR_DELIVERY
+DELIVERED
+CANCELLED
+RTO
+RETURNED
+REFUNDED
+```
+
+不要用一个 `status` 字段承载所有业务含义。
+
+至少拆：
+
+```text
+order_status
+payment_status
+fulfillment_status
+delivery_status
+confirmation_status
+```
+
+这样以后：
+
+* COD
+* BNPL
+* Card
+* WhatsApp confirmation
+* NDR
+* RTO
+* Refund
+
+都能进入同一个 Order State Machine。
+
+---
+
+# 十五、Cart 设计
+
+首版匿名购物车：
+
+> Local/client-side cart 为主。
+
+原因：
+
+产品页面应该尽可能静态化，不要因为每次浏览商品都调用 Worker/D1。
+
+只有：
+
+```text
+Checkout
+Login
+Order
+```
+
+才进入服务端交易流程。
+
+这样才能最大程度保护 Cloudflare Free 资源。
+
+---
+
+# 十六、支付系统必须“预留高级能力”，但不自己造支付平台
+
+这是整个项目非常重要的一条。
+
+不要：
+
+> 自己处理银行卡号。
+
+不要：
+
+> 自己写一个 Card API。
+
+不要：
+
+> 首版死绑 Tabby。
+
+设计成：
+
+```text
+PaymentService
+      │
+      ├── CODProvider
+      ├── CardProvider
+      ├── BNPLProvider
+      └── WalletProvider
+```
+
+Provider interface：
+
+```text
+createCheckout()
+getPaymentStatus()
+handleWebhook()
+refund()
+cancel()
+```
+
+Order 系统只关心：
+
+```text
+payment_status
+provider
+provider_reference
+checkout_reference
+amount
+currency
+```
+
+不关心具体支付商。
+
+---
+
+# 十七、在线支付 V1 的正确策略
+
+首版先保证：
+
+```text
+COD
+```
+
+同时：
+
+> **保留 Hosted Checkout / Payment Redirect 能力。**
+
+未来接：
+
+* Stripe
+* 本地 PSP
+* Tabby
+* Tamara
+* 其他 GCC 支付服务
+
+均通过 Payment Adapter 接入。
+
+因此未来增加支付方式：
+
+> **添加 provider，不修改 Order Core。**
+
+银行卡信息不得进入自有数据库。
+
+采用支付服务商托管收银页面/Hosted Checkout 时，站点只接收：
+
+```text
+payment session
+payment status
+transaction id
+webhook
+```
+
+这就是本项目所谓的：
+
+> “在线支付能力先留位置，后面通过插件/支付服务商接入”。
+
+目前已能确认的外部生态中有 Stripe、Shopify 等连接能力，但这不意味着它们就是本项目最终支付供应商；代码必须保持 Provider-Agnostic，不允许反过来让某一个供应商决定数据库结构。
+
+---
+
+# 十八、货币与价格模型
+
+不要浮点数。
+
+使用：
+
+```text
+integer minor units
+```
+
+例如：
+
+```text
+SAR 149.00
+→ 14900
+```
+
+ProductPrice 支持：
+
+```text
+market
+currency
+amount
+compare_at_amount
+tax_mode
+effective_from
+effective_to
+```
+
+市场：
+
+```text
+KSA → SAR
+UAE → AED
+```
+
+未来 GCC 新市场可以直接增加。
+
+---
+
+# 十九、税务不要写死在前端
+
+当前调研资料给出了：
+
+* KSA VAT 15%
+* UAE VAT 5%
+
+但代码禁止：
+
+```text
+if Saudi => 15
+if UAE => 5
+```
+
+所有税务参数进入：
+
+```text
+MarketSettings
+TaxConfig
+```
+
+这样法规变化不需要重新改业务逻辑。
+
+---
+
+# 二十、Shipping / Fulfillment 也必须 Provider-Agnostic
+
+模型：
+
+```text
+FulfillmentProvider
+      │
+      ├── Manual
+      ├── iMile
+      ├── Aramex
+      └── Future Providers
+```
+
+V1：
+
+> **Manual fulfillment first.**
+
+后台可以：
+
+```text
+carrier
+tracking_number
+tracking_url
+shipment_status
+shipped_at
+delivered_at
+```
+
+未来需要接 iMile API 时：
+
+> 只增加 Adapter。
+
+不要让整个 Order 表围绕 iMile 定制。
+
+---
+
+# 二十一、WhatsApp 是 Customer Operations Layer
+
+未来系统需要支持：
+
+```text
+Order Confirmation
+Address Confirmation
+Shipping Notification
+NDR Recovery
+Customer Support
+Repeat Purchase
+New Product Notification
+```
+
+架构：
+
+```text
+NotificationService
+      │
+      ├── Email
+      ├── WhatsApp
+      └── SMS / Future
+```
+
+V1 可以先做接口和事件。
+
+真正的 WhatsApp Provider 后接。
+
+---
+
+# 二十二、RTO 必须从第一天进入订单模型
+
+不要把 RTO 当“物流备注”。
+
+需要：
+
+```text
+delivery_attempt
+ndr_event
+rto_reason
+rto_at
+return_shipping_cost
+```
+
+Order Event：
+
+```text
+CONFIRMED
+SHIPPED
+OUT_FOR_DELIVERY
+DELIVERY_FAILED
+NDR
+DELIVERED
+RTO
+```
+
+以后才能计算：
+
+```text
+RTO Rate
+First Attempt Delivery Rate
+Confirmation Rate
+NDR Recovery Rate
+```
+
+---
+
+# 二十三、Product AI 继承 Aromiso 的 AI Gate 思想，但业务重新定义
+
+不要迁移 Aromiso 的香薰 prompt。
+
+重新建立 Jewelry Product Pipeline：
+
+```text
+Supplier Facts
+      ↓
+Fact Extraction
+      ↓
+Quality Check
+      ↓
+English Content
+      ↓
+Arabic Content
+      ↓
+SEO
+      ↓
+Image Validation
+      ↓
+Publish
+      ↓
+Verify
+```
+
+必须保证：
+
+> AI 不能创造供应商没有提供的材质、镀层、过敏、防水、医疗或质量承诺。
+
+例如：
+
+未经证据不得自动生成：
+
+* hypoallergenic
+* waterproof
+* tarnish-proof
+* nickel-free
+* 18K solid gold
+
+如果事实无法确认：
+
+> 标记为 UNKNOWN。
+
+不能猜。
+
+---
+
+# 二十四、Jewelry Product Facts 是唯一 Truth Source
+
+Product 内容结构：
+
+```text
+Facts
+ ├── Material
+ ├── Base Material
+ ├── Plating
+ ├── Color
+ ├── Dimensions
+ ├── Weight
+ ├── Size
+ ├── Care
+ └── Supplier Evidence
+
+Marketing
+ ├── Title
+ ├── Description
+ ├── Highlights
+ ├── Styling
+ ├── Gift Copy
+ └── SEO
+
+Localization
+ ├── EN
+ └── AR
+```
+
+禁止：
+
+> Marketing Copy 反向污染 Product Facts。
+
+---
+
+# 二十五、图片系统直接继承 Aromiso R2，但重新定义 Jewelry Media
+
+支持：
+
+```text
+Hero
+Product Front
+Product Detail
+On Model
+Scale Reference
+Packaging
+Lifestyle
+Collection
+```
+
+要求：
+
+* AVIF/WebP 优先
+* responsive sizes
+* lazy loading
+* CDN
+* alt text
+* Arabic / English metadata
+* 图片与 Product 结构化关联
+
+不要把图片直接存 D1。
+
+R2 负责媒体。
+
+当前 R2 Free 每月包含 10GB 标准存储、100 万 Class A、1000 万 Class B，且互联网 egress 免费，因此首发20–30 SKU完全可以沿用R2方案；但仍需避免无意义图片变体爆炸。
+
+---
+
+# 二十六、SEO 一次设计成 Jewelry SEO，不复制 Aromiso SEO 内容
+
+基础设施复制：
+
+* sitemap
+* canonical
+* robots
+* structured data
+* hreflang
+* meta
+* OG
+* breadcrumb
+* internal links
+
+但 SEO 业务模型改为：
+
+```text
+Category
+↓
+Collection
+↓
+Product
+↓
+Editorial / Guide
+↓
+Search Intent
+```
+
+关键词方向：
+
+```text
+Gold Earrings
+Gold Necklace
+Arabic Name Necklace
+Arabic Jewelry
+Jewelry Saudi Arabia
+Jewelry UAE
+Gifts for Her
+Ramadan Gifts
+Eid Gifts
+Everyday Gold Jewelry
+```
+
+不要为了 SEO 批量生成数千篇薄内容。
+
+---
+
+# 二十七、首页结构冻结
+
+首页不是传统跨境站：
+
+```text
+Banner
+100 products
+Banner
+20 discounts
+```
+
+而是：
+
+```text
+Hero
+↓
+Featured Collection
+↓
+Best Sellers
+↓
+Everyday Jewelry
+↓
+Gulf Design
+↓
+Gift Sets
+↓
+Editorial Story
+↓
+Social Proof
+↓
+Gift / Shipping / BNPL / COD service area
+```
+
+目的：
+
+> 品牌感 → 产品 → 场景 → 信任 → 购买。
+
+---
+
+# 二十八、Collection 页面必须支持持续增长
+
+Collection 不允许写死：
+
+```text
+20 products
+4 pages
+```
+
+而使用：
+
+```text
+filter
+sort
+pagination
+cursor / offset
+```
+
+并确保查询有索引。
+
+禁止全表扫描。
+
+因为从 2026 年 9 月 1 日开始，Cloudflare D1 Free 超出每日免费 rows read / write 限额后查询会失败，因此数据库必须从第一天就做索引和资源保护，而不是以后流量大了再补。
+
+---
+
+# 二十九、Search 不要一开始做复杂搜索引擎
+
+V1：
+
+* Product title
+* SKU
+* Collection
+* tags
+* material
+* Arabic title
+* English title
+
+使用 D1 索引/简单搜索。
+
+未来产品增长后再接更专业的 Search Provider。
+
+不要 V1 就上 Elasticsearch / Algolia 等复杂外部依赖。
+
+---
+
+# 三十、Admin 产品创建必须适合“一件一件上新”
+
+核心流程：
+
+```text
+Create Product
+ ↓
+Upload Media
+ ↓
+Enter Facts
+ ↓
+Generate Content
+ ↓
+Generate Arabic
+ ↓
+SEO
+ ↓
+Preview
+ ↓
+Publish
+```
+
+不要强迫运营人员：
+
+> 先建立100个产品 CSV 才能开始经营。
+
+这个项目的默认动作是：
+
+> **Create One Product → Publish One Product**
+
+---
+
+# 三十一、后台 Dashboard 不再关注“产品处理数量”
+
+Jewelry Dashboard 核心指标：
+
+```text
+Revenue
+Orders
+AOV
+Conversion
+Top Products
+Stock Alerts
+COD Confirmation Rate
+RTO Rate
+New Customers
+Returning Customers
+```
+
+第二层：
+
+```text
+Traffic
+Add to Cart
+Begin Checkout
+Purchase
+CPA
+ROAS
+```
+
+第三层：
+
+```text
+Product Performance
+Bundle Performance
+Collection Performance
+```
+
+这和 Aromiso 的 B2B Demand Generation Dashboard 必须区分。
+
+---
+
+# 三十二、Analytics 改成标准 B2C Ecommerce Events
+
+至少：
+
+```text
+view_item
+view_item_list
+select_item
+add_to_cart
+remove_from_cart
+view_cart
+begin_checkout
+add_shipping_info
+add_payment_info
+purchase
+refund
+```
+
+并保留：
+
+```text
+product_id
+sku
+collection
+currency
+value
+quantity
+```
+
+以后才能真正知道：
+
+> 哪个产品在卖，而不是哪个页面在被访问。
+
+---
+
+# 三十三、Review 系统必须预留
+
+Product：
+
+```text
+rating
+review_count
+```
+
+Review：
+
+```text
+customer
+order
+product
+rating
+title
+content
+verified_purchase
+status
+created_at
+```
+
+首版可以只做数据模型和展示。
+
+未来再做自动邀请评价。
+
+---
+
+# 三十四、Promotion 系统不要做死
+
+至少支持：
+
+```text
+coupon
+percentage_discount
+fixed_discount
+free_shipping
+bundle_price
+gift
+```
+
+未来可以扩展：
+
+```text
+first_order
+collection_discount
+birthday
+Ramadan
+Eid
+limited_drop
+```
+
+不要把折扣逻辑硬编码进 Product。
+
+---
+
+# 三十五、Cloudflare Free 约束是架构条件，不是部署结束后的监控指标
+
+默认：
+
+> 静态优先、动态最少。
+
+Public：
+
+```text
+Home        → Static
+Collection  → Static / Cached
+Product     → Static / Cached
+Guide       → Static
+FAQ         → Static
+```
+
+Dynamic：
+
+```text
+Cart
+Checkout
+Order
+Account
+Admin
+Webhook
+```
+
+Workers Free 当前限制包括：
+
+* 100,000 requests/day
+* 10ms CPU/request
+* 50 subrequests/request
+
+因此：
+
+> 不要把每一次商品浏览变成 D1 查询。
+
+---
+
+# 三十六、D1 资源保护必须内置
+
+必须：
+
+* 索引核心查询
+* 避免 SELECT *
+* 避免 N+1
+* 避免无条件 COUNT(*)
+* 避免首页大量实时查询
+* 避免后台自动轮询
+* 避免每次浏览写数据库
+* 对列表 API 加上限
+* 对搜索加分页
+* 对统计做聚合缓存
+
+数据库查询必须优先：
+
+```text KV/cache
+↓
+Static
+↓
+D1
+```
+
+而不是：
+
+```text User request
+↓
+D1
+↓
+D1
+↓
+D1
+↓
+D1
+```
+
+---
+
+# 三十七、不要把 Commerce Core 做成“Shopify 克隆”
+
+这个项目不追求开发：
+
+* Shopify Admin
+* Shopify App Store
+* Shopify 全部物流系统
+* ERP
+* CRM
+* POS
+
+目标只有：
+
+> **建立属于自己的轻量 Jewelry Commerce OS。**
+
+外部专业能力以后通过：
+
+```text Provider Adapter
+Plugin
+Hosted Checkout
+Webhook
+Connector
+```
+
+接入。
+
+核心数据永远掌握在自己的系统里。
+
+---
+
+# 三十八、Shopify 现在不作为核心平台
+
+不要因为支付方便就突然把整个站改 Shopify。
+
+原因：
+
+> Aromiso 已经有成熟 Astro/Cloudflare OS，当前目标是最大化复用。
+
+正确方式：
+
+```text
+Astro / Cloudflare
+        ↓
+Jewelry Commerce Core
+        ↓
+External Providers
+```
+
+而不是：
+
+```text
+Shopify
+↓
+重新做所有系统
+```
+
+---
+
+# 三十九、部署结构
+
+独立环境：
+
+```text
+Git Repo
+   ↓
+Cloudflare
+   ├── Worker / Pages
+   ├── D1
+   ├── R2
+   └── KV
+```
+
+至少：
+
+```text
+local
+preview
+production
+```
+
+production secrets 与 Aromiso 完全不同。
+
+---
+
+# 四十、首版域名/品牌必须配置化
+
+代码禁止把品牌名散落硬编码。
+
+统一：
+
+```text
+BRAND_NAME
+BRAND_NAME_AR
+DOMAIN
+DEFAULT_LOCALE
+DEFAULT_MARKET
+SUPPORT_EMAIL
+WHATSAPP_NUMBER
+```
+
+品牌名未来确定后：
+
+> 改配置，不改业务代码。
+
+---
+
+# 四十一、市场配置
+
+Market：
+
+```text
+KSA
+UAE
+```
+
+每个 Market 可配置：
+
+```text
+currency
+tax
+shipping
+payment_methods
+locale
+language
+free_shipping_threshold
+estimated_delivery
+```
+
+未来：
+
+```text Kuwait
+Qatar
+Bahrain
+Oman
+```
+
+直接增加 Market。
+
+不能重构 Product / Order。
+
+---
+
+# 四十二、首版商业默认值
+
+默认：
+
+```text
+Primary Market: KSA
+Secondary Market: UAE
+
+Language:
+English
+Arabic
+
+Currency:
+SAR
+AED
+
+Product:
+Jewelry
+
+Payment:
+COD
+Hosted Online Payment Slot
+
+Fulfillment:
+Manual + Carrier Abstraction
+
+Customer:
+Guest Checkout First
+
+Catalog:
+20–30 products
+
+Bundle:
+Basic
+
+Gift:
+Basic
+
+Personalization:
+Model Ready / Feature Off
+
+WhatsApp:
+Provider Slot Ready / Integration Later
+```
+
+---
+
+# 四十三、V1.0 不做什么
+
+明确禁止开发范围膨胀：
+
+```text
+❌ 腰带完整商品线
+❌ 男装
+❌ 美妆
+❌ 香水
+❌ 多品牌 marketplace
+❌ 复杂会员等级
+❌ 积分系统
+❌ ERP
+❌ POS
+❌ 自研支付网关
+❌ 自研物流平台
+❌ 复杂 AI 推荐引擎
+❌ 90–100 SKU 才算完成
+❌ 几百/上千 SKU 批量运营系统
+❌ 大规模 SEO 内容农场
+❌ 复杂刻字生产系统
+```
+
+但是：
+
+> **底层模型必须为这些未来能力留接口，而不是用临时代码堵死未来。**
+
+---
+
+# 四十四、V1.0 与 V1.1 的区别不是重构，而是“打开开关”
+
+V1.0：
+
+```text
+20–30 SKU
+COD
+Online Payment Slot
+EN/AR
+RTL
+Cart
+Checkout
+Order
+Manual Fulfillment
+Basic Bundle
+Basic Gift
+SEO
+AI Content
+Analytics
+Admin
+```
+
+V1.1：
+
+```text
+BNPL
+WhatsApp Automation
+Gift Expansion
+Personalization
+Reviews Automation
+External Fulfillment
+More Collections
+```
+
+V1.2：
+
+```text
+100+ SKU
+Advanced Bundles
+Warehouse
+More Markets
+Advanced Ads Attribution
+```
+
+重点：
+
+> **V1.1/V1.2 不得重新设计 Product、Order、Customer、Payment 基础模型。**
+
+---
+
+# 四十五、开发顺序必须遵守“先分叉，后商业核心”，但不得无限审计
+
+开发 AI 不需要把 Aromiso 全项目重新研究一遍。
+
+先确认：
+
+1. 当前 Aromiso 可复用模块
+2. 当前部署链
+3. 当前 D1/R2/KV 连接模式
+4. 当前 Admin shell
+5. 当前 Auth
+6. 当前 SEO
+7. 当前 i18n
+8. 当前 Media
+9. 当前 AI 基础设施
+10. 当前测试基建
+
+然后立即 Fork。
+
+不要：
+
+> 审计几天以后继续讨论架构。
+
+本文件就是架构冻结依据。
+
+如果现有 Aromiso 实现与本文冲突：
+
+> **保留成熟通用实现，按照本文 Jewelry Commerce 规范重新实现业务层。**
+
+---
+
+# 四十六、成功标准不是“页面很多”
+
+Jewelry V1.0 成功标准：
+
+```text
+独立部署
++
+EN/AR
++
+RTL
++
+20–30真实商品
++
+商品可浏览
++
+购物车
++
+Checkout
++
+COD
++
+在线支付接入位
++
+订单状态完整
++
+后台能处理订单
++
+后台能持续增加单个商品
++
+SEO 可索引
++
+Cloudflare Free 可承载早期流量
++
+没有 Aromiso 业务数据污染
+```
+
+最终商业验证：
+
+```text
+浏览
+ ↓
+商品兴趣
+ ↓
+加购
+ ↓
+结账
+ ↓
+下单
+ ↓
+确认
+ ↓
+发货
+ ↓
+签收
+ ↓
+评价
+ ↓
+复购
+```
+
+这才是 Jewelry 的完整闭环。
+
+---
+
+# 四十七、最终架构图
+
+```text
+                         JEWELRY DTC
+                              │
+              ┌───────────────┼────────────────┐
+              │               │                │
+            BRAND          COMMERCE           GROWTH
+              │               │                │
+        Gulf Identity       Product           TikTok
+        EN / AR             Variant            Instagram
+        RTL                 Collection         Google
+        Gift                Bundle             SEO
+        Visual              Cart               WhatsApp
+                            Checkout
+                            Order
+                            Payment
+                            Fulfillment
+                              │
+                              ↓
+                           CUSTOMER
+                              │
+                   Purchase → Delivery
+                              │
+                     Review → Repeat
+                              │
+                              ↓
+                         DATA / AI
+```
+
+底层：
+
+```text
+Astro
+Cloudflare
+D1
+R2
+KV
+Admin
+Auth
+Media
+SEO
+i18n
+AI
+Automation
+Analytics
+Testing
+Deployment
+```
+
+---
+
+# 四十八、开发 AI 的最终执行原则
+
+这是最终指令：
+
+> **不要重新发明 Aromiso 已经成熟的基础设施。**
+>
+> **不要把 Aromiso 香薰业务复制过来。**
+>
+> **不要因为首发只有 20–30 SKU 就做一个临时的小系统。**
+>
+> **不要因为未来可能增加功能就提前开发所有功能。**
+>
+> **底层模型一次设计成长期版，首版只开启必要能力。**
+>
+> **Product、Order、Payment、Fulfillment、Customer 五大核心对象必须一次设计正确。**
+>
+> **支付、物流、WhatsApp 等外部能力全部 Provider-Agnostic。**
+>
+> **支付采用 Hosted Checkout / Provider Adapter 思路，不自行保存银行卡数据。**
+>
+> **产品采用 1→N 持续上新模型，不依赖大批量导入。**
+>
+> **Arabic 从第一天原生 RTL。**
+>
+> **所有商业数据与 Aromiso 完全隔离。**
+>
+> **Cloudflare Free 优先，静态优先，严格保护 Workers/D1/R2 资源。**
+>
+> **本文件即 Jewelry V1.0 架构基准。后续开发不得因普通需求反复改变架构。只有真实商业约束、外部支付/物流强制要求或安全问题才能触发架构修订。**
+>
+> **目标不是把一个“漂亮的饰品网站”做出来，而是一次建立一个以后可以持续增加产品、订单、支付、物流、内容和市场而无需推倒重来的 Jewelry Commerce OS。**

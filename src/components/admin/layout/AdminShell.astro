@@ -1,0 +1,802 @@
+---
+// AdminShell — V2 壳层容器
+// Wraps Sidebar + Topbar + ContentArea
+import "../../../styles/admin-command-center.css";
+
+export interface Props {
+  title?: string;
+  activeModule?: string;
+}
+
+const { title = "Dashboard", activeModule = "dashboard" } = Astro.props;
+---
+
+<script is:inline>
+  // V5.57 防闪烁：默认暗色驾驶舱在 admin 壳层绘制前生效（显式选过亮色者除外）
+  try {
+    if (localStorage.getItem("aro-admin-theme") !== "light") {
+      document.documentElement.classList.add("dark");
+    }
+  } catch {
+    /* storage 不可用时按暗色默认 */
+    document.documentElement.classList.add("dark");
+  }
+</script>
+
+<script is:inline>
+  // === AromisoPagination — 全站后台统一分页控件（升级一次，所有列表页复用）===
+  // 修复「只有上一页/下一页、没有跳页输入」的配对性缺失。统一渲染：
+  //   共 N 条 · 第 X / Y 页 · ← 上一页 · 页码 · 下一页 → · [每页 N 条] · 跳转到 [ ] 页
+  // 规则：首页禁用上一页、末页禁用下一页；非法页码 clamp 或 toast 提示，
+  //       绝不崩溃 / 死循环 / 重复请求；跳页输入 Enter 单次触发。
+  (function () {
+    function clamp(n, lo, hi) {
+      return n < lo ? lo : n > hi ? hi : n;
+    }
+    function pageWindow(page, totalPages) {
+      const out = [];
+      if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) out.push(i);
+        return out;
+      }
+      out.push(1);
+      let start = Math.max(2, page - 1);
+      let end = Math.min(totalPages - 1, page + 1);
+      if (page <= 3) {
+        start = 2;
+        end = 4;
+      }
+      if (page >= totalPages - 2) {
+        start = totalPages - 3;
+        end = totalPages - 1;
+      }
+      if (start > 2) out.push("…");
+      for (let j = start; j <= end; j++) out.push(j);
+      if (end < totalPages - 1) out.push("…");
+      out.push(totalPages);
+      return out;
+    }
+    function toast(msg, type) {
+      if (window.showToast) window.showToast(msg, type || "info");
+      else if (window.AromisoToast) window.AromisoToast.show(msg, type || "info");
+    }
+    function render(infoEl, controlsEl, opts) {
+      const o = opts || {};
+      const total = Number(o.total) || 0;
+      const totalPages = Math.max(1, Number(o.totalPages) || 1);
+      const pageSize = Number(o.pageSize) || 0;
+      const pageSizes = o.pageSizes || [20, 50, 100];
+      const showPageSize = o.showPageSize !== false && pageSize > 0;
+      const onChange = typeof o.onChange === "function" ? o.onChange : function () {};
+      const page = clamp(Number(o.page) || 1, 1, totalPages);
+
+      if (infoEl)
+        infoEl.textContent = "共 " + total + " 条 · 第 " + page + " / " + totalPages + " 页";
+      if (!controlsEl) return;
+      if (totalPages <= 1) {
+        controlsEl.innerHTML = "";
+        return;
+      }
+
+      controlsEl.classList.add("aro-pager");
+      let html = "";
+      html +=
+        '<button type="button" class="admin-btn admin-btn-secondary admin-btn-sm aro-pager-btn" data-act="prev"' +
+        (page <= 1 ? " disabled" : "") +
+        ">← 上一页</button>";
+      const win = pageWindow(page, totalPages);
+      for (let k = 0; k < win.length; k++) {
+        const p = win[k];
+        if (p === "…") {
+          html += '<span class="aro-pager-ellipsis">…</span>';
+          continue;
+        }
+        html +=
+          '<button type="button" class="admin-btn admin-btn-sm aro-pager-num ' +
+          (p === page ? "admin-btn-primary" : "admin-btn-secondary") +
+          '" data-page="' +
+          p +
+          '"' +
+          (p === page ? ' aria-current="page"' : "") +
+          ">" +
+          p +
+          "</button>";
+      }
+      html +=
+        '<button type="button" class="admin-btn admin-btn-secondary admin-btn-sm aro-pager-btn" data-act="next"' +
+        (page >= totalPages ? " disabled" : "") +
+        ">下一页 →</button>";
+      if (showPageSize) {
+        html +=
+          '<label class="aro-pager-size">每页 <select data-act="size" class="aro-pager-select">';
+        for (let s = 0; s < pageSizes.length; s++) {
+          html +=
+            '<option value="' +
+            pageSizes[s] +
+            '"' +
+            (pageSizes[s] === pageSize ? " selected" : "") +
+            ">" +
+            pageSizes[s] +
+            "</option>";
+        }
+        html += "</select> 条</label>";
+      }
+      html +=
+        '<span class="aro-pager-jump">跳转到 <input type="text" inputmode="numeric" data-act="jump" class="aro-pager-input" aria-label="跳转到指定页码" placeholder="1-' +
+        totalPages +
+        '"> 页 <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm" data-act="go">跳转</button></span>';
+      controlsEl.innerHTML = html;
+
+      function go(target, size) {
+        const np = clamp(Math.round(Number(target)) || 1, 1, totalPages);
+        onChange({ page: np, pageSize: size || pageSize || undefined });
+      }
+      Array.prototype.forEach.call(controlsEl.querySelectorAll("[data-page]"), function (b) {
+        b.addEventListener("click", function () {
+          go(b.getAttribute("data-page"));
+        });
+      });
+      const prev = controlsEl.querySelector('[data-act="prev"]');
+      const next = controlsEl.querySelector('[data-act="next"]');
+      if (prev)
+        prev.addEventListener("click", function () {
+          go(page - 1);
+        });
+      if (next)
+        next.addEventListener("click", function () {
+          go(page + 1);
+        });
+      const sizeSel = controlsEl.querySelector('[data-act="size"]');
+      if (sizeSel)
+        sizeSel.addEventListener("change", function () {
+          onChange({ page: 1, pageSize: Number(sizeSel.value) });
+        });
+      const jumpInput = controlsEl.querySelector('[data-act="jump"]');
+      const goBtn = controlsEl.querySelector('[data-act="go"]');
+      function doJump() {
+        if (!jumpInput) return;
+        const raw = String(jumpInput.value || "").trim();
+        if (raw === "") {
+          toast("请输入页码（1-" + totalPages + "）", "warning");
+          return;
+        }
+        const n = Number(raw);
+        if (!isFinite(n) || Math.floor(n) !== n) {
+          toast("请输入有效页码（1-" + totalPages + "）", "warning");
+          jumpInput.focus();
+          return;
+        }
+        if (n < 1 || n > totalPages) {
+          toast("页码超出范围，已跳转到第 " + clamp(n, 1, totalPages) + " 页", "info");
+        }
+        go(n);
+      }
+      if (goBtn) goBtn.addEventListener("click", doJump);
+      if (jumpInput)
+        jumpInput.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            doJump();
+          }
+        });
+    }
+    window.AromisoPagination = { render: render, clamp: clamp };
+  })();
+</script>
+
+<script is:inline>
+  // === AromisoSort — 表格排序状态可视化（当前排序列 + 升/降序明确可见）===
+  // 修复「表头可点击排序，但用户不知道当前按什么排、是升还是降」的配对性缺失。
+  (function () {
+    function mark(scope, sortKey, order) {
+      const root = scope || document;
+      const dir = order === "asc" ? "asc" : "desc";
+      root.querySelectorAll(".sortable").forEach(function (th) {
+        if (th.getAttribute("data-sort") === sortKey) {
+          th.setAttribute("data-order", dir);
+          th.setAttribute("aria-sort", dir === "asc" ? "ascending" : "descending");
+        } else {
+          th.removeAttribute("data-order");
+          th.removeAttribute("aria-sort");
+        }
+      });
+    }
+    window.AromisoSort = { mark: mark };
+  })();
+</script>
+
+<script is:inline>
+  // === 全站 Modal/Drawer 的 Escape 关闭配对控件 ===
+  // 后台各页的弹窗/抽屉是手写结构（.admin-modal-overlay / .admin-drawer-overlay /
+  // .admin-drawer，用内联 display 切换），此前普遍只有关闭按钮或遮罩点击，缺 Escape。
+  // 这里在壳层统一绑定一次：Escape → 找到当前打开的容器 → 复用页面既有的关闭入口
+  // （优先头部 X 按钮 → 其次「取消/关闭」按钮 → 最后遮罩点击），保证清理逻辑照常执行。
+  (function () {
+    if (window.__aroEscBound) return;
+    window.__aroEscBound = true;
+    function isOpen(el) {
+      const d = el.style && el.style.display;
+      return !!d && d !== "none";
+    }
+    function findCloseBtn(root) {
+      if (!root) return null;
+      const headerBtn = root.querySelector(
+        ".admin-drawer-header button, .admin-modal-header button",
+      );
+      if (headerBtn) return headerBtn;
+      const btns = root.querySelectorAll("button");
+      for (let i = 0; i < btns.length; i++) {
+        const t = (btns[i].innerText || "").replace(/\s+/g, "");
+        if (/取消|关闭|cancel|close/i.test(t)) return btns[i];
+      }
+      return null;
+    }
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape") return;
+      const candidates = document.querySelectorAll(
+        ".admin-modal-overlay, .admin-drawer-overlay, .admin-drawer",
+      );
+      let open = null;
+      for (let i = 0; i < candidates.length; i++) {
+        if (isOpen(candidates[i])) open = candidates[i];
+      }
+      if (!open) return;
+      let btn = findCloseBtn(open);
+      if (!btn) {
+        const inner = open.querySelector(".admin-drawer, .admin-modal");
+        btn = findCloseBtn(inner);
+      }
+      if (btn) {
+        e.preventDefault();
+        btn.click();
+        return;
+      }
+      // 回退：点击遮罩（多数页面把遮罩点击绑定为关闭）。
+      const overlay =
+        open.classList.contains("admin-modal-overlay") ||
+        open.classList.contains("admin-drawer-overlay")
+          ? open
+          : document.querySelector(".admin-drawer-overlay, .admin-modal-overlay");
+      if (overlay && isOpen(overlay)) {
+        e.preventDefault();
+        overlay.click();
+      }
+    });
+  })();
+</script>
+
+<script is:inline>
+  // === 共享异步按钮守卫（data-once）===
+  // 修复「异步按钮点击后无 disabled/loading，可连续点击 → 重复请求」的配对性缺失。
+  // 用法：给按钮加 data-once 即可，无需改写各自 handler。点击后进入 busy 态并禁用，
+  // 待其触发的 fetch 全部 settle（或 6s 兜底）后自动恢复，避免重复提交/重复刷新。
+  (function () {
+    if (window.__aroAsyncBound) return;
+    window.__aroAsyncBound = true;
+    let inflight = 0;
+    const of = window.fetch;
+    window.fetch = function (...args) {
+      inflight++;
+      const dec = function () {
+        inflight = Math.max(0, inflight - 1);
+      };
+      const p = of.apply(this, args);
+      p.then(dec, dec);
+      return p;
+    };
+    document.addEventListener(
+      "click",
+      function (e) {
+        const btn = e.target.closest && e.target.closest("[data-once]");
+        if (!btn) return;
+        // 已在处理中（或已禁用）：在捕获阶段拦截并阻断，确保 button 自身 handler 不再触发，
+        // 从而杜绝连点导致的重复请求。
+        if (btn.dataset.aroBusy === "1" || btn.disabled) {
+          e.stopImmediatePropagation();
+          e.preventDefault();
+          return;
+        }
+        btn.dataset.aroBusy = "1";
+        const baseline = inflight;
+        // 下一 tick 再禁用，确保本次点击自身的 handler 正常执行。
+        setTimeout(function () {
+          btn.disabled = true;
+          btn.classList.add("is-busy");
+        }, 0);
+        const t0 = Date.now();
+        (function poll() {
+          const settled = inflight <= baseline;
+          const elapsed = Date.now() - t0;
+          if ((settled && elapsed >= 300) || elapsed >= 6000) {
+            btn.disabled = false;
+            btn.classList.remove("is-busy");
+            delete btn.dataset.aroBusy;
+            return;
+          }
+          setTimeout(poll, 100);
+        })();
+      },
+      true,
+    );
+  })();
+</script>
+
+<script is:inline>
+  // === 共享 aria-busy 助手：动态 innerHTML 区块加载期间标记 aria-busy ===
+  // 用法：AromisoBusy(elOrId, true) 开始加载；AromisoBusy(elOrId, false) 完成。
+  (function () {
+    window.AromisoBusy = function (elOrId, on) {
+      const el = typeof elOrId === "string" ? document.getElementById(elOrId) : elOrId;
+      if (!el) return;
+      if (on) el.setAttribute("aria-busy", "true");
+      else el.setAttribute("aria-busy", "false");
+    };
+  })();
+</script>
+
+<div class="admin-v2-shell" data-title={title} data-active-module={activeModule}>
+  <aside class="admin-v2-sidebar" id="admin-sidebar">
+    <div class="admin-sidebar-brand cc-side-brand">
+      AROMISO <b>OS</b><small>自主商业引擎</small>
+    </div>
+    <nav class="admin-sidebar-nav" id="admin-sidebar-nav">
+      <slot name="sidebar" />
+    </nav>
+    <div class="cc-side-status"><span class="cc-dot cc-dot--online"></span> 系统状态 · 在线</div>
+    <div class="admin-sidebar-footer">
+      <div
+        style="width:28px;height:28px;border-radius:50%;background:var(--beige);display:flex;align-items:center;justify-content:center;font-size:var(--fs-xs);color:var(--stone);flex-shrink:0;"
+      >
+        A
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div
+          id="admin-user-name"
+          style="font-size:var(--fs-base);color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+        >
+          管理员
+        </div>
+        <div
+          id="admin-user-role"
+          style="font-size:var(--fs-xs);color:var(--stone);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+        >
+        </div>
+      </div>
+      <button
+        id="admin-logout-btn"
+        class="admin-topbar-btn"
+        title="退出登录"
+        aria-label="退出登录"
+        style="flex-shrink:0;"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline
+            points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg
+        >
+      </button>
+    </div>
+  </aside>
+
+  <div class="admin-v2-main">
+    <header class="admin-v2-topbar">
+      <slot name="topbar-left" />
+      <div class="admin-topbar-search" id="admin-global-search">
+        <span class="search-icon"
+          ><svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"
+            ></line></svg
+          ></span
+        >
+        <input type="text" placeholder="搜索..." id="global-search-input" autocomplete="off" />
+        <kbd>Ctrl/Cmd K</kbd>
+        <div
+          id="search-results-dropdown"
+          class="admin-dropdown-panel"
+          style="display:none;position:absolute;top:100%;left:0;right:0;max-height:420px;background:var(--card);z-index:200;overflow-y:auto;margin-top:4px;"
+        >
+        </div>
+      </div>
+      <div class="admin-topbar-actions">
+        <button
+          class="admin-topbar-btn"
+          title="切换深浅色"
+          aria-label="切换深浅色"
+          id="theme-toggle-btn"
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg
+          >
+        </button>
+        <button class="admin-topbar-btn" title="通知" aria-label="通知" id="notif-bell-btn">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path
+              d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg
+          >
+          <span class="badge" id="notif-count" style="display:none;">0</span>
+        </button>
+        <div
+          id="notif-dropdown"
+          class="admin-dropdown-panel"
+          style="display:none;position:absolute;top:100%;right:0;width:360px;max-height:480px;background:var(--card);z-index:200;overflow:hidden;"
+        >
+          <div
+            style="display:flex;align-items:center;justify-content:space-between;padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--line);"
+          >
+            <span style="font-weight:600;font-size:var(--fs-md);">通知</span>
+            <button
+              id="notif-mark-all"
+              style="font-size:var(--fs-sm);color:var(--admin-primary);background:none;border:none;cursor:pointer;"
+              >全部已读</button
+            >
+          </div>
+          <div id="notif-list" style="overflow-y:auto;max-height:400px;">
+            <div
+              style="padding:var(--sp-6);text-align:center;color:var(--stone);font-size:var(--fs-base);"
+            >
+              <span class="admin-skeleton-text"></span>
+            </div>
+          </div>
+        </div>
+        <slot name="topbar-actions" />
+      </div>
+    </header>
+    <main class="admin-v2-content" id="admin-content">
+      <slot />
+    </main>
+  </div>
+</div>
+
+<!-- Sidebar mobile toggle -->
+<button
+  id="sidebar-mobile-toggle"
+  class="admin-topbar-btn"
+  style="display:none; position:fixed; top:var(--sp-3); left:var(--sp-3); z-index:150; background:var(--card); box-shadow:var(--sh-sm);"
+>
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    ><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line
+      x1="3"
+      y1="18"
+      x2="21"
+      y2="18"></line></svg
+  >
+</button>
+
+<script>
+  // === Theme toggle (V3 dark) ===
+  const themeBtn = document.getElementById("theme-toggle-btn");
+  const applyTheme = (dark: boolean) => document.documentElement.classList.toggle("dark", dark);
+  try {
+    // V5.57：默认暗色驾驶舱；仅当用户显式选过亮色时保持亮色
+    applyTheme(localStorage.getItem("aro-admin-theme") !== "light");
+  } catch {
+    /* storage 不可用时忽略 */
+  }
+  if (themeBtn)
+    themeBtn.addEventListener("click", () => {
+      const dark = !document.documentElement.classList.contains("dark");
+      applyTheme(dark);
+      try {
+        localStorage.setItem("aro-admin-theme", dark ? "dark" : "light");
+      } catch {
+        /* storage 不可用时忽略 */
+      }
+    });
+
+  // Mobile sidebar toggle
+  const toggle = document.getElementById("sidebar-mobile-toggle");
+  const sidebar = document.getElementById("admin-sidebar");
+  if (toggle && sidebar) {
+    const isMobile = () => window.innerWidth <= 768;
+    if (isMobile()) toggle.style.display = "flex";
+    toggle.addEventListener("click", () => sidebar.classList.toggle("open"));
+    window.addEventListener("resize", () => {
+      toggle.style.display = isMobile() ? "flex" : "none";
+      if (!isMobile()) sidebar.classList.remove("open");
+    });
+  }
+
+  // === Notification Bell ===
+  const notifBtn = document.getElementById("notif-bell-btn");
+  const notifDropdown = document.getElementById("notif-dropdown");
+  const notifList = document.getElementById("notif-list");
+  const notifCount = document.getElementById("notif-count");
+  const notifMarkAll = document.getElementById("notif-mark-all");
+  let notifOpen = false;
+
+  async function loadNotifications() {
+    try {
+      const res = await fetch("/api/admin/v2/system/notifications?is_read=0&pageSize=20");
+      const json = (await res.json()) as {
+        success: boolean;
+        data: unknown[];
+        meta?: { total?: number };
+      };
+      if (!json.success || !json.data) return;
+      const items = json.data;
+      const count = json.meta?.total || 0;
+      if (notifCount) {
+        notifCount.textContent = String(count);
+        notifCount.style.display = count > 0 ? "flex" : "none";
+      }
+      if (!notifList) return;
+      if (items.length === 0) {
+        notifList.innerHTML =
+          '<div style="padding:var(--sp-6);text-align:center;color:var(--stone);font-size:var(--fs-base);">暂无未读通知</div>';
+        return;
+      }
+      notifList.innerHTML = (
+        items as {
+          id: string;
+          type: string;
+          title: string;
+          body: string;
+          link: string;
+          created_at: string;
+        }[]
+      )
+        .map((n) => {
+          const icons: Record<string, string> = {
+            inquiry: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>`,
+            order: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`,
+            ai_task: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16.01"/><line x1="16" y1="16" x2="16" y2="16.01"/></svg>`,
+            seo_alert: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>`,
+            oem: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22h20"/><path d="M4 22V8l4 4V8l4 4V8l4 4v14"/><path d="M16 22V10l4-2v14"/></svg>`,
+            commerce: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
+            system: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
+          };
+          const icon =
+            icons[n.type] ||
+            `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17z"/></svg>`;
+          const time = new Date(n.created_at + "Z").toLocaleString("zh-CN", {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          return `<div class="notif-item" data-id="${n.id}" data-link="${n.link}" style="display:flex;gap:var(--sp-3);padding:var(--sp-3) var(--sp-4);cursor:pointer;border-bottom:1px solid var(--line);transition:background .12s;" onmouseover="this.style.background='var(--beige)'" onmouseout="this.style.background=''">
+          <span style="font-size:var(--fs-lg);flex-shrink:0;">${icon}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:var(--fs-base);font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n.title}</div>
+            ${n.body ? `<div style="font-size:var(--fs-sm);color:var(--stone);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;">${n.body}</div>` : ""}
+            <div style="font-size:var(--fs-xs);color:var(--stone);margin-top:2px;">${time}</div>
+          </div>
+        </div>`;
+        })
+        .join("");
+    } catch {
+      /* silent */
+    }
+  }
+
+  if (notifBtn && notifDropdown) {
+    notifBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      notifOpen = !notifOpen;
+      notifDropdown.style.display = notifOpen ? "block" : "none";
+      if (notifOpen) loadNotifications();
+    });
+  }
+
+  if (notifMarkAll) {
+    notifMarkAll.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await fetch("/api/admin/v2/system/notifications", { method: "PUT" });
+      loadNotifications();
+    });
+  }
+
+  if (notifList) {
+    notifList.addEventListener("click", async (e) => {
+      const item = (e.target as HTMLElement).closest(".notif-item") as HTMLElement | null;
+      if (!item) return;
+      const id = item.dataset.id;
+      const link = item.dataset.link;
+      if (id) await fetch(`/api/admin/v2/system/notifications?id=${id}`, { method: "PUT" });
+      if (link) window.location.href = link;
+    });
+  }
+
+  loadNotifications();
+
+  // === Global Search ===
+  const searchInput = document.getElementById("global-search-input") as HTMLInputElement | null;
+  const searchDropdown = document.getElementById("search-results-dropdown");
+  let searchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  const entityLabels: Record<string, string> = {
+    blog: "博客",
+    product_content: "产品资料",
+    commerce_product: "商品",
+    customer: "客户",
+    inquiry: "询盘",
+    oem_project: "OEM项目",
+    video: "视频",
+    copy_asset: "文案",
+    guide: "指南",
+    case: "案例",
+    faq: "FAQ",
+    ai_task: "AI任务",
+  };
+
+  const entityLinks: Record<string, string> = {
+    blog: "/admin-v2/content?type=blog",
+    product_content: "/admin-v2/content?type=product_content",
+    commerce_product: "/admin-v2/commerce",
+    customer: "/admin-v2/customers",
+    inquiry: "/admin-v2/customers?type=inquiry",
+    oem_project: "/admin-v2/customers/oem",
+    video: "/admin-v2/media",
+    copy_asset: "/admin-v2/content?type=copy_asset",
+    guide: "/admin-v2/content?type=guide",
+    case: "/admin-v2/content?type=case",
+    faq: "/admin-v2/content?type=faq",
+    ai_task: "/admin-v2/ai/tasks",
+  };
+
+  async function doSearch(q: string) {
+    if (!searchDropdown) return;
+    if (!q.trim()) {
+      searchDropdown.style.display = "none";
+      return;
+    }
+    try {
+      const res = await fetch(
+        `/api/admin/v2/system/entities/search?q=${encodeURIComponent(q)}&limit=15`,
+      );
+      const json = (await res.json()) as { success: boolean; data: unknown[] };
+      if (!json.success || !json.data) {
+        searchDropdown.style.display = "none";
+        return;
+      }
+      const items = json.data as {
+        entity_type: string;
+        entity_id: string;
+        title: string;
+        status: string;
+        updated_at: string;
+      }[];
+      if (items.length === 0) {
+        searchDropdown.innerHTML =
+          '<div style="padding:var(--sp-4);text-align:center;color:var(--stone);font-size:var(--fs-base);">无结果</div>';
+        searchDropdown.style.display = "block";
+        return;
+      }
+      const groups = new Map<string, typeof items>();
+      for (const item of items) {
+        if (!groups.has(item.entity_type)) groups.set(item.entity_type, []);
+        groups.get(item.entity_type)!.push(item);
+      }
+      let html = "";
+      for (const [type, group] of groups) {
+        html += `<div style="padding:var(--sp-2) var(--sp-3);font-size:var(--fs-xs);font-weight:600;color:var(--stone);text-transform:uppercase;background:var(--paper);">${entityLabels[type] || type}</div>`;
+        for (const item of group) {
+          const link = entityLinks[type] || "#";
+          html += `<a href="${link}" style="display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-2) var(--sp-3);text-decoration:none;color:var(--ink);font-size:var(--fs-base);border-bottom:1px solid var(--line);" onmouseover="this.style.background='var(--beige)'" onmouseout="this.style.background=''">
+            <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.title || item.entity_id}</span>
+            ${item.status ? `<span style="font-size:var(--fs-xs);color:var(--stone);">${item.status}</span>` : ""}
+          </a>`;
+        }
+      }
+      searchDropdown.innerHTML = html;
+      searchDropdown.style.display = "block";
+    } catch {
+      searchDropdown.style.display = "none";
+    }
+  }
+
+  if (searchInput) {
+    document.addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === "Escape") {
+        searchInput.blur();
+        if (searchDropdown) searchDropdown.style.display = "none";
+        if (notifDropdown && notifOpen) {
+          notifOpen = false;
+          notifDropdown.style.display = "none";
+        }
+      }
+    });
+    searchInput.addEventListener("input", () => {
+      if (searchTimeout) clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => doSearch(searchInput.value), 250);
+    });
+    searchInput.addEventListener("focus", () => {
+      if (searchInput.value.trim()) doSearch(searchInput.value);
+    });
+  }
+
+  document.addEventListener("click", (e) => {
+    const target = e.target as HTMLElement;
+    if (
+      notifDropdown &&
+      notifOpen &&
+      !notifBtn?.contains(target) &&
+      !notifDropdown.contains(target)
+    ) {
+      notifOpen = false;
+      notifDropdown.style.display = "none";
+    }
+    if (searchDropdown && !searchInput?.contains(target) && !searchDropdown.contains(target)) {
+      searchDropdown.style.display = "none";
+    }
+  });
+
+  // === Sidebar identity (real username + role) — fail-safe to static "Admin" ===
+  const userNameEl = document.getElementById("admin-user-name");
+  const userRoleEl = document.getElementById("admin-user-role");
+  (async () => {
+    try {
+      const res = await fetch("/api/admin/v2/auth/me", { credentials: "same-origin" });
+      const json = (await res.json()) as { data?: { username?: string; role_name?: string } };
+      const d = json?.data || {};
+      if (userNameEl && d.username) userNameEl.textContent = d.username;
+      if (userRoleEl && d.role_name) userRoleEl.textContent = d.role_name;
+    } catch {
+      /* keep the static "Admin" label if identity is unavailable */
+    }
+  })();
+
+  // === Logout — wires the existing POST /api/admin/v2/auth/logout endpoint ===
+  const logoutBtn = document.getElementById("admin-logout-btn") as HTMLButtonElement | null;
+  if (logoutBtn) {
+    let loggingOut = false;
+    logoutBtn.addEventListener("click", async () => {
+      if (loggingOut) return; // guard: double-click must not fire duplicate requests
+      loggingOut = true;
+      logoutBtn.disabled = true;
+      logoutBtn.style.opacity = "0.6";
+      try {
+        await fetch("/api/admin/v2/auth/logout", {
+          method: "POST",
+          credentials: "same-origin",
+        });
+      } catch {
+        /* even if the request fails, honor the intent to leave the session */
+      }
+      window.location.href = "/admin-v2/login";
+    });
+  }
+</script>

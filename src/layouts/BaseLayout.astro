@@ -1,0 +1,392 @@
+---
+import "../styles/global.css";
+import { SITE } from "../consts";
+import { t } from "../i18n";
+import type { Locale } from "../i18n";
+import { LOCALE_LIST, stripLocale } from "../i18n";
+import { getRelativeLocaleUrl } from "astro:i18n";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import settings from "../data/settings.json";
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  locale?: Locale;
+  alternates?: { lang: Locale; href: string }[];
+  jsonLd?: Record<string, unknown>;
+}
+const rawLocale = (Astro.currentLocale as Locale) ?? (Astro.props.locale as Locale) ?? "en";
+const locale: Locale = (LOCALE_LIST.includes(rawLocale) ? rawLocale : "en") as Locale;
+
+const { title, description = t(locale, "site.description"), image = "/images/hero.jpg" } = Astro.props;
+const fullTitle = title ? `${title} · ${SITE.name}` : `${t(locale, "hero.title")} · ${SITE.name}`;
+const canonical = new URL(Astro.url.pathname, SITE.url).href;
+
+// hreflang alternates for multilingual SEO
+const pathNoLocale = stripLocale(Astro.url.pathname);
+const hreflangs = LOCALE_LIST.map((l) => ({
+  lang: l,
+  href: new URL(getRelativeLocaleUrl(l, pathNoLocale), SITE.url).href,
+}));
+const xDefault = new URL(getRelativeLocaleUrl("en", pathNoLocale), SITE.url).href;
+
+// Build sameAs array from configured social links
+const sameAs = Object.entries(settings.social)
+  .filter(([key, val]) => val && key !== "whatsapp")
+  .map(([, val]) => val as string);
+
+// Studio V1 §16: Meta Pixel (browser-side only). PUBLIC_META_PIXEL_ID is empty in
+// dev (.env/.dev.vars) so the snippet never renders locally; production sets the
+// real ID via the build environment. Never hardcode the ID in source.
+const PIXEL_ID = (import.meta.env.PUBLIC_META_PIXEL_ID ?? "").trim();
+---
+
+<!doctype html>
+<html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Analytics: GA4 / Meta Pixel are wired via env vars only. The old Aromiso
+         GA property id has been removed; configure a new G-* id via a PUBLIC_*
+         build variable when the production analytics account is created. -->
+
+    <!-- Studio V1 §16: Meta Pixel (browser-side only; renders only when the ID is configured) -->
+    {
+      PIXEL_ID && (
+        <>
+          <script
+            is:inline
+            set:html={`!(function (f, b, e, v, n, t, s) {
+              if (f.fbq) return;
+              n = f.fbq = function () {
+                n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+              };
+              if (!f._fbq) f._fbq = n;
+              n.push = n;
+              n.loaded = !0;
+              n.version = "2.0";
+              n.queue = [];
+              t = b.createElement(e);
+              t.async = !0;
+              t.src = v;
+              s = b.getElementsByTagName(e)[0];
+              s.parentNode.insertBefore(t, s);
+            })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
+            fbq("init", ${JSON.stringify(PIXEL_ID)});
+            fbq("track", "PageView");`}
+          />
+          <noscript>
+            <img
+              height="1"
+              width="1"
+              style="display:none"
+              src={`https://www.facebook.com/tr?id=${PIXEL_ID}&ev=PageView&noscript=1`}
+            />
+          </noscript>
+        </>
+      )
+    }
+
+    <!-- No-FOUC theme init -->
+    <script is:inline>
+      (function () {
+        const t = localStorage.getItem("theme");
+        const m = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const dark = t === "dark" || ((t === null || t === "system") && m);
+        document.documentElement.classList.toggle("dark", dark);
+      })();
+    </script>
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonical} />
+    <meta name="generator" content={Astro.generator} />
+
+    <!-- hreflang alternates -->
+    {hreflangs.map((h) => <link rel="alternate" hreflang={h.lang} href={h.href} />)}
+    <link rel="alternate" hreflang="x-default" href={xDefault} />
+
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#fbf9f4" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL(image, SITE.url).href} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Organization structured data (SEO) -->
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        name: SITE.name,
+        url: SITE.url,
+        logo: new URL("/favicon.svg", SITE.url).href,
+        description: SITE.description,
+        email: SITE.email,
+        contactPoint: {
+          "@type": "ContactPoint",
+          email: SITE.email,
+          contactType: "customer support",
+          availableLanguage: ["English", "Arabic"],
+        },
+        sameAs: sameAs,
+      })}
+    />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="flex min-h-screen flex-col">
+    <a
+      href="#main"
+      class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-ink focus:px-4 focus:py-2 focus:text-paper"
+      >{t(locale, "nav.home")}</a
+    >
+    <Header locale={locale} />
+    <main id="main" class="flex-1">
+      <slot />
+    </main>
+    <Footer locale={locale} />
+
+    <!-- Reveal on scroll -->
+    <script is:inline>
+      (function () {
+        let io = null;
+        function ensureObserver() {
+          if (io) return io;
+          if (!("IntersectionObserver" in window)) return null;
+          io = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (e) {
+                if (e.isIntersecting) {
+                  e.target.classList.add("is-visible");
+                  io.unobserve(e.target);
+                }
+              });
+            },
+            { threshold: 0.12 },
+          );
+          return io;
+        }
+        // (Re)scan .reveal elements that are not yet visible and observe them.
+        // Exposed globally so pages that inject .reveal nodes after load
+        // (e.g. the Shop grid after its async product fetch) can re-trigger it.
+        function initReveal() {
+          const els = document.querySelectorAll(".reveal:not(.is-visible)");
+          const observer = ensureObserver();
+          if (!observer) {
+            els.forEach(function (el) {
+              el.classList.add("is-visible");
+            });
+            return;
+          }
+          els.forEach(function (el) {
+            observer.observe(el);
+          });
+        }
+        window.__initReveal = initReveal;
+        initReveal();
+      })();
+    </script>
+
+    <!-- Animated counters (stats sections) -->
+    <script is:inline>
+      (function () {
+        const els = document.querySelectorAll("[data-count]");
+        if (!els.length) return;
+        const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        function paint(el, val) {
+          el.textContent = val + (el.getAttribute("data-suffix") || "");
+        }
+        if (reduce) {
+          els.forEach(function (el) {
+            paint(el, el.getAttribute("data-count"));
+          });
+          return;
+        }
+        const io = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (e) {
+              if (!e.isIntersecting) return;
+              const el = e.target;
+              io.unobserve(el);
+              const target = parseInt(el.getAttribute("data-count") || "0", 10);
+              const _suffix = el.getAttribute("data-suffix") || "";
+              const dur = 1400;
+              let start = null;
+              function step(ts) {
+                if (!start) start = ts;
+                const p = Math.min((ts - start) / dur, 1);
+                const eased = 1 - Math.pow(1 - p, 3);
+                paint(el, Math.round(eased * target));
+                if (p < 1) requestAnimationFrame(step);
+                else paint(el, target);
+              }
+              requestAnimationFrame(step);
+            });
+          },
+          { threshold: 0.4 },
+        );
+        els.forEach(function (el) {
+          io.observe(el);
+        });
+      })();
+    </script>
+    <!-- V4.1: Self-built behavior tracking (no PII, anonymous session) -->
+    <script is:inline>
+      (function () {
+        let sid;
+        try {
+          sid = localStorage.getItem("_aro_sid");
+          if (!sid) {
+            sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+            localStorage.setItem("_aro_sid", sid);
+          }
+        } catch (_e) {
+          sid = "no-storage";
+        }
+
+        function device() {
+          const w = window.innerWidth;
+          if (w < 768) return "mobile";
+          if (w < 1024) return "tablet";
+          return "desktop";
+        }
+
+        function lang() {
+          const m = location.pathname.match(/^\/(en|ar)(\/|$)/);
+          return m ? m[1] : "en";
+        }
+
+        function send(evt, extra) {
+          const payload = Object.assign(
+            {
+              event_type: evt,
+              page: location.pathname,
+              lang: lang(),
+              device: device(),
+              referrer: document.referrer || "direct",
+              session_id: sid,
+            },
+            extra || {},
+          );
+          if (navigator.sendBeacon) {
+            navigator.sendBeacon("/api/track", JSON.stringify(payload));
+          }
+        }
+
+        // Studio V1 §16.4: Meta Pixel forwarder. Pixel event names stay independent
+        // from self-built behavior_events names; both channels fire side by side.
+        function fbqTrack(ev, params) {
+          if (typeof window.fbq === "function") {
+            try {
+              window.fbq("track", ev, params || {});
+            } catch (_e) {
+              /* noop */
+            }
+          }
+        }
+        window.__aroFbq = fbqTrack;
+
+        // Studio V1: recent product-video attribution for inquiry payloads
+        // (reads the marker written by the PDP video slot; 30-minute window).
+        window.__aroVideoAttribution = function () {
+          try {
+            const raw = localStorage.getItem("_aro_last_video");
+            if (!raw) return {};
+            const v = JSON.parse(raw);
+            if (v && v.id && Date.now() - Number(v.ts || 0) < 30 * 60 * 1000) {
+              return { source_video_id: String(v.id) };
+            }
+          } catch (_e) {
+            /* noop */
+          }
+          return {};
+        };
+
+        // Auto page_view
+        send("page_view");
+
+        // V4.1: view_product — auto-fire on product detail pages
+        if (location.pathname.match(/\/products\/[^/]+$/)) {
+          const slug = location.pathname.split("/").pop();
+          send("view_product", { product_slug: slug });
+          fbqTrack("ViewContent", { content_name: slug });
+        }
+
+        // V4.1: blog_read — fires after 30s on blog/guide pages
+        if (location.pathname.match(/\/(blog|guides|case-studies)\/[^/]+$/)) {
+          fbqTrack("ViewContent");
+          setTimeout(function () {
+            send("blog_read");
+          }, 30000);
+        }
+
+        // V4.1: Scroll depth tracking (25/50/75/100%)
+        const scrollFired = {};
+        function checkScroll() {
+          const h = document.documentElement;
+          const pct = Math.round(
+            ((h.scrollTop || document.body.scrollTop) / (h.scrollHeight - h.clientHeight)) * 100,
+          );
+          const levels = [25, 50, 75, 100];
+          for (let i = 0; i < levels.length; i++) {
+            const lv = levels[i];
+            if (pct >= lv && !scrollFired[lv]) {
+              scrollFired[lv] = true;
+              send("scroll_" + lv);
+            }
+          }
+        }
+        let scrollTimer;
+        window.addEventListener(
+          "scroll",
+          function () {
+            clearTimeout(scrollTimer);
+            scrollTimer = setTimeout(checkScroll, 200);
+          },
+          { passive: true },
+        );
+
+        // V4.1: copy_email — track when user copies email address
+        document.addEventListener("copy", function (_e) {
+          const sel = (window.getSelection() || "").toString().trim();
+          if (sel && sel.match(/@/)) {
+            send("copy_email");
+          }
+        });
+
+        // Delegated click tracking via [data-track] attribute
+        document.addEventListener("click", function (e) {
+          const el = e.target.closest ? e.target.closest("[data-track]") : null;
+          if (!el) return;
+          const evt = el.getAttribute("data-track");
+          const slug = el.getAttribute("data-product") || undefined;
+          const label = el.getAttribute("data-track-label") || undefined;
+          const extra = {};
+          if (slug) extra.product_slug = slug;
+          if (label) extra.label = label;
+          send(evt, extra);
+          // Studio V1 §16.4: WhatsApp / Email contact clicks → Pixel Contact
+          if (evt === "click_whatsapp" || evt === "click_email") fbqTrack("Contact");
+        });
+
+        // Expose for manual triggers (inquiry form, newsletter, catalog download)
+        window.__aroTrack = send;
+      })();
+    </script>
+  </body>
+</html>

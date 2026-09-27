@@ -1,0 +1,41 @@
+---
+import { c } from "../i18n-content";
+import type { Locale } from "../i18n";
+import { getRelativeLocaleUrl } from "astro:i18n";
+
+interface Props {
+  locale?: Locale;
+  href?: string;
+  /** Source page identifier appended as ?from= (e.g. "guide", "case-study", "solution"). */
+  from?: string;
+  /** Human-readable context appended as &context= (e.g. guide title, case study country+topic). */
+  context?: string;
+}
+const { locale = "en", href, from, context } = Astro.props;
+const data = c(locale, "ctaBand");
+
+// Build the CTA link: explicit href wins; otherwise default /contact with optional query params
+let link = href ?? getRelativeLocaleUrl(locale, "/contact");
+if (!href && (from || context)) {
+  const parts: string[] = [];
+  if (from) parts.push(`from=${encodeURIComponent(from)}`);
+  if (context) parts.push(`context=${encodeURIComponent(context)}`);
+  link = `${link}?${parts.join("&")}`;
+}
+---
+
+<section class="container-x py-16 lg:py-20">
+  <div class="reveal card-surface overflow-hidden rounded-2xl bg-ink p-10 text-paper lg:p-14">
+    <div class="mx-auto max-w-2xl text-center">
+      <p class="text-xs font-semibold uppercase tracking-[0.18em] text-accent-soft">
+        {data.eyebrow}
+      </p>
+      <h2 class="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">{data.title}</h2>
+      <p class="mt-3 text-paper/70">{data.text}</p>
+      <a href={link} class="btn mt-7 inline-flex bg-white text-ink hover:bg-beige magnetic"
+        >{data.button}</a
+      >
+      {data.note && <p class="mt-4 text-xs text-paper/60">{data.note}</p>}
+    </div>
+  </div>
+</section>

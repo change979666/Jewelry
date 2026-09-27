@@ -1,0 +1,76 @@
+---
+// ---------------------------------------------------------------------------
+//  Jewelry — locale homepage (placeholder for V1.0)
+//
+//  This is a clean, branded placeholder so the fork ships without any
+//  Aromiso/B2B content. The designed storefront homepage (hero, collections,
+//  gift moments, reviews, trust) is built per 项目复制说明.txt §27 in the
+//  Commerce phase.
+// ---------------------------------------------------------------------------
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Icon from "../../components/Icon.astro";
+import { SITE_CFG } from "../../consts";
+import { t, localeStaticPaths } from "../../i18n";
+import type { Locale } from "../../i18n";
+import { getRelativeLocaleUrl } from "astro:i18n";
+
+export const getStaticPaths = localeStaticPaths;
+
+const locale = (Astro.props.locale as Locale) ?? "en";
+const href = (p: string) => getRelativeLocaleUrl(locale, p);
+
+const trustPoints = [
+  { icon: "check", text: "Cash on delivery" },
+  { icon: "check", text: "Easy returns & exchanges" },
+  { icon: "check", text: "Designed for the Gulf" },
+  { icon: "check", text: "Gift-ready packaging" },
+];
+---
+
+<BaseLayout locale={locale} title={SITE_CFG.tagline} description={SITE_CFG.description}>
+  <!-- Hero -->
+  <section class="relative overflow-hidden">
+    <div
+      class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_70%_20%,var(--beige),transparent)]"
+    >
+    </div>
+    <div class="container-x relative py-28 text-center lg:py-36">
+      <p class="eyebrow">{SITE_CFG.name}</p>
+      <h1 class="mx-auto mt-5 max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
+        {SITE_CFG.tagline}
+      </h1>
+      <p class="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-stone">
+        {SITE_CFG.description}
+      </p>
+      <div class="mt-10 flex flex-wrap items-center justify-center gap-4">
+        <a href={href("/shop")} class="btn btn-primary magnetic">{t(locale, "hero.explore") || "Shop now"}</a>
+        <a href={href("/about")} class="btn btn-ghost">Our story</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust bar -->
+  <section class="border-y border-line bg-beige/50">
+    <div class="container-x flex flex-wrap items-center justify-center gap-x-8 gap-y-3 py-5">
+      {
+        trustPoints.map((item) => (
+          <span class="inline-flex items-center gap-2 text-sm font-medium text-ink">
+            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-ink text-paper">
+              <Icon name={item.icon} size={12} />
+            </span>
+            {item.text}
+          </span>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- Catalog placeholder -->
+  <section class="container-x py-24 text-center">
+    <h2 class="text-3xl font-semibold tracking-tight">The collection is coming soon</h2>
+    <p class="mx-auto mt-4 max-w-md text-stone">
+      Earrings, necklaces, bracelets and gift sets — curated for everyday wear and gifting.
+    </p>
+    <a href={href("/contact")} class="btn btn-primary magnetic mt-8">Get in touch</a>
+  </section>
+</BaseLayout>

@@ -1,0 +1,60 @@
+---
+import Icon from "./Icon.astro";
+import { getRelativeLocaleUrl } from "astro:i18n";
+import type { Locale } from "../i18n";
+import { t } from "../i18n";
+import type { BlogEntry } from "../lib/content";
+
+interface Props {
+  locale: Locale;
+  posts: BlogEntry[];
+}
+const { locale, posts } = Astro.props;
+const dateFmt = new Intl.DateTimeFormat(
+  locale === "de" ? "de-DE" : locale === "es" ? "es-ES" : "en-US",
+  { year: "numeric", month: "short", day: "numeric" },
+);
+const postHref = (key: string) => getRelativeLocaleUrl(locale, `/blog/${key}`);
+---
+
+{
+  posts.length > 0 && (
+    <section class="container-x mt-16">
+      <div class="mx-auto max-w-4xl">
+        <h2 class="text-xl font-semibold">{t(locale, "blog.related_title")}</h2>
+        <div class="mt-6 grid gap-6 sm:grid-cols-3">
+          {posts.map((post) => (
+            <a
+              href={postHref(post.data.key)}
+              class="reveal card-surface group block overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1"
+            >
+              <div class="aspect-[16/9] bg-beige">
+                {post.data.cover ? (
+                  <img
+                    src={post.data.cover}
+                    alt={post.data.title}
+                    class="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div class="grid h-full place-items-center text-accent/30">
+                    <Icon name="drop" size={40} />
+                  </div>
+                )}
+              </div>
+              <div class="p-5">
+                <div class="mb-2 flex items-center gap-2 text-xs text-stone">
+                  <span class="rounded-full bg-beige px-2.5 py-0.5 font-medium text-accent">
+                    {post.data.category}
+                  </span>
+                  <span>{dateFmt.format(post.data.pubDate)}</span>
+                </div>
+                <h3 class="text-base font-semibold leading-snug">{post.data.title}</h3>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
