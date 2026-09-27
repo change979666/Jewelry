@@ -37,22 +37,19 @@ type BlogEntry = {
   };
 };
 
+// Blog category → candidate guide categories. Unmapped blog categories simply
+// produce no guide cross-links (relatedGuidesForBlog returns []), so this table
+// only needs the categories the editorial team actually uses.
 const BLOG_CAT_TO_GUIDE_CATS: Record<string, string[]> = {
-  "Sourcing & Procurement": [
-    "Business Operations",
-    "Market Entry",
-    "Import & Logistics",
-    "Logistics",
-  ],
-  "Buying Guides": ["Product Guides", "Candles", "Essential Oils", "Fragrance Oils", "Diffusers"],
-  "Product Comparisons": ["Product Guides", "Formulation"],
-  "Market Guides": ["Market Entry", "E-commerce", "Marketing & Sales"],
-  "Shipping & Logistics": ["Import & Logistics", "Logistics", "Business Operations"],
-  "Industry Applications": ["Industry Verticals", "Marketing & Sales"],
-  "Compliance & Safety": ["Compliance", "Quality"],
-  "Cost & Pricing": ["Pricing & MOQ", "Business Operations", "Business"],
-  "Brand Building": ["Marketing & Sales", "Marketing", "E-commerce"],
-  "Trends & Insights": ["Trends & Innovation", "Sustainability"],
+  Gifting: ["Gifting", "Buying Guides"],
+  Occasions: ["Gifting", "Occasions"],
+  Styling: ["Styling", "Buying Guides"],
+  "Care & Cleaning": ["Care & Cleaning", "Product Guides"],
+  Sizing: ["Sizing", "Buying Guides"],
+  Materials: ["Materials", "Product Guides"],
+  "Buying Guides": ["Buying Guides", "Product Guides"],
+  "Trends & Insights": ["Trends", "Styling"],
+  Stories: ["Styling", "Gifting"],
 };
 
 async function loadGuides(locale: Locale): Promise<GuideEntry[]> {

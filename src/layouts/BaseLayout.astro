@@ -3,8 +3,7 @@ import "../styles/global.css";
 import { SITE } from "../consts";
 import { t } from "../i18n";
 import type { Locale } from "../i18n";
-import { LOCALE_LIST, stripLocale } from "../i18n";
-import { getRelativeLocaleUrl } from "astro:i18n";
+import { LOCALE_LIST, localizedUrl, localeFromPath, stripLocale } from "../i18n";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import settings from "../data/settings.json";
@@ -17,7 +16,7 @@ interface Props {
   alternates?: { lang: Locale; href: string }[];
   jsonLd?: Record<string, unknown>;
 }
-const rawLocale = (Astro.currentLocale as Locale) ?? (Astro.props.locale as Locale) ?? "en";
+const rawLocale = (Astro.props.locale as Locale) ?? localeFromPath(Astro.url.pathname);
 const locale: Locale = (LOCALE_LIST.includes(rawLocale) ? rawLocale : "en") as Locale;
 
 const { title, description = t(locale, "site.description"), image = "/images/hero.jpg" } = Astro.props;
@@ -28,9 +27,9 @@ const canonical = new URL(Astro.url.pathname, SITE.url).href;
 const pathNoLocale = stripLocale(Astro.url.pathname);
 const hreflangs = LOCALE_LIST.map((l) => ({
   lang: l,
-  href: new URL(getRelativeLocaleUrl(l, pathNoLocale), SITE.url).href,
+  href: new URL(localizedUrl(l, pathNoLocale), SITE.url).href,
 }));
-const xDefault = new URL(getRelativeLocaleUrl("en", pathNoLocale), SITE.url).href;
+const xDefault = new URL(localizedUrl("en", pathNoLocale), SITE.url).href;
 
 // Build sameAs array from configured social links
 const sameAs = Object.entries(settings.social)

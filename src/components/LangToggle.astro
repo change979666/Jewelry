@@ -1,14 +1,13 @@
 ---
 import { LOCALES, nextLocale } from "../i18n";
 import type { Locale } from "../i18n";
-import { LOCALE_LIST, stripLocale } from "../i18n";
-import { getRelativeLocaleUrl } from "astro:i18n";
+import { LOCALE_LIST, localizedUrl, localeFromPath, stripLocale } from "../i18n";
 
-const _l = (Astro.props.locale as Locale) ?? (Astro.currentLocale as Locale) ?? "en";
+const _l = (Astro.props.locale as Locale) ?? localeFromPath(Astro.url.pathname);
 const current = (LOCALE_LIST.includes(_l) ? _l : "en") as Locale;
 const nxt = nextLocale(current);
 const stripped = stripLocale(Astro.url.pathname);
-const href = getRelativeLocaleUrl(nxt, stripped);
+const href = localizedUrl(nxt, stripped);
 ---
 
 <a

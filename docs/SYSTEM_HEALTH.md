@@ -1,5 +1,10 @@
 # Aromiso SYSTEM HEALTH — V5.64
 
+> ⚠️ **历史快照 — 非当前文档。** 本文描述的是前身项目 **Aromiso（香薰 B2B）** 时期的实现，
+> 其中的 `functions/` 目录、`commerce_*` 表、en/es/de 三语、`/admin`（V1）等均**已不存在**。
+> 保留此文仅作迁移对照与决策留痕。**当前架构与约定以 [`README.md`](../README.md) 与
+> [`docs/01-项目说明.md`](./01-项目说明.md) 为准。**
+
 > 更新时间：2026-09-07（Asia/Shanghai）。本文件区分本地实现、远端 Git、Pages 部署、D1 schema 和 Worker 部署证据；没有真实运行证据统一写 `NOT MEASURED`。
 
 ## 可交接生产基线字段

@@ -1,21 +1,11 @@
 ---
-import { SITE } from "../consts";
+// Root "/" — redirect the visitor to their preferred locale.
+//
+// Replaces the retired functions/index.ts Pages Function with a server-side
+// 302 so the decision is made before any HTML is sent (the previous
+// meta-refresh fallback caused a visible flash and was invisible to crawlers).
+// Falls back to English.
+const accept = (Astro.request.headers.get("accept-language") || "").toLowerCase();
+const locale = /\bar\b/.test(accept) || accept.startsWith("ar") ? "ar" : "en";
+return Astro.redirect(`/${locale}`, 302);
 ---
-
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="refresh" content="0; url=/en" />
-    <link rel="canonical" href={SITE.url + "/en"} />
-    <link rel="alternate" hreflang="x-default" href="/en" />
-    <title>{SITE.name}</title>
-  </head>
-  <body>
-    <p>Redirecting to <a href="/en">English</a>…</p>
-    <script is:inline>
-      location.replace("/en");
-    </script>
-  </body>
-</html>

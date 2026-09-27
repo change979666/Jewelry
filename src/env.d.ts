@@ -1,9 +1,12 @@
-/// <reference path="../.astro/types.d.ts" />
 /// <reference types="astro/client" />
-
-type D1Database = import("@cloudflare/workers-types").D1Database;
-type R2Bucket = import("@cloudflare/workers-types").R2Bucket;
-type KVNamespace = import("@cloudflare/workers-types").KVNamespace;
+// Load the Workers runtime globals (D1Database / R2Bucket / KVNamespace / …)
+// as a SINGLE source of truth.
+//
+// Do NOT reintroduce `type D1Database = import("@cloudflare/workers-types")...`
+// aliases here: that module-view import resolves the same global script through
+// a second identity, and types such as R2ObjectBody / Headers then become
+// mutually unassignable (ts 2322 / 2345) across files.
+/// <reference types="@cloudflare/workers-types" />
 
 declare namespace App {
   interface Locals {
@@ -13,6 +16,15 @@ declare namespace App {
         IMAGES: R2Bucket;
         DRAFTS: KVNamespace;
       };
+      /**
+       * ExecutionContext provided by @astrojs/cloudflare.
+       * Used by src/middleware.ts and src/pages/api/_lib/ctx.ts.
+       */
+      ctx: {
+        waitUntil(promise: Promise<unknown>): void;
+        passThroughOnException(): void;
+      };
+      cf?: unknown;
     };
   }
 }

@@ -35,6 +35,18 @@ const blog = defineCollection({
     seoTitle: z.string().optional(),
     seoDescription: z.string().optional(),
     keywords: z.array(z.string()).default([]),
+
+    // Author byline extras rendered by AuthorCard on the article page.
+    authorBio: z.string().optional(),
+    authorAvatar: z.string().optional(),
+
+    // Buyer FAQ shown under the article and emitted as FAQPage JSON-LD.
+    faq: z.array(z.object({ q: z.string(), a: z.string() })).default([]),
+
+    // Curated cross-links. Each entry is a locale-agnostic `key`; unresolvable
+    // keys are ignored and the page falls back to category matches.
+    relatedPosts: z.array(z.string()).default([]),
+    relatedGuides: z.array(z.string()).default([]),
   }),
 });
 

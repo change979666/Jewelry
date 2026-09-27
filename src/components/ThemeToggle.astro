@@ -1,9 +1,9 @@
 ---
 import { t } from "../i18n";
 import type { Locale } from "../i18n";
-import { LOCALE_LIST } from "../i18n";
+import { LOCALE_LIST, localeFromPath } from "../i18n";
 
-const _l = (Astro.currentLocale as Locale) ?? "en";
+const _l = localeFromPath(Astro.url.pathname);
 const locale = (LOCALE_LIST.includes(_l) ? _l : "en") as Locale;
 ---
 

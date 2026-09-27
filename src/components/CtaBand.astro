@@ -1,6 +1,5 @@
 ---
-import type { Locale } from "../i18n";
-import { getRelativeLocaleUrl } from "astro:i18n";
+import { localizedUrl, type Locale } from "../i18n";
 
 interface Props {
   locale?: Locale;
@@ -31,7 +30,7 @@ const copy = {
 const data = copy[locale] ?? copy.en;
 
 // Build the CTA link: explicit href wins; otherwise default /contact with optional query params
-let link = href ?? getRelativeLocaleUrl(locale, "/collection/everyday");
+let link = href ?? localizedUrl(locale, "/collection/everyday");
 if (!href && (from || context)) {
   const parts: string[] = [];
   if (from) parts.push(`from=${encodeURIComponent(from)}`);

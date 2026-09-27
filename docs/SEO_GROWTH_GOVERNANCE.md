@@ -1,5 +1,10 @@
 # SEO / GROWTH GOVERNANCE — RTS rule, Taxonomy mapping, Dedupe candidates, Enrichment/Association pipelines
 
+> ⚠️ **历史快照 — 非当前文档。** 本文描述的是前身项目 **Aromiso（香薰 B2B）** 时期的实现，
+> 其中的 `functions/` 目录、`commerce_*` 表、en/es/de 三语、`/admin`（V1）等均**已不存在**。
+> 保留此文仅作迁移对照与决策留痕。**当前架构与约定以 [`README.md`](../README.md) 与
+> [`docs/01-项目说明.md`](./01-项目说明.md) 为准。**
+
 > 2026-09-10 · LONG-TERM OPERATING MODE. Read-only analysis + dry-run proposals. **No production data mutated, no RTS/Catalog/taxonomy re-key, no deletions.**
 > Companion to `MASTER_CONSOLIDATION_BACKLOG.md` (the single ledger) and `NEW_RTS_DIFFUSER_PIPELINE.md`.
 

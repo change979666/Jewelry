@@ -4,22 +4,21 @@
 //  search modal fetches it once and does full-text matching in the browser —
 //  no server, no third-party service.
 //
-//  PLACEHOLDER (V1.0): the catalog and content are not built yet, so each
-//  locale emits an empty list. In the Commerce/Content phase, populate it
-//  with products (from D1), blog posts and FAQ items.
+//  SCOPE (V1.0): blog posts + guides. The product catalog lives in D1 and is
+//  not available at static build time; catalog search is served by
+//  /api/commerce/products and is a separate surface (see docs/01-项目说明.md).
 //
 //  Entry shape:
-//    { type, title, excerpt, url, extra, cover?, price?, read?, year? }
+//    { type, title, excerpt, url, extra, cover?, read?, year? }
 // ---------------------------------------------------------------------------
 
-import type { Locale } from "../i18n";
+import { getCollection } from "astro:content";
+import { localizedUrl, LOCALE_LIST, type Locale } from "../i18n";
 
 export const prerender = true;
 
-const LOCALES: Locale[] = ["en", "ar"];
-
 interface SearchEntry {
-  type: "product" | "post" | "faq";
+  type: "post" | "guide";
   title: string;
   excerpt: string;
   url: string;
@@ -29,11 +28,53 @@ interface SearchEntry {
   year?: number;
 }
 
+/** Rough reading time in minutes (200 wpm, min 1). */
+function readingMinutes(body: string | undefined): number {
+  const words = (body ?? "").trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / 200));
+}
+
+// Every page (including the default locale) lives under a /{locale} segment, so
+// the prefix is always required — see localizedUrl in src/i18n.ts.
+function urlFor(locale: Locale, section: string, key: string): string {
+  return localizedUrl(locale, `/${section}/${key}`);
+}
+
 export async function GET() {
+  const [posts, guides] = await Promise.all([
+    getCollection("blog", ({ data }) => !data.draft),
+    getCollection("guides", ({ data }) => !data.draft),
+  ]);
+
   const index: Record<string, SearchEntry[]> = {};
-  for (const locale of LOCALES) {
-    // TODO(commerce/content): products from D1, blog posts, FAQ items.
-    index[locale] = [];
+  for (const locale of LOCALE_LIST) {
+    const entries: SearchEntry[] = [];
+
+    for (const p of posts) {
+      if (p.data.locale !== locale) continue;
+      entries.push({
+        type: "post",
+        title: p.data.title,
+        excerpt: p.data.seoDescription ?? "",
+        url: urlFor(locale, "blog", p.data.key),
+        extra: [p.data.category, ...(p.data.tags ?? [])].filter(Boolean).join(" "),
+        read: readingMinutes(p.body),
+        year: p.data.pubDate.getFullYear(),
+      });
+    }
+
+    for (const g of guides) {
+      if (g.data.locale !== locale) continue;
+      entries.push({
+        type: "guide",
+        title: g.data.title,
+        excerpt: g.data.excerpt,
+        url: urlFor(locale, "resources", g.data.key),
+        extra: g.data.category ?? "",
+      });
+    }
+
+    index[locale] = entries;
   }
 
   return new Response(JSON.stringify(index), {

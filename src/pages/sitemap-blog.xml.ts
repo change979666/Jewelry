@@ -3,9 +3,14 @@
  */
 import type { APIRoute } from "astro";
 import { getCollection } from "astro:content";
+import { SITE as SITE_CFG } from "../consts";
+import { LOCALE_LIST } from "../i18n";
 
-const SITE = "https://jewelry.com";
-const LOCALES = ["en", "es", "de"];
+// Single source of truth for the domain (src/consts.ts) and for the shipped
+// locales. This endpoint previously hardcoded https://jewelry.com and
+// ["en","es","de"], which advertised URLs that do not exist on this site.
+const SITE = SITE_CFG.url.replace(/\/$/, "");
+const LOCALES = LOCALE_LIST;
 
 function escapeXml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");

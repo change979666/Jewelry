@@ -46,3 +46,6 @@ gsc-service-account.json
 
 # 浏览器自动化快照
 .playwright-mcp/
+
+# E2E 验证截图产物
+artifacts-p07/

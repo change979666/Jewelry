@@ -3,6 +3,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import Icon from "../components/Icon.astro";
 import { SITE } from "../consts";
 import { getBlogPosts, getGuides } from "../lib/content";
+import { localizedUrl } from "../i18n";
 
 const locale = "en";
 
@@ -23,9 +24,9 @@ const guides = (await getGuides(locale)).slice(0, 3);
       The page you're looking for doesn't exist or may have moved. Let's get you back on track.
     </p>
     <div class="mt-8 flex flex-wrap justify-center gap-3">
-      <a href="/" class="btn btn-primary">Back to Home</a>
-      <a href="/collection/everyday" class="btn btn-ghost">Browse Jewelry</a>
-      <a href="/contact" class="btn btn-ghost">Contact Us</a>
+      <a href={localizedUrl(locale, "/")} class="btn btn-primary">Back to Home</a>
+      <a href={localizedUrl(locale, "/collection/everyday")} class="btn btn-ghost">Browse Jewelry</a>
+      <a href={localizedUrl(locale, "/contact")} class="btn btn-ghost">Contact Us</a>
     </div>
   </section>
 
@@ -37,7 +38,7 @@ const guides = (await getGuides(locale)).slice(0, 3);
         <div class="grid gap-4 sm:grid-cols-3">
           {posts.map((post) => (
             <a
-              href={`/blog/${post.data.key}`}
+              href={localizedUrl(locale, `/blog/${post.data.key}`)}
               class="card-surface group rounded-xl p-5 transition-shadow hover:shadow-md"
             >
               <span class="text-xs font-medium text-accent">{post.data.category}</span>
@@ -59,7 +60,7 @@ const guides = (await getGuides(locale)).slice(0, 3);
         <div class="grid gap-4 sm:grid-cols-3">
           {guides.map((g) => (
             <a
-              href={`/resources/${g.data.key}`}
+              href={localizedUrl(locale, `/resources/${g.data.key}`)}
               class="card-surface group rounded-xl p-5 transition-shadow hover:shadow-md"
             >
               <span class="text-xs font-medium text-accent">{g.data.category}</span>

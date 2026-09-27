@@ -1,5 +1,10 @@
 # Aromiso 反滥用与信任增长架构开发文档
 
+> ⚠️ **历史快照 — 非当前文档。** 本文描述的是前身项目 **Aromiso（香薰 B2B）** 时期的实现，
+> 其中的 `functions/` 目录、`commerce_*` 表、en/es/de 三语、`/admin`（V1）等均**已不存在**。
+> 保留此文仅作迁移对照与决策留痕。**当前架构与约定以 [`README.md`](../README.md) 与
+> [`docs/01-项目说明.md`](./01-项目说明.md) 为准。**
+
 > 版本：V1.0（2026-08-02）
 > 状态：服务端+前端代码已实施并上线（main，2026-08-04 经 GitHub API 核实 guard.ts/Turnstile.astro/settings.json 均在远程 main）。**剩余仅 CF/Resend 控制台激活**：TURNSTILE_SECRET_KEY / WAF 速率规则 / Bot Fight Mode / sales@ 退信排查（密钥类操作需人工在控制台完成）。
 > 触发事件：2026-08-01 晚至 08-02 晨询盘接口遭自动化垃圾提交轰炸（"Robertbib" 事件）

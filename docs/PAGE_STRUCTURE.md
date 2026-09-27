@@ -1,5 +1,10 @@
 # Aromiso 全站页面结构盘点
 
+> ⚠️ **历史快照 — 非当前文档。** 本文描述的是前身项目 **Aromiso（香薰 B2B）** 时期的实现，
+> 其中的 `functions/` 目录、`commerce_*` 表、en/es/de 三语、`/admin`（V1）等均**已不存在**。
+> 保留此文仅作迁移对照与决策留痕。**当前架构与约定以 [`README.md`](../README.md) 与
+> [`docs/01-项目说明.md`](./01-项目说明.md) 为准。**
+
 > 盘点时间：2026-08-10 · 用途：重大改版前的全量结构参考
 > 范围：前台公开页面（三语去重）、后台 admin 页面、全部 API 端点、公共函数库
 > 技术栈：Astro 5.18 + Tailwind v4 + TypeScript · Cloudflare Pages（静态 + Functions + D1 + KV + R2）

@@ -4,6 +4,7 @@ import { CollectionService } from './collection.service';
 import { CartService } from './cart.service';
 import { OrderService } from './order.service';
 import { CustomerService } from './customer.service';
+import { InventoryService } from './inventory.service';
 import { CODProvider, HostedCheckoutProvider } from './providers/payment';
 
 export class CommerceCore {
@@ -12,6 +13,7 @@ export class CommerceCore {
   public cart: CartService;
   public orders: OrderService;
   public customers: CustomerService;
+  public inventory: InventoryService;
   public cod: CODProvider;
   public hosted: HostedCheckoutProvider;
 
@@ -21,6 +23,7 @@ export class CommerceCore {
     this.cart = new CartService(db);
     this.orders = new OrderService(db);
     this.customers = new CustomerService(db);
+    this.inventory = new InventoryService(db);
     this.cod = new CODProvider(db);
     this.hosted = new HostedCheckoutProvider(db, { enabled: options.enableOnlinePayment === true });
   }
@@ -33,3 +36,4 @@ export function getCommerce(db: D1Database, options?: { enableOnlinePayment?: bo
 export * from './types';
 export * from './pricing';
 export * from './order.service';
+export * from './inventory.service';

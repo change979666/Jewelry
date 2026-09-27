@@ -2,12 +2,14 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCommerce } from "../../lib/commerce";
 import { PAGE, SITE_CFG } from "../../consts";
-import type { Locale } from "../../i18n";
 import { t } from "../../i18n";
+import { requireLocale } from "../../lib/locale";
 import { getCollection } from "astro:content";
 
 const { lang } = Astro.params;
-const locale = lang as Locale;
+const _locale = requireLocale(lang);
+if (_locale instanceof Response) return _locale;
+const locale = _locale;
 
 const db = Astro.locals.runtime.env.DB;
 const commerce = db ? getCommerce(db) : null;

@@ -8,9 +8,8 @@ import RelatedPosts from "../../../components/RelatedPosts.astro";
 import BlogInternalLinks from "../../../components/BlogInternalLinks.astro";
 import FaqSection from "../../../components/FaqSection.astro";
 import CtaBand from "../../../components/CtaBand.astro";
-import { t, type Locale, LOCALE_LIST } from "../../../i18n";
-import { getRelativeLocaleUrl } from "astro:i18n";
-import { getCollection } from "astro:content";
+import { t, localizedUrl } from "../../../i18n";
+import { requireLocale } from "../../../lib/locale";
 import { SITE } from "../../../consts";
 import { getBlogEntryResolved, getBlogPosts } from "../../../lib/content";
 import {
@@ -18,40 +17,28 @@ import {
   resolveGuidesByKeys,
   resolvePostsByKeys,
 } from "../../../lib/blog-related";
-import type { GetStaticPaths } from "astro";
 
-export const getStaticPaths = (async () => {
-  const entries = await getCollection("blog", ({ data }) => !data.draft);
-  const keys = [...new Set(entries.map((e) => e.data.key))];
-  const paths: {
-    params: { lang: string; slug: string };
-    props: { entry: any; isFallback: boolean };
-  }[] = [];
-  for (const lang of LOCALE_LIST) {
-    for (const key of keys) {
-      const resolved = await getBlogEntryResolved(lang as Locale, key);
-      if (!resolved) continue;
-      paths.push({
-        params: { lang, slug: key },
-        props: { entry: resolved.entry, isFallback: resolved.isFallback },
-      });
-    }
-  }
-  return paths;
-}) satisfies GetStaticPaths;
+// This route is server-rendered, so nothing may be read from `Astro.props`
+// (getStaticPaths props are only injected when a route is prerendered — see
+// src/lib/locale.ts). The entry is resolved from the URL at request time and a
+// missing slug is a real 404. The page locale follows the URL so the chrome
+// stays in the visitor's language, even when the body falls back to English.
+const { lang, slug } = Astro.params;
+const _locale = requireLocale(lang);
+if (_locale instanceof Response) return _locale;
+const locale = _locale;
 
-const { entry, isFallback } = Astro.props;
+const resolved = await getBlogEntryResolved(locale, slug as string);
+if (!resolved) return new Response("Not Found", { status: 404 });
+const { entry, isFallback } = resolved;
 const { Content, headings } = await entry.render();
-// The page locale follows the URL so the chrome stays in the visitor's language,
-// even when the body falls back to English.
-const locale = (Astro.params.lang as Locale) ?? (entry.data.locale as Locale);
 
 const dateFmt = new Intl.DateTimeFormat(
   locale === "ar" ? "ar-SA-u-nu-latn" : "en-US",
   { year: "numeric", month: "long", day: "numeric" },
 );
-const backHref = getRelativeLocaleUrl(locale, "/blog");
-const ctaHref = getRelativeLocaleUrl(locale, "/contact");
+const backHref = localizedUrl(locale, "/blog");
+const ctaHref = localizedUrl(locale, "/contact");
 const absUrl = new URL(Astro.url.pathname, SITE.url).href;
 
 // Reading time ≈ 200 words per minute, at least 1 minute.
@@ -128,7 +115,7 @@ const breadcrumbLd = {
       "@type": "ListItem",
       position: 1,
       name: t(locale, "nav.home"),
-      item: new URL(getRelativeLocaleUrl(locale, "/"), SITE.url).href,
+      item: new URL(localizedUrl(locale, "/"), SITE.url).href,
     },
     {
       "@type": "ListItem",
@@ -281,7 +268,7 @@ const fallbackNote: Record<string, string> = {
         <div class="mx-auto grid max-w-5xl gap-4 sm:grid-cols-2">
           {newerPost ? (
             <a
-              href={getRelativeLocaleUrl(locale, `/blog/${newerPost.data.key}`)}
+              href={localizedUrl(locale, `/blog/${newerPost.data.key}`)}
               class="reveal card-surface group rounded-2xl p-6 transition-all hover:-translate-y-0.5"
             >
               <span class="text-xs font-semibold uppercase tracking-wider text-stone">
@@ -296,7 +283,7 @@ const fallbackNote: Record<string, string> = {
           )}
           {olderPost && (
             <a
-              href={getRelativeLocaleUrl(locale, `/blog/${olderPost.data.key}`)}
+              href={localizedUrl(locale, `/blog/${olderPost.data.key}`)}
               class="reveal card-surface group rounded-2xl p-6 text-right transition-all hover:-translate-y-0.5"
             >
               <span class="text-xs font-semibold uppercase tracking-wider text-stone">

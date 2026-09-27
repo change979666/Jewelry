@@ -7,9 +7,15 @@
 
 # Admin pages are dynamic — never serve a cached copy (avoids stale admin UI
 # after deploys, e.g. fields that were removed still showing up).
+# NOTE: the console lives at /admin-v2 (Admin V1 at /admin is retired and only
+# 302-redirected), so both prefixes must be listed.
 /admin
   Cache-Control: no-store, max-age=0
 /admin/*
+  Cache-Control: no-store, max-age=0
+/admin-v2
+  Cache-Control: no-store, max-age=0
+/admin-v2/*
   Cache-Control: no-store, max-age=0
 
 # Baseline security + privacy headers for everything else.

@@ -4,16 +4,16 @@
 //  Included once via Header. Fetches the build-time /search-index.json once,
 //  then matches fully client-side.
 //
-//  Lead-gen focused result cards:
-//    · type badge (Product / Article / FAQ) + thumbnail so buyers know at a
-//      glance what they're looking at
-//    · product rows carry price/inventory meta and a CTA that deep-links to
-//      the product page
-//    · article rows carry reading time + publish year
-//  Grouped by type with live match counts, ranked by type weight
-//  (products > blog > FAQ, title hits boosted). Also: popular-search chips,
-//  synonym expansion, "did you mean" spell correction, keyword highlighting
-//  and full keyboard navigation.
+//  Result cards:
+//    · type badge (Guide / Journal) + thumbnail so visitors know at a glance
+//      what they're looking at
+//    · rows carry reading time + publish year
+//  Catalog search is intentionally not indexed here: the product table lives in
+//  D1 and is not available at static build time (see search-index.json.ts).
+//  Grouped by type with live match counts, ranked by type weight (guides >
+//  journal, title hits boosted). Also: popular-search chips, synonym
+//  expansion, "did you mean" spell correction, keyword highlighting and full
+//  keyboard navigation.
 // ---------------------------------------------------------------------------
 import { t } from "../i18n";
 import type { Locale } from "../i18n";
@@ -32,16 +32,11 @@ const labels = {
   noResults: t(locale, "search.no_results"),
   popular: t(locale, "search.popular"),
   didYouMean: t(locale, "search.did_you_mean"),
-  getQuote: t(locale, "search.get_quote"),
-  oem: t(locale, "search.oem"),
-  moq: t(locale, "search.moq"),
   emptyTitle: t(locale, "search.empty_title"),
   emptyText: t(locale, "search.empty_text"),
-  requestQuote: t(locale, "cta"),
-  products: t(locale, "search.products"),
-  blog: t(locale, "search.blog"),
+  browse: t(locale, "search.browse"),
+  posts: t(locale, "search.posts"),
   guides: t(locale, "search.guides"),
-  faq: t(locale, "search.faq"),
   minRead: t(locale, "blog.min_read"),
   navigate: t(locale, "search.navigate"),
   open: t(locale, "search.open"),
@@ -66,6 +61,7 @@ const waHref = waNumber
     : `https://wa.me/${waNumber}?text=${waMsg}`
   : "";
 const contactHref = `/${locale}/contact/`;
+const collectionHref = `/${locale}/collection/everyday/`;
 ---
 
 <div
@@ -79,6 +75,7 @@ const contactHref = `/${locale}/contact/`;
   data-popular={JSON.stringify(popular)}
   data-wa={waHref}
   data-contact={contactHref}
+  data-collection={collectionHref}
 >
   <!-- Backdrop -->
   <div id="search-backdrop" class="absolute inset-0 bg-ink/50 backdrop-blur-sm"></div>
@@ -167,17 +164,16 @@ const contactHref = `/${locale}/contact/`;
     const popular = JSON.parse(modal.getAttribute("data-popular") || "[]");
     const waHref = modal.getAttribute("data-wa") || "";
     const contactHref = modal.getAttribute("data-contact") || "/contact/";
+    const collectionHref = modal.getAttribute("data-collection") || "/collection/everyday/";
 
-    // Type weighting (per product spec): products rank above guides, guides
-    // above blog, blog above FAQ.
-    const WEIGHTS = { product: 10, guide: 9, post: 8, faq: 6 };
-    const CAPS = { product: 5, guide: 4, post: 5, faq: 4 };
-    const ORDER = ["product", "guide", "post", "faq"];
+    // Type weighting: guides rank above journal posts (guides are evergreen
+    // how-to content, posts are time-sensitive).
+    const WEIGHTS = { guide: 9, post: 8 };
+    const CAPS = { guide: 4, post: 5 };
+    const ORDER = ["guide", "post"];
     const NAMES = {
-      product: labels.products,
       guide: labels.guides,
-      post: labels.blog,
-      faq: labels.faq,
+      post: labels.posts,
     };
     const svg = function (body) {
       return (
@@ -187,64 +183,56 @@ const contactHref = `/${locale}/contact/`;
       );
     };
     const BADGE_ICONS = {
-      product: svg('<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>'),
       guide: svg(
         '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
       ),
       post: svg(
         '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 3 14 8 19 8"/>',
       ),
-      faq: svg('<path d="M4 5h16v10H8l-4 4V5z"/><path d="M8 9.5h8M8 12.5h5"/>'),
     };
     const FALLBACK_ICONS = {
-      product:
-        '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>',
       guide:
         '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
       post: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 3 14 8 19 8"/></svg>',
-      faq: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v10H8l-4 4V5z"/><path d="M8 9.5h8M8 12.5h5"/></svg>',
     };
 
     // Synonym expansion — matches OR across a token's synonyms, AND across
     // tokens. Includes cross-language pairs so e.g. an English query still
-    // finds German/Spanish content (and vice versa).
+    // finds Arabic content (and vice versa).
+    //
+    // NOTE: this object must not contain duplicate keys — in a JS object literal
+    // a later key silently overwrites an earlier one, which previously dropped
+    // the Arabic synonym for "gift". Keep one entry per term.
     const SYNONYMS = {
-      perfume: ["fragrance", "aroma"],
-      fragrance: ["perfume", "aroma", "scent"],
-      scent: ["fragrance", "aroma"],
-      aroma: ["fragrance", "scent"],
-      reed: ["diffuser", "difusor"],
-      diffuser: ["reed", "difusor"],
-      difusor: ["diffuser", "reed"],
-      candle: ["candles", "vela", "kerze", "kerzen"],
-      candles: ["candle", "vela", "kerze"],
-      vela: ["candle", "candles"],
-      kerze: ["candle", "candles"],
-      oil: ["oils", "aceite", "öl", "oel"],
-      oils: ["oil", "aceite", "öl"],
-      aceite: ["oil", "oils"],
-      öl: ["oil", "oils"],
-      soy: ["soja", "soya"],
-      soja: ["soy", "soya"],
-      wax: ["wachs", "cera"],
-      wachs: ["wax"],
-      cera: ["wax"],
-      essential: ["esencial", "ätherisches", "aetherisches"],
-      esencial: ["essential"],
-      ätherisches: ["essential"],
-      lavender: ["lavanda", "lavendel"],
-      lavanda: ["lavender"],
-      lavendel: ["lavender"],
-      vanilla: ["vanille", "vainilla"],
-      vanille: ["vanilla"],
-      vainilla: ["vanilla"],
-      private: ["label"],
-      label: ["private", "oem", "odm"],
-      oem: ["odm"],
-      odm: ["oem"],
-      gift: ["regalo", "geschenk"],
-      box: ["gift", "packaging"],
-      packaging: ["box", "packing"],
+      anklet: ["anklets", "خلخال"],
+      anklets: ["anklet", "خلخال"],
+      bracelet: ["bracelets", "bangle", "سوار"],
+      bracelets: ["bracelet", "سوار"],
+      bangle: ["bracelet", "سوار"],
+      chain: ["necklace", "قلادة"],
+      earring: ["earrings", "أقراط"],
+      earrings: ["earring", "أقراط"],
+      gift: ["gifts", "هدية"],
+      gifts: ["gift", "هدية"],
+      gold: ["ذهب"],
+      hoop: ["hoops", "طوق"],
+      hoops: ["hoop", "طوق"],
+      necklace: ["necklaces", "chain", "قلادة"],
+      necklaces: ["necklace", "قلادة"],
+      pearl: ["pearls", "لؤلؤ"],
+      pearls: ["pearl", "لؤلؤ"],
+      pendant: ["pendants", "دلاية"],
+      pendants: ["pendant", "دلاية"],
+      plated: ["plating", "طلاء"],
+      plating: ["plated", "طلاء"],
+      ring: ["rings", "خاتم"],
+      rings: ["ring", "خاتم"],
+      set: ["sets", "طقم"],
+      sets: ["set", "طقم"],
+      silver: ["فضة", "sterling"],
+      sterling: ["silver", "فضة"],
+      stud: ["studs"],
+      studs: ["stud"],
     };
 
     let index = null; // entries for the current locale
@@ -338,7 +326,7 @@ const contactHref = `/${locale}/contact/`;
       }
       const tokens = query.split(/\s+/).filter(Boolean);
       const scored = [];
-      const counts = { product: 0, guide: 0, post: 0, faq: 0 };
+      const counts = { guide: 0, post: 0 };
       for (let i = 0; i < index.length; i++) {
         const it = index[i];
         const title = it.title.toLowerCase();
@@ -388,36 +376,14 @@ const contactHref = `/${locale}/contact/`;
     }
 
     function meta(it) {
-      if (it.type === "product") {
-        const m = [];
-        if (it.moq) m.push(labels.moq + " " + esc(it.moq));
-        m.push(labels.oem);
-        return m.join(" · ");
-      }
-      if (it.type === "post" || it.type === "guide") {
-        const p = [];
-        if (it.read) p.push(it.read + " " + labels.minRead);
-        if (it.year) p.push(it.year);
-        return p.join(" · ");
-      }
-      // FAQ: show a short slice of the answer
-      return esc(it.excerpt);
-    }
-
-    function quoteCta(it) {
-      if (it.type !== "product") return "";
-      const href = contactHref + "?product=" + encodeURIComponent(it.title);
-      return (
-        '<a href="' +
-        esc(href) +
-        '" class="search-quote ml-auto shrink-0 self-center rounded-full border border-accent/50 px-3 py-1.5 text-[11px] font-semibold text-accent transition-colors hover:bg-accent hover:text-paper">' +
-        esc(labels.getQuote) +
-        "</a>"
-      );
+      const p = [];
+      if (it.read) p.push(it.read + " " + labels.minRead);
+      if (it.year) p.push(it.year);
+      return p.join(" · ") || esc(it.excerpt);
     }
 
     function renderResults(scored, counts, tokens, _query) {
-      const groups = { product: [], guide: [], post: [], faq: [] };
+      const groups = { guide: [], post: [] };
       for (let i = 0; i < scored.length; i++) {
         const g = groups[scored[i].it.type];
         if (g && g.length < CAPS[scored[i].it.type]) g.push(scored[i].it);
@@ -456,7 +422,6 @@ const contactHref = `/${locale}/contact/`;
             meta(it) +
             "</span>" +
             "</span>" +
-            quoteCta(it) +
             "</div>";
         }
       }
@@ -538,9 +503,9 @@ const contactHref = `/${locale}/contact/`;
         "</p>" +
         '<div class="mt-4 flex flex-wrap justify-center gap-2">' +
         '<a href="' +
-        esc(contactHref) +
+        esc(collectionHref) +
         '" class="btn btn-primary px-5 py-2.5 text-xs">' +
-        esc(labels.requestQuote) +
+        esc(labels.browse) +
         "</a>" +
         (waHref
           ? '<a href="' +

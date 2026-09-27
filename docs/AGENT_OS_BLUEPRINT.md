@@ -1,4 +1,9 @@
 > **入库说明（V5.33，2026-08-15）**：本文是 Aromiso Composable Agent OS 的架构蓝图，owner 指令按其执行。
+
+> ⚠️ **历史快照 — 非当前文档。** 本文描述的是前身项目 **Aromiso（香薰 B2B）** 时期的实现，
+> 其中的 `functions/` 目录、`commerce_*` 表、en/es/de 三语、`/admin`（V1）等均**已不存在**。
+> 保留此文仅作迁移对照与决策留痕。**当前架构与约定以 [`README.md`](../README.md) 与
+> [`docs/01-项目说明.md`](./01-项目说明.md) 为准。**
 > **已落地（Phase 1）**：Fact Authority Layer（`functions/lib/fact-registry.json` + `functions/lib/truthfulness.ts` 真实性硬闸门，接入 Content Factory）、Model Router 预备层（`functions/lib/model-router.ts`，默认关）、Skill 固化（`docs/skills/buyer-decision/`、`docs/skills/compliance/truthfulness/`）。
 > **未落地部分一律以本文 §34/§35 的冻结清单为准**：不做 Buyer Agent、不建 Plugin Registry 表、不注入 Analyst Prompt、不全站自动审计、不允许 AI 自我修改生产 Prompt；升级须数据证明 + owner 明确指令。
 > **Owner 2026-08-15 复审裁决（V5.33 定稿）**：V5.33 是 Aromiso 从「多个 AI 功能」迈向「可组合 AI 操作系统」的第一版——AI 能力层（Skill / Tool / Knowledge / Policy / Fact Authority / Model Router）与业务角色层（Analyst / Content Writer / Strategist）正式解耦；以后新增能力优先「新增 Skill/Tool/Policy 让已有角色组合」，而不是新增 Agent。**当下不继续开发，进入观察期**（观察协议与 5 指标见 `docs/BACKLOG.md` §九）；Phase 2 形态（升级 Skill / 四层 Memory / 打开 Model Router / 引入 Harness Runtime / 不开发）由业务数据决定——让业务结果决定架构，而不是让新技术决定架构。

@@ -100,7 +100,6 @@ import Toast from "../../../components/admin/shared/Toast.astro";
     <div class="admin-tabs admin-mb-4" id="detail-tabs">
       <button class="admin-tab active" data-tab="inquiries">询盘</button>
       <button class="admin-tab" data-tab="orders">订单</button>
-      <button class="admin-tab" data-tab="oem">OEM 项目</button>
     </div>
 
     <!-- Tab Content -->
@@ -120,33 +119,9 @@ import Toast from "../../../components/admin/shared/Toast.astro";
         </table>
       </div>
     </section>
-    <section id="tab-oem" class="admin-card admin-mb-4" style="display:none;">
-      <div class="admin-card-body">
-        <a id="btn-new-oem" class="admin-btn admin-btn-primary admin-mb-4">+ 新建 OEM 项目</a>
-      </div>
-      <div class="admin-table-wrapper">
-        <table class="admin-table">
-          <thead><tr><th>项目名</th><th>阶段</th><th>状态</th><th>创建时间</th></tr></thead>
-          <tbody id="oem-list"></tbody>
-        </table>
-      </div>
-    </section>
   </div>
 
   <script is:inline>
-    const STAGE_LABELS = {
-      inquiry: "询盘",
-      requirement: "需求",
-      sampling: "打样",
-      quotation: "报价",
-      negotiation: "谈判",
-      confirmed: "确认",
-      production: "生产",
-      shipping: "发货",
-      completed: "完成",
-      cancelled: "取消",
-    };
-
     async function load() {
       const id = new URLSearchParams(location.search).get("id");
       if (!id) {
@@ -208,8 +183,6 @@ import Toast from "../../../components/admin/shared/Toast.astro";
         document.getElementById("cust-notes-wrap").style.display = "block";
         document.getElementById("cust-notes").textContent = c.notes;
       }
-      document.getElementById("btn-new-oem").href =
-        `/admin-v2/customers/oem-detail?new=1&customer_id=${id}`;
 
       // Inquiries
       const inqHtml = (c.inquiries || []).length
@@ -233,17 +206,6 @@ import Toast from "../../../components/admin/shared/Toast.astro";
         : '<tr><td colspan="4" class="admin-text-center admin-text-muted" style="padding:16px;">暂无订单</td></tr>';
       document.getElementById("orders-list").innerHTML = ordHtml;
 
-      // OEM
-      const oemHtml = (c.oem_projects || []).length
-        ? c.oem_projects
-            .map(
-              (p) =>
-                `<tr><td><a href="/admin-v2/customers/oem-detail?id=${p.id}" class="admin-font-semibold" style="color:var(--admin-accent);text-decoration:none;">${esc(p.project_name)}</a></td><td>${STAGE_LABELS[p.stage] || p.stage}</td><td>${esc(p.status)}</td><td>${(p.created_at || "").slice(0, 10)}</td></tr>`,
-            )
-            .join("")
-        : '<tr><td colspan="4" class="admin-text-center admin-text-muted" style="padding:16px;">暂无 OEM 项目</td></tr>';
-      document.getElementById("oem-list").innerHTML = oemHtml;
-
       document.getElementById("loading").style.display = "none";
       document.getElementById("content").style.display = "block";
     }
@@ -259,7 +221,7 @@ import Toast from "../../../components/admin/shared/Toast.astro";
         .querySelectorAll("#detail-tabs .admin-tab")
         .forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
-      ["inquiries", "orders", "oem"].forEach(
+      ["inquiries", "orders"].forEach(
         (t) =>
           (document.getElementById("tab-" + t).style.display =
             t === btn.dataset.tab ? "block" : "none"),

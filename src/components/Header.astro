@@ -2,21 +2,20 @@
 import { NAV, SITE } from "../consts";
 import { t } from "../i18n";
 import type { Locale } from "../i18n";
-import { LOCALE_LIST, stripLocale } from "../i18n";
-import { getRelativeLocaleUrl } from "astro:i18n";
+import { LOCALE_LIST, localizedUrl, localeFromPath, stripLocale } from "../i18n";
 import Icon from "./Icon.astro";
 import ThemeToggle from "./ThemeToggle.astro";
 import LangToggle from "./LangToggle.astro";
 import SearchModal from "./SearchModal.astro";
 
-const _l = (Astro.props.locale as Locale) ?? (Astro.currentLocale as Locale) ?? "en";
+const _l = (Astro.props.locale as Locale) ?? localeFromPath(Astro.url.pathname);
 const locale = (LOCALE_LIST.includes(_l) ? _l : "en") as Locale;
 const path = Astro.url.pathname;
 const base = stripLocale(path);
 const isActive = (href: string) =>
   href === "/" ? base === "/" || base === "" : base === href || base.startsWith(href + "/");
 
-const href = (p: string) => getRelativeLocaleUrl(locale, p);
+const href = (p: string) => localizedUrl(locale, p);
 ---
 
 <header
@@ -126,12 +125,6 @@ const href = (p: string) => getRelativeLocaleUrl(locale, p);
       </button>
       <ThemeToggle />
       <LangToggle locale={locale} />
-      <a
-        href={href("/workspace")}
-        class="hidden text-xs font-medium text-stone transition-colors hover:text-ink sm:inline-block"
-      >
-        {t(locale, "nav.workspace")}
-      </a>
       <a href={href("/contact")} class="btn btn-primary btn-sm magnetic hidden sm:inline-flex">
         {t(locale, "cta_short")}
       </a>

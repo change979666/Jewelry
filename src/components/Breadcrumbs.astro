@@ -1,7 +1,6 @@
 ---
 import { SITE } from "../consts";
-import { stripLocale, type Locale } from "../i18n";
-import { getRelativeLocaleUrl } from "astro:i18n";
+import { localizedUrl, stripLocale, type Locale } from "../i18n";
 
 interface Crumb {
   label: string;
@@ -16,7 +15,7 @@ const { locale = "en", items } = Astro.props;
 // stripLocale first so callers may pass either a raw path ("/export") OR an
 // already-localized one ("/en/export") without producing "/en/en/export".
 const list = items.map((it) => {
-  const localHref = it.href ? getRelativeLocaleUrl(locale, stripLocale(it.href)) : undefined;
+  const localHref = it.href ? localizedUrl(locale, stripLocale(it.href)) : undefined;
   return {
     ...it,
     localHref,

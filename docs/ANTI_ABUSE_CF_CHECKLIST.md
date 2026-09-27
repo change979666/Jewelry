@@ -1,5 +1,10 @@
 # Aromiso 反滥用 P0 — Cloudflare 仪表盘手动配置清单
 
+> ⚠️ **历史快照 — 非当前文档。** 本文描述的是前身项目 **Aromiso（香薰 B2B）** 时期的实现，
+> 其中的 `functions/` 目录、`commerce_*` 表、en/es/de 三语、`/admin`（V1）等均**已不存在**。
+> 保留此文仅作迁移对照与决策留痕。**当前架构与约定以 [`README.md`](../README.md) 与
+> [`docs/01-项目说明.md`](./01-项目说明.md) 为准。**
+
 > 配套代码改动：`functions/api/_lib/guard.ts` + inquiry/orders 接入（commit 见 IMPLEMENTED_FEATURES V4.7）。
 > 本文档列出**必须在 Cloudflare / Resend 仪表盘手工完成**的步骤——代码无法代劳。
 > 完成一项勾一项。全部完成后 P0 止血包才真正生效。

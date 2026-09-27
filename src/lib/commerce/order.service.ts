@@ -139,7 +139,17 @@ export class OrderService {
   }
 
   async getOrderItems(orderId: string): Promise<OrderItem[]> {
-    const { results } = await this.db.prepare(`SELECT * FROM order_items WHERE order_id = ? ORDER BY created_at ASC`).bind(orderId).all<OrderItem>();
+    // NOTE: `order_items` has no `created_at` column (see migrations/0001), so
+    // ordering by it raises `no such column: created_at` — which the Cloudflare
+    // adapter turned into an opaque plain-text 404 on
+    // GET /api/admin/v2/commerce/orders?id=<uuid>, leaving the admin order
+    // drawer permanently blank and the whole fulfilment flow unreachable from
+    // the UI. `rowid` preserves the insertion order, which is the order the
+    // lines were added to the cart.
+    const { results } = await this.db
+      .prepare(`SELECT * FROM order_items WHERE order_id = ? ORDER BY rowid ASC`)
+      .bind(orderId)
+      .all<OrderItem>();
     return results || [];
   }
 

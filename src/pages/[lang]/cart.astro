@@ -1,11 +1,13 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import type { Locale } from "../../i18n";
 import { t } from "../../i18n";
+import { requireLocale } from "../../lib/locale";
 import { getCommerce } from "../../lib/commerce";
 
 const { lang } = Astro.params;
-const locale = lang as Locale;
+const _locale = requireLocale(lang);
+if (_locale instanceof Response) return _locale;
+const locale = _locale;
 
 // For V1, we get cart from cookie (session_id)
 const sessionId = Astro.cookies.get("session_id")?.value;
@@ -26,14 +28,14 @@ const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.variant
 const currency = items.length > 0 ? items[0].variant.currency : 'SAR';
 
 ---
-<BaseLayout locale={locale} title="Cart" description="Your shopping cart">
+<BaseLayout locale={locale} title={t(locale, "cart.title")} description={t(locale, "cart.title")}>
   <main class="container-x py-12">
-    <h1 class="text-3xl font-bold">Shopping Cart</h1>
+    <h1 class="text-3xl font-bold">{t(locale, "cart.title")}</h1>
 
     {items.length === 0 ? (
       <div class="mt-8 text-center py-12 border border-dashed border-line rounded-xl">
-        <p class="text-stone">Your cart is empty.</p>
-        <a href={`/${lang}/`} class="btn btn-primary mt-4 inline-block">Continue Shopping</a>
+        <p class="text-stone">{t(locale, "cart.empty")}</p>
+        <a href={`/${lang}/`} class="btn btn-primary mt-4 inline-block">{t(locale, "cart.continue")}</a>
       </div>
     ) : (
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 mt-8">
@@ -47,24 +49,24 @@ const currency = items.length > 0 ? items[0].variant.currency : 'SAR';
               <div class="flex items-center gap-2">
                 <input type="number" value={item.quantity} min="0" max="99"
                   class="border border-line rounded w-16 px-2 py-1 cart-qty"
-                  data-item-id={item.id} aria-label="Quantity" />
+                  data-item-id={item.id} aria-label={t(locale, "cart.quantity")} />
               </div>
               <div class="font-semibold w-24 text-right">
                 {formattedPrice(item.variant.price * item.quantity, item.variant.currency)}
               </div>
-              <button type="button" class="text-red-500 hover:text-red-700 p-2 cart-remove" data-item-id={item.id} aria-label="Remove">&times;</button>
+              <button type="button" class="text-red-500 hover:text-red-700 p-2 cart-remove" data-item-id={item.id} aria-label={t(locale, "cart.remove")}>&times;</button>
             </div>
           ))}
         </div>
 
         <div class="border border-line p-6 rounded-xl self-start">
-          <h3 class="text-lg font-semibold">Order Summary</h3>
+          <h3 class="text-lg font-semibold">{t(locale, "checkout.summary")}</h3>
           <dl class="mt-4 space-y-2 text-sm">
-            <div class="flex justify-between"><dt>Subtotal</dt><dd>{formattedPrice(subtotal, currency)}</dd></div>
-            <div class="flex justify-between text-stone"><dt>Shipping</dt><dd>Calculated at checkout</dd></div>
-            <div class="flex justify-between font-semibold text-lg border-t border-line pt-2 mt-2"><dt>Total</dt><dd>{formattedPrice(subtotal, currency)}</dd></div>
+            <div class="flex justify-between"><dt>{t(locale, "cart.subtotal")}</dt><dd>{formattedPrice(subtotal, currency)}</dd></div>
+            <div class="flex justify-between text-stone"><dt>{t(locale, "checkout.shipping")}</dt><dd>{t(locale, "checkout.totals_note")}</dd></div>
+            <div class="flex justify-between font-semibold text-lg border-t border-line pt-2 mt-2"><dt>{t(locale, "cart.total")}</dt><dd>{formattedPrice(subtotal, currency)}</dd></div>
           </dl>
-          <a href={`/${lang}/checkout`} class="btn btn-primary w-full mt-6 text-center block">Proceed to Checkout</a>
+          <a href={`/${lang}/checkout`} class="btn btn-primary w-full mt-6 text-center block">{t(locale, "cart.checkout")}</a>
         </div>
       </div>
     )}

@@ -1,12 +1,13 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
-import { t, localeStaticPaths } from "../../i18n";
-import type { Locale } from "../../i18n";
+import { t } from "../../i18n";
+import { requireLocale } from "../../lib/locale";
+import { SITE_CFG } from "../../consts";
 
-export const getStaticPaths = localeStaticPaths;
-
-const locale = (Astro.props.locale as Locale) ?? "en";
+const _locale = requireLocale(Astro.params.lang);
+if (_locale instanceof Response) return _locale;
+const locale = _locale;
 
 type Legal = { title: string; updated: string; sections: { h: string; p: string }[] };
 
@@ -43,7 +44,7 @@ const legal: Record<"en", Legal> = {
         h: "Governing Law",
         p: "These terms are interpreted in accordance with the applicable consumer-protection laws of the Kingdom of Saudi Arabia or the United Arab Emirates, based on your delivery country, without prejudice to your mandatory consumer rights.",
       },
-      { h: "Contact", p: "Questions about these terms can be sent to support@example.com." },
+      { h: "Contact", p: `Questions about these terms can be sent to ${SITE_CFG.email}.` },
     ],
   },
 };

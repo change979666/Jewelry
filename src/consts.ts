@@ -6,15 +6,36 @@
 //  across components. (See 项目复制说明.txt §40.)
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+//  Production origin — SINGLE SOURCE OF TRUTH.
+//
+//  Canonical URLs, hreflang alternates, JSON-LD, sitemap-*.xml and robots.txt
+//  all derive from `SITE.url` below. Set it in exactly one place:
+//    • Cloudflare Pages → Settings → Environment variables → PUBLIC_SITE_URL
+//      (build-time variable; applies to production and preview builds), or
+//    • the `DEFAULT_SITE_URL` constant underneath.
+//  `astro.config.mjs` reads the same variable via process.env so `Astro.site`
+//  stays in sync. Do NOT reintroduce a second hardcoded copy elsewhere.
+// ---------------------------------------------------------------------------
+const DEFAULT_SITE_URL = "https://example.com"; // TODO: replace before launch
+const SITE_URL = (
+  (import.meta.env.PUBLIC_SITE_URL as string | undefined) || DEFAULT_SITE_URL
+).replace(/\/+$/, "");
+
+// Support mailbox — also overridable at runtime via src/data/settings.json
+// (admin-editable → SITE_CFG.email). This default is the build-time fallback.
+const DEFAULT_SUPPORT_EMAIL = "support@example.com"; // TODO: replace before launch
+const SUPPORT_EMAIL =
+  (import.meta.env.PUBLIC_SUPPORT_EMAIL as string | undefined) || DEFAULT_SUPPORT_EMAIL;
+
 export const SITE = {
   // TODO: replace with the finalized brand name (and Arabic name) once set.
   name: "Jewelry",
   tagline: "Everyday fine jewelry, designed for the Gulf.",
   description:
     "Modern everyday jewelry for women in KSA and the UAE — earrings, necklaces, bracelets and gift sets with cash on delivery and easy returns.",
-  // TODO: replace with the purchased production domain.
-  url: "https://example.com",
-  email: "support@example.com",
+  url: SITE_URL,
+  email: SUPPORT_EMAIL,
   whatsapp: "",
   address: "",
   hours: "",
@@ -67,21 +88,27 @@ export interface NavItem {
   columns?: number;
 }
 
-// Consumer-facing navigation. Collection filters are wired to /shop during the
-// Commerce phase; for now they point at the storefront.
+// Consumer-facing navigation.
+// Every href must resolve to a real route under src/pages/[lang]/:
+//   /collection/<slug>  → collection/[slug].astro (slugs seeded in migrations/0001 + 0008)
+//   /blog, /about, /faq, /contact, /cart
+// There is intentionally no "/shop" route in V1.0 — collections are the storefront.
 export const NAV: NavItem[] = [
   {
-    key: "shop",
-    label: "Shop",
-    href: "/shop",
+    key: "collections",
+    label: "Collections",
+    href: "/collection/everyday",
     columns: 2,
     children: [
-      { labelKey: "nav.shop_new", href: "/shop?sort=newest" },
-      { labelKey: "nav.shop_best", href: "/shop?filter=best-sellers" },
-      { labelKey: "nav.shop_everyday", href: "/shop?collection=everyday" },
-      { labelKey: "nav.shop_gulf", href: "/shop?collection=gulf-design" },
-      { labelKey: "nav.shop_gift", href: "/shop?collection=gift-sets" },
-      { labelKey: "nav.shop_statement", href: "/shop?collection=statement" },
+      { labelKey: "nav.new_arrivals", href: "/collection/new-arrivals" },
+      { labelKey: "nav.best_sellers", href: "/collection/best-sellers" },
+      { labelKey: "nav.everyday", href: "/collection/everyday" },
+      { labelKey: "nav.gulf", href: "/collection/gulf-design" },
+      { labelKey: "nav.gift", href: "/collection/gift" },
+      { labelKey: "nav.statement", href: "/collection/statement" },
+      { labelKey: "nav.gold", href: "/collection/gold" },
+      { labelKey: "nav.silver", href: "/collection/silver" },
+      { labelKey: "nav.pearls", href: "/collection/pearls" },
     ],
   },
   { key: "journal", label: "Journal", href: "/blog" },

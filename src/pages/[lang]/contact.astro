@@ -9,12 +9,11 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import Icon from "../../components/Icon.astro";
 import SocialContactButtons from "../../components/SocialContactButtons.astro";
 import { SITE_CFG } from "../../consts";
-import { localeStaticPaths } from "../../i18n";
-import type { Locale } from "../../i18n";
+import { requireLocale } from "../../lib/locale";
 
-export const getStaticPaths = localeStaticPaths;
-
-const locale = (Astro.props.locale as Locale) ?? "en";
+const _locale = requireLocale(Astro.params.lang);
+if (_locale instanceof Response) return _locale;
+const locale = _locale;
 
 const channels = [
   { icon: "mail", label: "Email", value: SITE_CFG.email, href: `mailto:${SITE_CFG.email}` },
@@ -100,11 +99,13 @@ const channels = [
   </section>
 </BaseLayout>
 
-<script is:inline>
+<script is:inline define:vars={{ contactEmail: SITE_CFG.email }}>
   (function () {
     const form = document.querySelector(".contact-mail");
     if (!form) return;
-    const to = "support@example.com";
+    // Injected via define:vars — inline scripts bypass Vite, so SITE_CFG cannot
+    // be imported directly. Keeps the mailbox configured in one place.
+    const to = contactEmail;
     const status = form.querySelector(".form-status");
     form.addEventListener("submit", function (e) {
       e.preventDefault();

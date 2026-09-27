@@ -2,21 +2,20 @@
 import { NAV, SITE_CFG } from "../consts";
 import { t } from "../i18n";
 import type { Locale } from "../i18n";
-import { LOCALE_LIST, stripLocale } from "../i18n";
-import { getRelativeLocaleUrl } from "astro:i18n";
+import { LOCALE_LIST, localizedUrl, localeFromPath, stripLocale } from "../i18n";
 import Icon from "./Icon.astro";
 import SocialContactButtons from "./SocialContactButtons.astro";
 import settings from "../data/settings.json";
 import { getBlogPosts } from "../lib/content";
 
-const _l = (Astro.props.locale as Locale) ?? (Astro.currentLocale as Locale) ?? "en";
+const _l = (Astro.props.locale as Locale) ?? localeFromPath(Astro.url.pathname);
 const locale = (LOCALE_LIST.includes(_l) ? _l : "en") as Locale;
 
 const base = stripLocale(Astro.url.pathname);
 const isActive = (href: string) =>
   href === "/" ? base === "/" || base === "" : base === href || base.startsWith(href + "/");
 
-const href = (p: string) => getRelativeLocaleUrl(locale, p);
+const href = (p: string) => localizedUrl(locale, p);
 const waNum = settings.social.whatsapp || SITE_CFG.whatsapp;
 const whatsappHref = waNum ? (waNum.startsWith("http") ? waNum : `https://wa.me/${waNum}`) : "";
 const _facebookUrl = (settings.social as Record<string, string>).facebook || "";

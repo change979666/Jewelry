@@ -1,8 +1,6 @@
 ---
 import Icon from "./Icon.astro";
-import { getRelativeLocaleUrl } from "astro:i18n";
-import type { Locale } from "../i18n";
-import { t } from "../i18n";
+import { t, localizedUrl, type Locale } from "../i18n";
 import type { BlogEntry } from "../lib/content";
 
 interface Props {
@@ -14,7 +12,7 @@ const dateFmt = new Intl.DateTimeFormat(
   locale === "ar" ? "ar-SA-u-nu-latn" : "en-US",
   { year: "numeric", month: "short", day: "numeric" },
 );
-const postHref = (key: string) => getRelativeLocaleUrl(locale, `/blog/${key}`);
+const postHref = (key: string) => localizedUrl(locale, `/blog/${key}`);
 ---
 
 {

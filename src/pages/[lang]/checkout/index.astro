@@ -2,11 +2,13 @@
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { getCommerce, calcOrderTotals } from "../../../lib/commerce";
 import type { Market } from "../../../lib/commerce";
-import type { Locale } from "../../../i18n";
 import { t } from "../../../i18n";
+import { requireLocale } from "../../../lib/locale";
 
 const { lang } = Astro.params;
-const locale = lang as Locale;
+const _locale = requireLocale(lang);
+if (_locale instanceof Response) return _locale;
+const locale = _locale;
 
 const db = Astro.locals.runtime.env.DB;
 if (!db) return new Response("Database unavailable", { status: 503 });
@@ -28,7 +30,13 @@ if (sessionId) {
 let error: string | null = null;
 let orderId: string | null = null;
 
-// ---- POST: server-side transaction entry ----
+// ---- POST: server-side transaction entry -----------------------------------
+//
+// Order of operations matters (P0-3):
+//   1. re-read every variant  → price & stock truth come from D1, never the client
+//   2. claim the cart         → single-use guard against double submit
+//   3. reserve stock          → conditional UPDATE (all-or-nothing, compensating)
+//   4. create the order       → any later failure releases both 2 and 3
 if (Astro.request.method === "POST") {
   if (!cartData || cartData.items.length === 0) {
     error = "cart_empty";
@@ -58,7 +66,7 @@ if (Astro.request.method === "POST") {
       if (!market) {
         error = "market_unavailable";
       } else {
-        // ---- Server recalculation: re-read every variant; client prices are NEVER trusted ----
+        // ---- Step 1: server recalculation (client prices are NEVER trusted) ----
         const lines: Array<{ unit_price: number; quantity: number }> = [];
         const orderItems: Array<{
           product_id: string; variant_id: string; sku: string | null; title: string;
@@ -92,48 +100,69 @@ if (Astro.request.method === "POST") {
         }
 
         if (!error) {
-          // Tax & shipping come from market config — never hardcoded in the page
-          const totals = calcOrderTotals(lines, market);
+          const cartId = cartData.cart.id;
 
-          const customer = await commerce.customers.findOrCreateGuest({
-            email, phone, first_name: first, last_name: last, locale: lang ?? 'en', market: market.code,
-          });
+          // ---- Step 2: claim the cart (duplicate-submit guard) ----
+          const claimed = await commerce.inventory.claimCart(cartId);
+          if (!claimed) {
+            error = "duplicate_submission";
+          } else {
+            // ---- Step 3: reserve stock atomically (all-or-nothing) ----
+            const reservation = await commerce.inventory.reserve(
+              orderItems.map((i) => ({ variant_id: i.variant_id, quantity: i.quantity })),
+            );
 
-          const order = await commerce.orders.createOrder({
-            customer_id: customer.id,
-            session_id: sessionId,
-            market: market.code,
-            currency: market.currency,
-            subtotal: totals.subtotal,
-            discount_amount: totals.discount,
-            shipping_amount: totals.shipping,
-            tax_amount: totals.tax,
-            items: orderItems,
-            shipping_address: {
-              first_name: first, last_name: last, phone, country: market.code,
-              city, address_line_1: address1,
-            },
-          });
+            if (!reservation.ok) {
+              await commerce.inventory.releaseCart(cartId);
+              error = "out_of_stock";
+            } else {
+              // Tax & shipping come from market config — never hardcoded in the page
+              const totals = calcOrderTotals(lines, market);
+              const customer = await commerce.customers.findOrCreateGuest({
+                email, phone, first_name: first, last_name: last, locale: lang ?? 'en', market: market.code,
+              });
 
-          // Payment (V1: COD only)
-          if (paymentMethod === 'cod') {
-            await commerce.cod.createCheckout(order);
+              // ---- Step 4: create the order (compensate 2 + 3 on failure) ----
+              let order = null;
+              try {
+                order = await commerce.orders.createOrder({
+                  customer_id: customer.id,
+                  session_id: sessionId,
+                  market: market.code,
+                  currency: market.currency,
+                  subtotal: totals.subtotal,
+                  discount_amount: totals.discount,
+                  shipping_amount: totals.shipping,
+                  tax_amount: totals.tax,
+                  items: orderItems,
+                  shipping_address: {
+                    first_name: first, last_name: last, phone, country: market.code,
+                    city, address_line_1: address1,
+                  },
+                });
+
+                // Payment (V1: COD only)
+                if (paymentMethod === 'cod') {
+                  await commerce.cod.createCheckout(order);
+                }
+              } catch (err) {
+                console.error("[checkout] order creation failed — compensating", err);
+                await commerce.inventory.release(reservation.reserved);
+                await commerce.inventory.releaseCart(cartId);
+              }
+
+              if (!order) {
+                error = "unknown";
+              } else {
+                // Order + stock + payment are settled; retire the cart.
+                await commerce.cart.clearCart(cartId);
+                Astro.cookies.delete("session_id", { path: '/' });
+
+                orderId = order.id;
+                return Astro.redirect(`/${lang}/order-confirmation?id=${order.id}`);
+              }
+            }
           }
-
-          // Decrement inventory for deny-policy variants
-          for (const item of orderItems) {
-            await db.prepare(`
-              UPDATE product_variants SET inventory_quantity = MAX(0, inventory_quantity - ?), updated_at = ?
-              WHERE id = ? AND inventory_policy = 'deny'
-            `).bind(item.quantity, new Date().toISOString(), item.variant_id).run();
-          }
-
-          // Clear cart
-          await commerce.cart.clearCart(cartData.cart.id);
-          Astro.cookies.delete("session_id", { path: '/' });
-
-          orderId = order.id;
-          return Astro.redirect(`/${lang}/order-confirmation?id=${order.id}`);
         }
       }
     }

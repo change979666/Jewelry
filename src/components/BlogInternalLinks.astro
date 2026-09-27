@@ -4,8 +4,7 @@
  * Rendered between article body and RelatedPosts. (Blog → product cross-links
  * were retired with the products content collection; catalog lives in D1.)
  */
-import { getRelativeLocaleUrl } from "astro:i18n";
-import type { Locale } from "../i18n";
+import { localizedUrl, type Locale } from "../i18n";
 
 interface GuideLink {
   data: { key: string; title: string; excerpt: string; category: string };
@@ -32,7 +31,7 @@ const l = labels[locale] ?? labels.en;
         <div class="flex items-center justify-between">
           <h2 class="text-lg font-semibold tracking-tight">{l.guides}</h2>
           <a
-            href={getRelativeLocaleUrl(locale, "/resources")}
+            href={localizedUrl(locale, "/resources")}
             class="text-sm font-medium text-accent hover:underline"
           >
             {l.viewAll}
@@ -41,7 +40,7 @@ const l = labels[locale] ?? labels.en;
         <div class="mt-4 grid gap-3 sm:grid-cols-3">
           {guides.map((g) => (
             <a
-              href={getRelativeLocaleUrl(locale, `/resources/${g.data.key}`)}
+              href={localizedUrl(locale, `/resources/${g.data.key}`)}
               class="group flex items-start gap-3 rounded-xl border border-line bg-white/60 p-4 transition-all hover:border-accent/30 hover:bg-beige/40"
             >
               <span class="mt-0.5 text-accent">📖</span>

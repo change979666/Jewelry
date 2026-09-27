@@ -1,21 +1,20 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Icon from "../../components/Icon.astro";
-import { t, localeStaticPaths } from "../../i18n";
-import type { Locale } from "../../i18n";
+import { localizedUrl, t } from "../../i18n";
+import { requireLocale } from "../../lib/locale";
 import { getBlogPosts } from "../../lib/content";
-import { getRelativeLocaleUrl } from "astro:i18n";
 
-export const getStaticPaths = localeStaticPaths;
-
-const locale = (Astro.props.locale as Locale) ?? "en";
+const _locale = requireLocale(Astro.params.lang);
+if (_locale instanceof Response) return _locale;
+const locale = _locale;
 const posts = await getBlogPosts(locale);
 
 const dateFmt = new Intl.DateTimeFormat(
   locale === "ar" ? "ar-SA-u-nu-latn" : "en-US",
   { year: "numeric", month: "short", day: "numeric" },
 );
-const postHref = (key: string) => getRelativeLocaleUrl(locale, `/blog/${key}`);
+const postHref = (key: string) => localizedUrl(locale, `/blog/${key}`);
 
 // Latest post becomes the hero; the rest fill the filterable grid.
 const [latest, ...rest] = posts;

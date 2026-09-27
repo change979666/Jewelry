@@ -1,5 +1,10 @@
 # Aromiso Content Schema（内容字段标准）
 
+> ⚠️ **历史快照 — 非当前文档。** 本文描述的是前身项目 **Aromiso（香薰 B2B）** 时期的实现，
+> 其中的 `functions/` 目录、`commerce_*` 表、en/es/de 三语、`/admin`（V1）等均**已不存在**。
+> 保留此文仅作迁移对照与决策留痕。**当前架构与约定以 [`README.md`](../README.md) 与
+> [`docs/01-项目说明.md`](./01-项目说明.md) 为准。**
+
 > 版本：v1.0 · 2026-08-10
 > 用途：Phase 2 Content Factory 的地基。AI 角色只输出符合本 Schema 的 JSON，模板只管渲染。
 > 本文随仓库走，是 Content Factory 生成器、质量闸、模板三方共同的字段契约。

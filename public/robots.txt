@@ -1,7 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /admin/
-Disallow: /admin-v2/
-
-# TODO: replace with the production domain.
-Sitemap: https://example.com/sitemap-index.xml

@@ -2,11 +2,13 @@
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { getCommerce } from "../../../lib/commerce";
 import { SITE_CFG } from "../../../consts";
-import type { Locale } from "../../../i18n";
 import { t } from "../../../i18n";
+import { requireLocale } from "../../../lib/locale";
 
 const { slug, lang } = Astro.params;
-const locale = lang as Locale;
+const _locale = requireLocale(lang);
+if (_locale instanceof Response) return _locale;
+const locale = _locale;
 
 const db = Astro.locals.runtime.env.DB;
 if (!db) return new Response("Database unavailable", { status: 503 });
@@ -156,7 +158,16 @@ const productJsonLd = {
   });
 
   function selectedVariant(): HTMLInputElement | null {
-    return document.querySelector<HTMLInputElement>('input[name="variant"]:checked');
+    // Multi-variant products render radio inputs. Single-variant products render
+    // a `type="hidden"` input instead — and a hidden input can never match
+    // `:checked`, so without the fallback below `selectedVariant()` returned null
+    // and the submit handler bailed out at `if (!v) return;`: the Add-to-cart
+    // button did nothing, silently, on every single-variant product (7 of the 8
+    // seed SKUs).
+    return (
+      document.querySelector<HTMLInputElement>('input[name="variant"]:checked') ??
+      document.querySelector<HTMLInputElement>('input[name="variant"][type="hidden"]')
+    );
   }
 
   function refreshPrice() {
@@ -175,6 +186,12 @@ const productJsonLd = {
   }
   document.querySelectorAll<HTMLInputElement>('input[name="variant"]').forEach((r) => r.addEventListener('change', refreshPrice));
 
+  // Seed the initial state. The server renders `minPrice` and a button whose
+  // disabled state reflects *any* variant being in stock, so without this first
+  // call the button could stay enabled while the pre-selected (checked) variant
+  // is sold out — letting the user submit an unavailable variant.
+  refreshPrice();
+
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const v = selectedVariant();
@@ -192,7 +209,7 @@ const productJsonLd = {
     });
     if (res.ok) { window.location.href = `/${lang}/cart`; return; }
     let msg = 'add_failed';
-    try { msg = ((await res.json()) as { error?: string }).error || msg; } catch {}
+    try { msg = ((await res.json()) as { error?: string }).error || msg; } catch { /* keep the default message */ }
     if (errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); }
   });
 </script>

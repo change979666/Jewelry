@@ -7,14 +7,13 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Icon from "../../components/Icon.astro";
 import { SITE_CFG } from "../../consts";
-import { localeStaticPaths } from "../../i18n";
-import type { Locale } from "../../i18n";
-import { getRelativeLocaleUrl } from "astro:i18n";
+import { localizedUrl } from "../../i18n";
+import { requireLocale } from "../../lib/locale";
 
-export const getStaticPaths = localeStaticPaths;
-
-const locale = (Astro.props.locale as Locale) ?? "en";
-const href = (p: string) => getRelativeLocaleUrl(locale, p);
+const _locale = requireLocale(Astro.params.lang);
+if (_locale instanceof Response) return _locale;
+const locale = _locale;
+const href = (p: string) => localizedUrl(locale, p);
 
 const values = [
   { icon: "sparkle", title: "Everyday design", desc: "Pieces made to be worn daily, with a modern Gulf sensibility." },

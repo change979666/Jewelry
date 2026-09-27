@@ -1,1087 +1,400 @@
 {
   "version": 1,
+  "_note": "Per-collection FAQ payload used by the Admin V2 Content tab (entity_type=category_faqs). Keys are the collection slugs seeded in migrations/0008_jewelry_seed.sql. Facts here MUST stay consistent with src/pages/[lang]/faq.astro and src/i18n.ts — do not add delivery windows, prices or material claims that are not already published there.",
   "categories": {
-    "essential-oils": [
+    "everyday": [
       {
-        "id": "eo-01",
+        "id": "ev-01",
         "group": "product",
         "priority": 10,
         "status": "active",
         "q": {
-          "en": "What are essential oils and how are they extracted?",
-          "es": "¿Qué son los aceites esenciales y cómo se extraen?",
-          "de": "Was sind ätherische Öle und wie werden sie gewonnen?"
+          "en": "Are Everyday pieces suitable for daily wear?",
+          "ar": "هل قطع المجموعة اليومية مناسبة للاستخدام اليومي؟"
         },
         "a": {
-          "en": "Concentrated plant aromatics extracted by steam distillation or cold pressing. We supply single-note and blended oils for home fragrance, wellness and cosmetic applications.",
-          "es": "Aromas vegetales concentrados extraídos por destilación al vapor o prensado en frío. Suministramos aceites mononota y mezclas para fragancia de hogar, bienestar y cosmética.",
-          "de": "Konzentrierte Pflanzenaromen, gewonnen per Wasserdampfdestillation oder Kaltpressung. Wir liefern Einzeldüfte und Blends für Raumduft, Wellness und Kosmetik."
+          "en": "Yes. The Everyday collection is designed to be worn daily. Every product page lists the material, base material and plating in the Details section so you can match the piece to your routine.",
+          "ar": "نعم. صُممت المجموعة اليومية لتُلبس كل يوم. وتوضّح صفحة كل قطعة المادة والمعدن الأساسي والطلاء في قسم التفاصيل حتى تختار ما يناسب استخدامك."
         }
       },
       {
-        "id": "eo-02",
-        "group": "product",
+        "id": "ev-02",
+        "group": "care",
         "priority": 20,
         "status": "active",
         "q": {
-          "en": "What grades of essential oils are available?",
-          "es": "¿Qué grados de aceites esenciales hay disponibles?",
-          "de": "Welche Qualitäten an ätherischen Ölen gibt es?"
+          "en": "How should I care for Everyday pieces?",
+          "ar": "كيف أعتني بقطع المجموعة اليومية؟"
         },
         "a": {
-          "en": "Fragrance/technical grade and cosmetic grade are the common tiers; purity, GC-MS profile and documentation differ by grade. We help you choose the right grade for your application and market.",
-          "es": "Los grados habituales son técnico/perfumería y cosmético; la pureza, el perfil GC-MS y la documentación varían según el grado. Le ayudamos a elegir el grado adecuado para su aplicación y mercado.",
-          "de": "Üblich sind technische/Parfümerie-Qualität und Kosmetikqualität; Reinheit, GC-MS-Profil und Dokumentation unterscheiden sich je nach Qualität. Wir helfen bei der Wahl der passenden Qualität für Anwendung und Markt."
+          "en": "Keep them dry, avoid perfume and harsh cleaners, and store each piece separately in the pouch provided. Wiping gently with a soft cloth after wear keeps the finish bright for longer.",
+          "ar": "احفظيها جافة وتجنّبي العطور والمنظفات القوية، واحفظي كل قطعة على حدة في الكيس المرفق. ومسحها بلطف بقطعة قماش ناعمة بعد الاستخدام يحافظ على لمعان الطلاء مدة أطول."
         }
       },
       {
-        "id": "eo-03",
-        "group": "product",
+        "id": "ev-03",
+        "group": "sizing",
         "priority": 30,
         "status": "active",
         "q": {
-          "en": "Which essential oils suit home fragrance products?",
-          "es": "¿Qué aceites esenciales sirven para fragancia de hogar?",
-          "de": "Welche ätherischen Öle eignen sich für Home-Fragrance-Produkte?"
+          "en": "How do I choose the right size?",
+          "ar": "كيف أختار المقاس المناسب؟"
         },
         "a": {
-          "en": "Lavender, eucalyptus, citrus, tea tree and blended profiles perform well in diffusers, candles and sprays; we can formulate blends to your target scent and budget.",
-          "es": "Lavanda, eucalipto, cítricos, árbol de té y perfiles mezclados rinden bien en difusores, velas y sprays; podemos formular mezclas según su aroma objetivo y presupuesto.",
-          "de": "Lavendel, Eukalyptus, Zitrus, Teebaum und Blends funktionieren gut in Diffusern, Kerzen und Sprays; wir formulieren Mischungen nach Zielduft und Budget."
-        }
-      },
-      {
-        "id": "eo-04",
-        "group": "product",
-        "priority": 40,
-        "status": "active",
-        "q": {
-          "en": "How should essential oils be stored and shipped?",
-          "es": "¿Cómo deben almacenarse y enviarse los aceites esenciales?",
-          "de": "Wie lagert und versendet man ätherische Öle richtig?"
-        },
-        "a": {
-          "en": "Sealed in aluminium or amber glass containers, away from heat and light. We ship with the transport documentation required for international freight.",
-          "es": "Envasados herméticamente en aluminio o vidrio ámbar, lejos del calor y la luz. Enviamos con la documentación de transporte exigida para el transporte internacional.",
-          "de": "Luftdicht in Aluminium- oder Braunglasbehältern, geschützt vor Hitze und Licht. Wir versenden mit den für internationale Fracht erforderlichen Transportdokumenten."
-        }
-      },
-      {
-        "id": "eo-05",
-        "group": "wholesale",
-        "priority": 10,
-        "status": "active",
-        "q": {
-          "en": "What is the MOQ for wholesale essential oils?",
-          "es": "¿Cuál es el MOQ para aceites esenciales al por mayor?",
-          "de": "Wie hoch ist das MOQ für ätherische Öle im Großhandel?"
-        },
-        "a": {
-          "en": "Bottled stock items start at 100 pieces; bulk drum quantities are quoted per oil and grade.",
-          "es": "Los frascos de stock parten de 100 piezas; las cantidades a granel por bidón se cotizan por aceite y grado.",
-          "de": "Abgefüllte Lagerware startet ab 100 Stück; Fassmengen werden je Öl und Qualität angeboten."
-        }
-      },
-      {
-        "id": "eo-06",
-        "group": "wholesale",
-        "priority": 20,
-        "status": "active",
-        "q": {
-          "en": "Can I order different oils in one shipment?",
-          "es": "¿Puedo pedir aceites distintos en un mismo envío?",
-          "de": "Kann ich verschiedene Öle in einer Sendung bestellen?"
-        },
-        "a": {
-          "en": "Yes — mixed-SKU and mixed-oil orders are supported and consolidated into one export shipment.",
-          "es": "Sí: admitimos pedidos multi-SKU y de varios aceites, consolidados en un único envío de exportación.",
-          "de": "Ja – gemischte SKUs und Öle werden in einer Exportsendung konsolidiert."
-        }
-      },
-      {
-        "id": "eo-07",
-        "group": "wholesale",
-        "priority": 30,
-        "status": "active",
-        "q": {
-          "en": "Can you supply bulk essential oils for brands?",
-          "es": "¿Suministran aceites esenciales a granel para marcas?",
-          "de": "Liefern Sie ätherische Öle in Bulk für Marken?"
-        },
-        "a": {
-          "en": "Yes — from retail bottles to 25 kg drums, with private-label bottling and packaging for your brand.",
-          "es": "Sí: desde frascos retail hasta bidones de 25 kg, con envasado y embalaje de marca privada para su marca.",
-          "de": "Ja – von Retail-Flaschen bis zu 25-kg-Fässern, mit Private-Label-Abfüllung und Verpackung für Ihre Marke."
-        }
-      },
-      {
-        "id": "eo-08",
-        "group": "oem",
-        "priority": 10,
-        "status": "active",
-        "q": {
-          "en": "Can you provide custom labeling and packaging?",
-          "es": "¿Ofrecen etiquetado y embalaje personalizados?",
-          "de": "Bieten Sie eigene Etikettierung und Verpackung an?"
-        },
-        "a": {
-          "en": "Yes — amber and Boston glass bottles, droppers, labels and boxes fully customized, with artwork support included.",
-          "es": "Sí: frascos de vidrio ámbar y Boston, cuentagotas, etiquetas y cajas totalmente personalizados, con apoyo de arte incluido.",
-          "de": "Ja – Braunglas- und Boston-Flaschen, Tropfer, Etiketten und Boxen vollständig individualisiert, inklusive Artwork-Support."
-        }
-      },
-      {
-        "id": "eo-09",
-        "group": "oem",
-        "priority": 20,
-        "status": "active",
-        "q": {
-          "en": "Can you match or develop a blend from a sample?",
-          "es": "¿Pueden igualar o desarrollar una mezcla a partir de una muestra?",
-          "de": "Können Sie einen Blend nach Muster entwickeln oder nachstellen?"
-        },
-        "a": {
-          "en": "Yes — send a reference sample or brief; our perfumers develop a matching or improved profile.",
-          "es": "Sí: envíe una muestra o brief de referencia; nuestros perfumistas desarrollan un perfil igual o mejorado.",
-          "de": "Ja – senden Sie ein Referenzmuster oder Briefing; unsere Parfümeure entwickeln ein gleichwertiges oder verbessertes Profil."
-        }
-      },
-      {
-        "id": "eo-10",
-        "group": "shipping",
-        "priority": 10,
-        "status": "active",
-        "q": {
-          "en": "Can you provide SDS and COA for essential oils?",
-          "es": "¿Proporcionan SDS y COA para aceites esenciales?",
-          "de": "Stellen Sie SDS und COA für ätherische Öle bereit?"
-        },
-        "a": {
-          "en": "Yes — SDS/MSDS and certificates of analysis, with GC-MS profiles available on request for cosmetic-grade oils.",
-          "es": "Sí: SDS/MSDS y certificados de análisis, con perfiles GC-MS bajo petición para aceites de grado cosmético.",
-          "de": "Ja – SDS/MSDS und Analysenzertifikate, auf Wunsch mit GC-MS-Profilen für Öle in Kosmetikqualität."
-        }
-      },
-      {
-        "id": "eo-11",
-        "group": "shipping",
-        "priority": 20,
-        "status": "active",
-        "q": {
-          "en": "What documents are needed to import essential oils into the US or EU?",
-          "es": "¿Qué documentos se necesitan para importar aceites esenciales a EE. UU. o la UE?",
-          "de": "Welche Dokumente braucht der Import ätherischer Öle in die USA oder EU?"
-        },
-        "a": {
-          "en": "Requirements vary by market; typically SDS and COA, plus REACH/CLP information for EU cosmetic use. We provide the documentation our supply chain holds to support your registration.",
-          "es": "Los requisitos varían según el mercado; normalmente SDS y COA, más información REACH/CLP para uso cosmético en la UE. Proporcionamos la documentación que nuestra cadena de suministro posee para apoyar su registro.",
-          "de": "Die Anforderungen variieren je nach Markt; üblich sind SDS und COA, für kosmetische Nutzung in der EU zusätzlich REACH/CLP-Informationen. Wir stellen die Dokumente unserer Lieferkette zur Unterstützung Ihrer Registrierung bereit."
+          "en": "Each product page shows the measured size under Dimensions. If you are between two sizes for a necklace or bracelet, choose the larger one for a more comfortable fit.",
+          "ar": "تظهر المقاسات الفعلية في حقل الأبعاد بصفحة كل قطعة. وإذا كنتِ بين مقاسين في القلادة أو الإسورة فاختاري الأكبر لراحة أكبر."
         }
       }
     ],
-    "fragrance-oils": [
+    "new-arrivals": [
       {
-        "id": "fo-01",
+        "id": "na-01",
         "group": "product",
         "priority": 10,
         "status": "active",
         "q": {
-          "en": "What are fragrance oils?",
-          "es": "¿Qué son los aceites de fragancia?",
-          "de": "Was sind Duftöle?"
+          "en": "How often do you add new pieces?",
+          "ar": "كم مرة تضيفون قطعًا جديدة؟"
         },
         "a": {
-          "en": "Formulated aromatic blends — synthetic and nature-identical — designed for candles, diffusers, soaps and home care, with consistent performance batch after batch.",
-          "es": "Mezclas aromáticas formuladas (sintéticas y naturaleza-idénticas) diseñadas para velas, difusores, jabones y hogar, con rendimiento consistente lote tras lote.",
-          "de": "Formulierte aromatische Mischungen (synthetisch und naturidentisch) für Kerzen, Diffuser, Seifen und Home Care – mit konstanter Leistung von Charge zu Charge."
+          "en": "Regularly. The New Arrivals collection always reflects what has landed most recently, so it is the fastest way to see what is new.",
+          "ar": "بشكل منتظم. وتعرض مجموعة «وصل حديثًا» أحدث ما وصل إلى المتجر، وهي أسرع طريقة لمتابعة الجديد."
         }
       },
       {
-        "id": "fo-02",
+        "id": "na-02",
         "group": "product",
         "priority": 20,
         "status": "active",
         "q": {
-          "en": "What is the difference between fragrance oils and essential oils?",
-          "es": "¿Qué diferencia hay entre aceites de fragancia y aceites esenciales?",
-          "de": "Was ist der Unterschied zwischen Duftölen und ätherischen Ölen?"
+          "en": "Are new arrivals limited in stock?",
+          "ar": "هل الكميات في الوصول الجديد محدودة؟"
         },
         "a": {
-          "en": "Essential oils are extracted from plants; fragrance oils are formulated to replicate or create scents, offering wider variety, better consistency and lower cost for manufacturing.",
-          "es": "Los esenciales se extraen de plantas; los de fragancia se formulan para reproducir o crear aromas, ofreciendo más variedad, mejor consistencia y menor coste en fabricación.",
-          "de": "Ätherische Öle werden aus Pflanzen gewonnen; Duftöle werden formuliert, um Düfte nachzubilden oder neu zu schaffen – mit größerer Vielfalt, besserer Konstanz und niedrigeren Kosten in der Fertigung."
+          "en": "New pieces are produced in limited quantities. If a finish or size shows as sold out, it is genuinely unavailable — sold-out variants cannot be back-ordered.",
+          "ar": "تُنتج القطع الجديدة بكميات محدودة. وإذا ظهر تشطيب أو مقاس بأنه نفد، فهو غير متوفر فعلًا — ولا يمكن حجز المقاسات النافدة مسبقًا."
         }
       },
       {
-        "id": "fo-03",
-        "group": "product",
+        "id": "na-03",
+        "group": "shipping",
         "priority": 30,
         "status": "active",
         "q": {
-          "en": "Are fragrance oils suitable for candles and reed diffusers?",
-          "es": "¿Sirven los aceites de fragancia para velas y difusores?",
-          "de": "Eignen sich Duftöle für Kerzen und Reed-Diffuser?"
+          "en": "Will a new piece reach me before an occasion?",
+          "ar": "هل تصل القطعة الجديدة قبل المناسبة؟"
         },
         "a": {
-          "en": "Yes — we supply high-flash-point candle grades for clean hot throw and diffuser-grade bases with optimal wicking viscosity.",
-          "es": "Sí: ofrecemos grados para vela de alto punto de inflamación con buena intensidad en caliente y bases para difusor con viscosidad de capilaridad óptima.",
-          "de": "Ja – wir liefern hochflammpunktige Kerzenqualitäten für sauberen Hot Throw und Diffuser-Basen mit optimaler Dochtviskosität."
-        }
-      },
-      {
-        "id": "fo-04",
-        "group": "product",
-        "priority": 40,
-        "status": "active",
-        "q": {
-          "en": "What affects fragrance performance?",
-          "es": "¿Qué afecta al rendimiento de la fragancia?",
-          "de": "Was beeinflusst die Duftleistung?"
-        },
-        "a": {
-          "en": "Fragrance load, carrier base, flash point and the wax or diffuser base used. We recommend usage rates per application and test performance before bulk production.",
-          "es": "La carga de fragancia, la base portadora, el punto de inflamación y la cera o base de difusor usada. Recomendamos dosis por aplicación y probamos el rendimiento antes de producir.",
-          "de": "Duftstoffanteil, Trägerbasis, Flammpunkt sowie die verwendete Wachs- oder Diffuserbasis. Wir empfehlen Einsatzmengen je Anwendung und testen die Leistung vor der Serienproduktion."
-        }
-      },
-      {
-        "id": "fo-05",
-        "group": "wholesale",
-        "priority": 10,
-        "status": "active",
-        "q": {
-          "en": "What is the MOQ for fragrance oils?",
-          "es": "¿Cuál es el MOQ para aceites de fragancia?",
-          "de": "Wie hoch ist das MOQ für Duftöle?"
-        },
-        "a": {
-          "en": "Bottled stock items start at 100 pieces; bulk kilogram and drum quantities are quoted per formulation.",
-          "es": "Los frascos de stock parten de 100 piezas; las cantidades por kilo o bidón se cotizan por formulación.",
-          "de": "Abgefüllte Lagerware startet ab 100 Stück; Kilo- und Fassmengen werden je Formulierung angeboten."
-        }
-      },
-      {
-        "id": "fo-06",
-        "group": "wholesale",
-        "priority": 20,
-        "status": "active",
-        "q": {
-          "en": "Can fragrance oils be supplied in bulk?",
-          "es": "¿Se pueden suministrar aceites de fragancia a granel?",
-          "de": "Können Duftöle in Bulk geliefert werden?"
-        },
-        "a": {
-          "en": "Yes — from 10 ml retail bottles to 25 kg drums for manufacturing use.",
-          "es": "Sí: desde frascos retail de 10 ml hasta bidones de 25 kg para fabricación.",
-          "de": "Ja – von 10-ml-Retail-Flaschen bis zu 25-kg-Fässern für die Fertigung."
-        }
-      },
-      {
-        "id": "fo-07",
-        "group": "wholesale",
-        "priority": 30,
-        "status": "active",
-        "q": {
-          "en": "How many scent profiles are available?",
-          "es": "¿Cuántos perfiles de aroma hay disponibles?",
-          "de": "Wie viele Duftprofile sind verfügbar?"
-        },
-        "a": {
-          "en": "Hundreds of stock profiles across floral, woody, citrus, gourmand and hotel-style families, plus seasonal and trending scents.",
-          "es": "Cientos de perfiles de stock entre familias florales, amaderadas, cítricas, gourmand y estilo hotel, además de aromas de temporada y tendencia.",
-          "de": "Hunderte Lagerprofile über florale, holzige, zitrische, gourmandige und Hotel-Familien hinweg, plus Saison- und Trenddüfte."
-        }
-      },
-      {
-        "id": "fo-08",
-        "group": "oem",
-        "priority": 10,
-        "status": "active",
-        "q": {
-          "en": "Can I develop a custom fragrance?",
-          "es": "¿Puedo desarrollar una fragancia propia?",
-          "de": "Kann ich einen eigenen Duft entwickeln lassen?"
-        },
-        "a": {
-          "en": "Yes — perfumers at our partner factories, working with houses such as Firmenich and Givaudan, create exclusive scents from a brief or match a reference sample.",
-          "es": "Sí: los perfumistas de nuestras fábricas asociadas, trabajando con casas como Firmenich y Givaudan, crean aromas exclusivos desde un brief o igualan una muestra de referencia.",
-          "de": "Ja – Parfümeure unserer Partnerfabriken, die mit Häusern wie Firmenich und Givaudan arbeiten, kreieren exklusive Düfte aus einem Briefing oder stellen ein Referenzmuster nach."
-        }
-      },
-      {
-        "id": "fo-09",
-        "group": "oem",
-        "priority": 20,
-        "status": "active",
-        "q": {
-          "en": "What packaging options are available?",
-          "es": "¿Qué opciones de embalaje hay?",
-          "de": "Welche Verpackungsoptionen gibt es?"
-        },
-        "a": {
-          "en": "Amber glass and aluminium bottles with dropper or sealed caps for retail, and drums for bulk; private-label printing and boxes on request.",
-          "es": "Frascos de vidrio ámbar y aluminio con cuentagotas o tapón precintado para retail, y bidones para granel; impresión de marca privada y cajas bajo petición.",
-          "de": "Braunglas- und Aluminiumflaschen mit Tropfer oder Siegelkappe für Retail, Fässer für Bulk; Private-Label-Druck und Boxen auf Anfrage."
-        }
-      },
-      {
-        "id": "fo-10",
-        "group": "shipping",
-        "priority": 10,
-        "status": "active",
-        "q": {
-          "en": "Can you provide SDS and IFRA-related documentation?",
-          "es": "¿Proporcionan SDS y documentación relacionada con IFRA?",
-          "de": "Stellen Sie SDS- und IFRA-Dokumente bereit?"
-        },
-        "a": {
-          "en": "Yes — SDS/MSDS and IFRA conformity statements from the fragrance houses, plus REACH/CLP information letters where applicable.",
-          "es": "Sí: SDS/MSDS y declaraciones de conformidad IFRA de las casas de fragancia, más cartas REACH/CLP cuando aplica.",
-          "de": "Ja – SDS/MSDS und IFRA-Konformitätserklärungen der Dufthäuser sowie, wo zutreffend, REACH/CLP-Schreiben."
-        }
-      },
-      {
-        "id": "fo-11",
-        "group": "shipping",
-        "priority": 20,
-        "status": "active",
-        "q": {
-          "en": "What documents do buyers need before placing an order?",
-          "es": "¿Qué documentos necesita el comprador antes de hacer un pedido?",
-          "de": "Welche Dokumente brauchen Käufer vor der Bestellung?"
-        },
-        "a": {
-          "en": "Typically SDS, IFRA statement and allergen information for your compliance review; we provide these with the quotation so your team can approve before production.",
-          "es": "Normalmente SDS, declaración IFRA e información de alérgenos para su revisión de cumplimiento; los entregamos con la cotización para que su equipo apruebe antes de producir.",
-          "de": "Üblich sind SDS, IFRA-Erklärung und Allergeninformationen für Ihr Compliance-Review; wir liefern diese zusammen mit dem Angebot, damit Ihr Team vor der Produktion freigeben kann."
+          "en": "Orders are delivered within 2–5 business days in Saudi Arabia and 3–7 business days in the UAE, so please allow for that window when buying for a specific date.",
+          "ar": "يتم التوصيل خلال ٢ إلى ٥ أيام عمل في السعودية و٣ إلى ٧ أيام عمل في الإمارات، لذا يُرجى احتساب هذه المدة عند الشراء لمناسبة محددة."
         }
       }
     ],
-    "reed-diffusers": [
+    "best-sellers": [
       {
-        "id": "rd-01",
+        "id": "bs-01",
         "group": "product",
         "priority": 10,
         "status": "active",
         "q": {
-          "en": "What is a reed diffuser and how does it work?",
-          "es": "¿Qué es un difusor de varillas y cómo funciona?",
-          "de": "Was ist ein Reed-Diffuser und wie funktioniert er?"
+          "en": "How are Best Sellers chosen?",
+          "ar": "كيف يتم اختيار الأكثر مبيعًا؟"
         },
         "a": {
-          "en": "A reed diffuser releases fragrance through rattan or fiber reeds standing in a scented oil base. The reeds draw the oil up and diffuse it continuously into the air — no flame, heat or electricity needed.",
-          "es": "Un difusor de varillas libera fragancia a través de varillas de ratán o fibra colocadas en una base de aceite perfumado. Las varillas absorben el aceite y lo difunden continuamente en el aire, sin llama, calor ni electricidad.",
-          "de": "Ein Reed-Diffuser gibt Duft über Rattan- oder Fiberstäbchen ab, die in einer duftenden Ölbasis stehen. Die Stäbchen saugen das Öl nach oben und geben es kontinuierlich an die Raumluft ab – ganz ohne Flamme, Hitze oder Strom."
+          "en": "Best Sellers collects the pieces our customers order most. The selection changes over time as ordering patterns change.",
+          "ar": "تجمع مجموعة «الأكثر مبيعًا» القطع التي يطلبها عملاؤنا أكثر من غيرها، ويتغيّر الاختيار بمرور الوقت بتغيّر أنماط الطلب."
         }
       },
       {
-        "id": "rd-02",
+        "id": "bs-02",
         "group": "product",
         "priority": 20,
         "status": "active",
         "q": {
-          "en": "How long does a reed diffuser typically last?",
-          "es": "¿Cuánto dura normalmente un difusor de varillas?",
-          "de": "Wie lange hält ein Reed-Diffuser typischerweise?"
+          "en": "Is a best seller always in stock?",
+          "ar": "هل القطع الأكثر مبيعًا متوفرة دائمًا؟"
         },
         "a": {
-          "en": "A 100–200 ml diffuser typically lasts 2–4 months depending on room size, airflow and reed count. Flipping the reeds weekly refreshes the scent throw.",
-          "es": "Un difusor de 100–200 ml dura normalmente de 2 a 4 meses, según el tamaño de la habitación, la ventilación y el número de varillas. Girar las varillas cada semana reaviva la intensidad del aroma.",
-          "de": "Ein Diffuser mit 100–200 ml hält je nach Raumgröße, Luftzug und Anzahl der Stäbchen typischerweise 2–4 Monate. Wöchentliches Umdrehen der Stäbchen frischt die Duftabgabe auf."
+          "en": "Not necessarily — high demand is exactly why a variant can sell out. Availability is shown live on the product page, and checkout will not let you order a quantity we cannot fulfil.",
+          "ar": "ليس بالضرورة — فالإقبال الكبير هو سبب نفاد بعض المقاسات. ويظهر التوفر مباشرة في صفحة القطعة، ولن تسمح لك صفحة الدفع بطلب كمية لا نستطيع توفيرها."
         }
       },
       {
-        "id": "rd-03",
-        "group": "product",
-        "priority": 30,
-        "status": "active",
-        "q": {
-          "en": "What affects the scent throw of a reed diffuser?",
-          "es": "¿Qué afecta a la intensidad del aroma de un difusor?",
-          "de": "Was beeinflusst die Duftstärke eines Reed-Diffusers?"
-        },
-        "a": {
-          "en": "The base formulation, reed material and count, room temperature and airflow. We tune base viscosity and reed count to each vessel size so the scent performs consistently in real rooms.",
-          "es": "La formulación de la base, el material y el número de varillas, la temperatura y la ventilación de la sala. Ajustamos la viscosidad de la base y el número de varillas a cada frasco para que el aroma rinda de forma constante en condiciones reales.",
-          "de": "Die Rezeptur der Basis, Material und Anzahl der Stäbchen, Raumtemperatur und Luftzirkulation. Wir stimmen die Viskosität der Basis und die Stäbchenanzahl auf jede Gefäßgröße ab, damit der Duft im realen Raum konstant performt."
-        }
-      },
-      {
-        "id": "rd-04",
-        "group": "product",
-        "priority": 40,
-        "status": "active",
-        "q": {
-          "en": "What diffuser bases and reed options are available?",
-          "es": "¿Qué bases y varillas hay disponibles?",
-          "de": "Welche Diffuser-Basen und Stäbchen-Optionen gibt es?"
-        },
-        "a": {
-          "en": "Standard and low-VOC diffuser bases, plus rattan and fiber reeds in several colors and lengths. Child-safe vessel and closure options are available for private label.",
-          "es": "Bases estándar y bajas en COV, además de varillas de ratán y fibra en varios colores y longitudes. Para marca privada ofrecemos frascos y cierres con seguridad infantil.",
-          "de": "Standard- und VOC-arme Basen sowie Rattan- und Fiberstäbchen in mehreren Farben und Längen. Für Private Label sind kindersichere Gefäße und Verschlüsse verfügbar."
-        }
-      },
-      {
-        "id": "rd-05",
-        "group": "wholesale",
-        "priority": 10,
-        "status": "active",
-        "q": {
-          "en": "What is the MOQ for bulk reed diffusers?",
-          "es": "¿Cuál es el MOQ para difusores al por mayor?",
-          "de": "Wie hoch ist das MOQ für Reed-Diffuser?"
-        },
-        "a": {
-          "en": "Ready-to-ship models start at 100 pieces. Fully customized private-label MOQ depends on your bottle, reed and packaging choices — send your specification for an exact quotation.",
-          "es": "Los modelos listos para enviar parten de 100 piezas. El MOQ para marca privada totalmente personalizada depende del frasco, las varillas y el embalaje elegidos; envíenos su especificación para una cotización exacta.",
-          "de": "Lagermodelle starten ab 100 Stück. Das MOQ für vollständig individualisierte Private Label hängt von Flasche, Stäbchen und Verpackung ab – senden Sie uns Ihre Spezifikation für ein exaktes Angebot."
-        }
-      },
-      {
-        "id": "rd-06",
-        "group": "wholesale",
-        "priority": 20,
-        "status": "active",
-        "q": {
-          "en": "Can I mix different fragrances in one wholesale order?",
-          "es": "¿Puedo mezclar fragancias distintas en un pedido mayorista?",
-          "de": "Kann ich verschiedene Düfte in einer Großbestellung mischen?"
-        },
-        "a": {
-          "en": "Yes — you can combine multiple scents, vessel sizes and reed styles within one order to reach the MOQ, which makes market testing affordable.",
-          "es": "Sí: puede combinar varios aromas, tamaños de frasco y estilos de varillas en un mismo pedido para alcanzar el MOQ, lo que facilita probar el mercado.",
-          "de": "Ja – Sie können mehrere Düfte, Gefäßgrößen und Stäbchenstile in einer Bestellung kombinieren, um das MOQ zu erreichen. Das macht Markttests erschwinglich."
-        }
-      },
-      {
-        "id": "rd-07",
-        "group": "wholesale",
-        "priority": 30,
-        "status": "active",
-        "q": {
-          "en": "Are ready-to-ship reed diffusers available?",
-          "es": "¿Hay difusores de varillas listos para enviar?",
-          "de": "Gibt es versandbereite Reed-Diffuser?"
-        },
-        "a": {
-          "en": "Yes — popular models are kept in stock with tiered wholesale pricing and typically dispatch within 48 hours.",
-          "es": "Sí: mantenemos modelos populares en stock con precios mayoristas escalonados y envío normalmente en 48 horas.",
-          "de": "Ja – gängige Modelle sind auf Lager, mit gestaffelten Großhandelspreisen und in der Regel Versand innerhalb von 48 Stunden."
-        }
-      },
-      {
-        "id": "rd-08",
-        "group": "oem",
-        "priority": 10,
-        "status": "active",
-        "q": {
-          "en": "Can I customize the fragrance, bottle, reeds and packaging?",
-          "es": "¿Puedo personalizar fragancia, frasco, varillas y embalaje?",
-          "de": "Kann ich Duft, Flasche, Stäbchen und Verpackung individualisieren?"
-        },
-        "a": {
-          "en": "Fully. Scent (including matching a reference), bottle shape and color, reed type, labels and gift boxes can all be customized to your brand.",
-          "es": "Por completo. El aroma (incluida la reproducción de una referencia), la forma y el color del frasco, el tipo de varilla, las etiquetas y las cajas regalo se personalizan según su marca.",
-          "de": "Vollständig. Duft (auch das Nachstellen einer Referenz), Flaschenform und -farbe, Stäbchentyp, Etiketten und Geschenkboxen lassen sich komplett auf Ihre Marke zuschneiden."
-        }
-      },
-      {
-        "id": "rd-09",
-        "group": "oem",
-        "priority": 20,
-        "status": "active",
-        "q": {
-          "en": "How long does private label production take?",
-          "es": "¿Cuánto tarda la producción de marca privada?",
-          "de": "Wie lange dauert die Private-Label-Produktion?"
-        },
-        "a": {
-          "en": "Sampling takes about 3–12 days; bulk production typically 10–35 days depending on customization level and order volume.",
-          "es": "El muestreo tarda unos 3–12 días; la producción en serie, normalmente 10–35 días según el nivel de personalización y el volumen del pedido.",
-          "de": "Die Bemusterung dauert etwa 3–12 Tage, die Serienproduktion je nach Individualisierungsgrad und Menge typischerweise 10–35 Tage."
-        }
-      },
-      {
-        "id": "rd-10",
-        "group": "oem",
-        "priority": 30,
-        "status": "active",
-        "q": {
-          "en": "Can you develop a custom fragrance for my brand?",
-          "es": "¿Pueden desarrollar una fragancia exclusiva para mi marca?",
-          "de": "Können Sie einen eigenen Duft für meine Marke entwickeln?"
-        },
-        "a": {
-          "en": "Yes — our partner factories work with international fragrance houses such as Firmenich and Givaudan, and perfumers can match a reference or create an exclusive scent from your brief.",
-          "es": "Sí: nuestras fábricas asociadas trabajan con casas de fragancias internacionales como Firmenich y Givaudan, y sus perfumistas pueden igualar una referencia o crear un aroma exclusivo a partir de su brief.",
-          "de": "Ja – unsere Partnerfabriken arbeiten mit internationalen Dufthäusern wie Firmenich und Givaudan zusammen; deren Parfümeure können eine Referenz nachstellen oder aus Ihrem Briefing einen exklusiven Duft kreieren."
-        }
-      },
-      {
-        "id": "rd-11",
+        "id": "bs-03",
         "group": "shipping",
-        "priority": 10,
+        "priority": 30,
         "status": "active",
         "q": {
-          "en": "Can you provide SDS and other compliance documents?",
-          "es": "¿Pueden proporcionar SDS y otros documentos de cumplimiento?",
-          "de": "Können Sie SDB und weitere Compliance-Dokumente bereitstellen?"
+          "en": "What does shipping cost?",
+          "ar": "كم تكلفة الشحن؟"
         },
         "a": {
-          "en": "Yes. We provide SDS/MSDS, sea- and air-freight transport safety reports and third-party test reports; REACH/CLP information letters from our fragrance suppliers are available where applicable.",
-          "es": "Sí. Proporcionamos SDS/MSDS, informes de seguridad de transporte marítimo y aéreo e informes de ensayo de terceros; cuando aplica, cartas REACH/CLP de nuestros proveedores de fragancia.",
-          "de": "Ja. Wir stellen SDS/MSDS, Transportsicherheitsberichte für See- und Luftfracht sowie Drittprüfberichte bereit; wo zutreffend, auch REACH/CLP-Schreiben unserer Duftstofflieferanten."
-        }
-      },
-      {
-        "id": "rd-12",
-        "group": "shipping",
-        "priority": 20,
-        "status": "active",
-        "q": {
-          "en": "How are reed diffusers packed for export?",
-          "es": "¿Cómo se embalan los difusores para exportación?",
-          "de": "Wie werden Reed-Diffuser für den Export verpackt?"
-        },
-        "a": {
-          "en": "Export cartons with inner dividers and protective inserts; glass vessels are packed to pass drop tests. FBA labeling and palletization are supported on request.",
-          "es": "Cajas de exportación con divisores interiores y protectores; los frascos de vidrio se embalan superando pruebas de caída. Bajo petición, etiquetado FBA y paletizado.",
-          "de": "Exportkartons mit Innentrennern und Schutzeinlagen; Glasgefäße werden falltestsicher verpackt. FBA-Etikettierung und Palettierung sind auf Wunsch möglich."
+          "en": "Shipping is a flat SAR 15 in Saudi Arabia and AED 20 in the UAE. Orders over SAR 300 (KSA) or AED 300 (UAE) ship free.",
+          "ar": "الشحن بسعر ثابت: ١٥ ريالًا في السعودية و٢٠ درهمًا في الإمارات. والشحن مجاني للطلبات فوق ٣٠٠ ريال (السعودية) أو ٣٠٠ درهم (الإمارات)."
         }
       }
     ],
-    "candles": [
+    "gift": [
       {
-        "id": "cd-01",
+        "id": "gf-01",
         "group": "product",
         "priority": 10,
         "status": "active",
         "q": {
-          "en": "What types of candle wax do you offer?",
-          "es": "¿Qué tipos de cera ofrecen?",
-          "de": "Welche Wachsarten bieten Sie an?"
+          "en": "Do gift pieces arrive ready to give?",
+          "ar": "هل تصل قطع الهدايا جاهزة للإهداء؟"
         },
         "a": {
-          "en": "Primarily natural soy wax, with coconut, beeswax, paraffin and blend options available on request depending on your market and price point.",
-          "es": "Principalmente cera de soja natural, con opciones de coco, abeja, parafina y mezclas según su mercado y precio objetivo.",
-          "de": "Hauptsächlich natürliches Sojawachs, auf Anfrage auch Kokos-, Bienenwachs, Paraffin und Mischungen – je nach Markt und Preislage."
+          "en": "Yes. Gift pieces ship in our presentation packaging, so they can be handed over as they arrive.",
+          "ar": "نعم. تُشحن قطع الهدايا في تغليف التقديم الخاص بنا، ليمكن إهداؤها كما تصل."
         }
       },
       {
-        "id": "cd-02",
+        "id": "gf-02",
         "group": "product",
         "priority": 20,
         "status": "active",
         "q": {
-          "en": "What is the difference between soy, coconut and paraffin wax?",
-          "es": "¿Qué diferencia hay entre cera de soja, coco y parafina?",
-          "de": "Was unterscheidet Soja-, Kokos- und Paraffinwachs?"
+          "en": "What if I choose the wrong size as a gift?",
+          "ar": "وإذا اخترت المقاس الخطأ كهدية؟"
         },
         "a": {
-          "en": "Soy and coconut are plant-based, burn cleaner and support a natural positioning; paraffin gives a stronger hot throw at lower cost. Blends balance performance and price.",
-          "es": "La soja y el coco son de origen vegetal, arden más limpias y apoyan un posicionamiento natural; la parafina da mayor intensidad en caliente a menor coste. Las mezclas equilibran rendimiento y precio.",
-          "de": "Soja und Kokos sind pflanzlich, brennen sauberer und stützen eine natürliche Positionierung; Paraffin bietet stärkeren Hot Throw zu niedrigeren Kosten. Mischungen balancieren Leistung und Preis."
+          "en": "Unworn items in their original packaging can be returned within 14 days of delivery. Contact our support team with the order number and we will arrange the return.",
+          "ar": "يمكن إرجاع القطع غير المستخدمة في تغليفها الأصلي خلال ١٤ يومًا من التوصيل. تواصلي مع فريق الدعم مع رقم الطلب وسنرتّب الإرجاع."
         }
       },
       {
-        "id": "cd-03",
-        "group": "product",
+        "id": "gf-03",
+        "group": "care",
         "priority": 30,
         "status": "active",
         "q": {
-          "en": "How does wax type affect candle performance?",
-          "es": "¿Cómo afecta el tipo de cera al rendimiento de la vela?",
-          "de": "Wie beeinflusst das Wachs die Kerzenleistung?"
+          "en": "How should a gift be stored before it is given?",
+          "ar": "كيف تُحفظ الهدية قبل إهدائها؟"
         },
         "a": {
-          "en": "It affects burn time, scent throw, surface finish and frosting. We recommend a wax system per vessel and fragrance load, and test-burn each formulation before bulk production.",
-          "es": "Afecta al tiempo de combustión, la intensidad del aroma, el acabado superficial y el frosting. Recomendamos un sistema de cera por recipiente y carga de fragancia, y quemamos de prueba cada fórmula antes de producir.",
-          "de": "Es beeinflusst Brenndauer, Duftabgabe, Oberfläche und Frosting. Wir empfehlen ein Wachssystem pro Gefäß und Duftstoffanteil und brennen jede Rezeptur vor der Serienproduktion probe."
-        }
-      },
-      {
-        "id": "cd-04",
-        "group": "product",
-        "priority": 40,
-        "status": "active",
-        "q": {
-          "en": "What candle containers are available?",
-          "es": "¿Qué recipientes para velas hay disponibles?",
-          "de": "Welche Kerzengefäße sind verfügbar?"
-        },
-        "a": {
-          "en": "Glass jars, tins, ceramic and concrete vessels in stock molds, plus custom molds, colors, printing and lids for private label programs.",
-          "es": "Frascos de vidrio, latas, cerámica y hormigón en moldes de stock, además de moldes personalizados, colores, impresión y tapas para programas de marca privada.",
-          "de": "Glasgefäße, Dosen, Keramik- und Betongefäße in Lagerformen, plus eigene Formen, Farben, Bedruckung und Deckel für Private-Label-Programme."
-        }
-      },
-      {
-        "id": "cd-05",
-        "group": "wholesale",
-        "priority": 10,
-        "status": "active",
-        "q": {
-          "en": "What is the MOQ for wholesale candles?",
-          "es": "¿Cuál es el MOQ para velas al por mayor?",
-          "de": "Wie hoch ist das MOQ für Großhandelskerzen?"
-        },
-        "a": {
-          "en": "Ready-to-ship models start at 100 pieces; custom wax, vessel and scent combinations are quoted per specification.",
-          "es": "Los modelos listos para enviar parten de 100 piezas; las combinaciones personalizadas de cera, recipiente y aroma se cotizan según especificación.",
-          "de": "Lagermodelle starten ab 100 Stück; individuelle Kombinationen aus Wachs, Gefäß und Duft werden je nach Spezifikation angeboten."
-        }
-      },
-      {
-        "id": "cd-06",
-        "group": "wholesale",
-        "priority": 20,
-        "status": "active",
-        "q": {
-          "en": "Can I mix fragrances and vessels in one order?",
-          "es": "¿Puedo mezclar aromas y recipientes en un pedido?",
-          "de": "Kann ich Düfte und Gefäße in einer Bestellung mischen?"
-        },
-        "a": {
-          "en": "Yes — mixed-SKU orders let you build a complete candle collection in a single production run.",
-          "es": "Sí: los pedidos multi-SKU le permiten crear una colección completa de velas en una sola producción.",
-          "de": "Ja – mit gemischten SKUs bauen Sie eine komplette Kerzenkollektion in einem Produktionslauf auf."
-        }
-      },
-      {
-        "id": "cd-07",
-        "group": "wholesale",
-        "priority": 30,
-        "status": "active",
-        "q": {
-          "en": "Do you offer ready-to-ship candles?",
-          "es": "¿Ofrecen velas listas para enviar?",
-          "de": "Bieten Sie versandbereite Kerzen an?"
-        },
-        "a": {
-          "en": "Yes — selected soy-wax candles are in stock with tiered pricing and fast dispatch.",
-          "es": "Sí: mantenemos en stock una selección de velas de soja con precios escalonados y envío rápido.",
-          "de": "Ja – ausgewählte Sojawachskerzen sind auf Lager, mit gestaffelten Preisen und schnellem Versand."
-        }
-      },
-      {
-        "id": "cd-08",
-        "group": "oem",
-        "priority": 10,
-        "status": "active",
-        "q": {
-          "en": "Can I customize the fragrance, jar and packaging?",
-          "es": "¿Puedo personalizar aroma, frasco y embalaje?",
-          "de": "Kann ich Duft, Gefäß und Verpackung individualisieren?"
-        },
-        "a": {
-          "en": "Yes — custom scent, vessel, label, lid and gift box, down to wick choice and burn-time specification.",
-          "es": "Sí: aroma, recipiente, etiqueta, tapa y caja regalo a medida, hasta la elección de la mecha y la especificación de tiempo de combustión.",
-          "de": "Ja – Duft, Gefäß, Etikett, Deckel und Geschenkbox nach Maß, bis hin zu Dochtwahl und Brenndauer-Spezifikation."
-        }
-      },
-      {
-        "id": "cd-09",
-        "group": "oem",
-        "priority": 20,
-        "status": "active",
-        "q": {
-          "en": "How long does OEM candle production take?",
-          "es": "¿Cuánto tarda la producción OEM de velas?",
-          "de": "Wie lange dauert die OEM-Kerzenproduktion?"
-        },
-        "a": {
-          "en": "Sampling about 3–12 days; bulk production 10–35 days depending on vessel and packaging customization.",
-          "es": "Muestreo de unos 3–12 días; producción en serie de 10–35 días según la personalización de recipiente y embalaje.",
-          "de": "Bemusterung ca. 3–12 Tage; Serienproduktion 10–35 Tage, je nach Individualisierung von Gefäß und Verpackung."
-        }
-      },
-      {
-        "id": "cd-10",
-        "group": "oem",
-        "priority": 30,
-        "status": "active",
-        "q": {
-          "en": "Are your candles safe and compliant for export?",
-          "es": "¿Sus velas son seguras y cumplen para exportar?",
-          "de": "Sind Ihre Kerzen sicher und exportkonform?"
-        },
-        "a": {
-          "en": "We provide SDS/MSDS and third-party test reports, and can supply candle safety and transport documentation for your target markets on request.",
-          "es": "Proporcionamos SDS/MSDS e informes de ensayo de terceros y, bajo petición, documentación de seguridad y transporte de velas para sus mercados objetivo.",
-          "de": "Wir stellen SDS/MSDS und Drittprüfberichte bereit und liefern auf Anfrage Sicherheits- und Transportdokumente für Ihre Zielmärkte."
-        }
-      },
-      {
-        "id": "cd-11",
-        "group": "shipping",
-        "priority": 10,
-        "status": "active",
-        "q": {
-          "en": "How are candles packed for export?",
-          "es": "¿Cómo se embalan las velas para exportación?",
-          "de": "Wie werden Kerzen für den Export verpackt?"
-        },
-        "a": {
-          "en": "Foam or divider inserts, shrink wrap and five-layer export cartons; glass vessels get drop-tested packing. FBA preparation is available.",
-          "es": "Insertos de espuma o divisores, retráctil y cajas de exportación de cinco capas; el vidrio se embala superando pruebas de caída. Preparación FBA disponible.",
-          "de": "Schaum- oder Trenneinlagen, Schrumpffolie und fünflagige Exportkartons; Glasgefäße werden falltestsicher verpackt. FBA-Vorbereitung ist möglich."
-        }
-      },
-      {
-        "id": "cd-12",
-        "group": "shipping",
-        "priority": 20,
-        "status": "active",
-        "q": {
-          "en": "What information do you need for a bulk quotation?",
-          "es": "¿Qué información necesitan para una cotización?",
-          "de": "Welche Angaben brauchen Sie für ein Großhandelsangebot?"
-        },
-        "a": {
-          "en": "Product style or reference, wax type, vessel size, fragrance direction, target quantity and destination port — we reply with MOQ, unit price and lead time within one business day.",
-          "es": "Estilo o referencia, tipo de cera, tamaño del recipiente, dirección olfativa, cantidad objetivo y puerto de destino; respondemos con MOQ, precio unitario y plazo en un día laborable.",
-          "de": "Stil oder Referenz, Wachsart, Gefäßgröße, Duftrichtung, Zielmenge und Zielhafen – wir antworten innerhalb eines Werktags mit MOQ, Stückpreis und Lieferzeit."
+          "en": "Keep the piece in the pouch or box it arrived in, away from direct sunlight and humidity, until it is gifted.",
+          "ar": "احفظي القطعة في الكيس أو العلبة التي وصلت بها، بعيدًا عن أشعة الشمس المباشرة والرطوبة، إلى حين إهدائها."
         }
       }
     ],
-    "home-fragrance": [
+    "statement": [
       {
-        "id": "hf-01",
+        "id": "st-01",
         "group": "product",
         "priority": 10,
         "status": "active",
         "q": {
-          "en": "What types of home fragrance products do you manufacture?",
-          "es": "¿Qué productos de fragancia de hogar fabrican?",
-          "de": "Welche Home-Fragrance-Produkte fertigen Sie?"
+          "en": "Are statement pieces heavier to wear?",
+          "ar": "هل القطع المميزة أثقل في اللبس؟"
         },
         "a": {
-          "en": "Reed diffusers, scented candles, room and linen sprays, wax melts, car diffusers, aroma stones, sachets and gift sets — a complete range under one supply chain.",
-          "es": "Difusores de varillas, velas aromáticas, sprays de ambiente y ropa, wax melts, difusores de coche, piedras aromáticas, saquitos y sets regalo: una gama completa bajo una misma cadena de suministro.",
-          "de": "Reed-Diffuser, Duftkerzen, Raum- und Textilsprays, Wachsmelts, Auto-Diffuser, Duftsteine, Duftsäckchen und Geschenksets – eine komplette Range aus einer Lieferkette."
+          "en": "Statement designs use more metal by nature. The weight of each piece is listed in the Details section so you can judge it before ordering.",
+          "ar": "تستخدم التصاميم المميزة معدنًا أكثر بطبيعتها. ويُذكر وزن كل قطعة في قسم التفاصيل حتى تحدّدي ذلك قبل الطلب."
         }
       },
       {
-        "id": "hf-02",
-        "group": "product",
+        "id": "st-02",
+        "group": "sizing",
         "priority": 20,
         "status": "active",
         "q": {
-          "en": "What is the difference between reed diffusers, candles and room sprays?",
-          "es": "¿Qué diferencia hay entre difusores, velas y sprays de ambiente?",
-          "de": "Was unterscheidet Reed-Diffuser, Kerzen und Raumsprays?"
+          "en": "Will a statement necklace sit correctly on me?",
+          "ar": "هل تستقر القلادة المميزة بشكل صحيح؟"
         },
         "a": {
-          "en": "Diffusers give continuous flameless scent for months; candles create ritual and ambiance; sprays deliver an instant scent burst. Most brands combine all three in a collection.",
-          "es": "Los difusores dan aroma continuo sin llama durante meses; las velas crean ritual y ambiente; los sprays ofrecen un impacto inmediato. La mayoría de las marcas combinan los tres en una colección.",
-          "de": "Diffuser geben monatelang kontinuierlich Duft ohne Flamme ab; Kerzen schaffen Ritual und Ambiente; Sprays liefern sofortige Duftakzente. Die meisten Marken kombinieren alle drei in einer Kollektion."
+          "en": "Check the Dimensions field for the total length, then compare it with a necklace you already wear comfortably. That is the most reliable guide.",
+          "ar": "راجعي حقل الأبعاد لمعرفة الطول الكلي، ثم قارنيه بقلادة ترتدينها بارتياح. فهذا أدق مقياس."
         }
       },
       {
-        "id": "hf-03",
-        "group": "product",
+        "id": "st-03",
+        "group": "care",
         "priority": 30,
         "status": "active",
         "q": {
-          "en": "Which format is best for hotels and hospitality?",
-          "es": "¿Qué formato es mejor para hoteles y hostelería?",
-          "de": "Welches Format eignet sich für Hotels und Hospitality?"
+          "en": "How do I keep a statement piece looking sharp?",
+          "ar": "كيف أحافظ على مظهر القطعة المميزة؟"
         },
         "a": {
-          "en": "Reed diffusers and automatic machines for lobbies and corridors; branded candles and pillow mists for guest rooms. We can build a complete scent program per property.",
-          "es": "Difusores de varillas y máquinas automáticas para lobbies y pasillos; velas y pillow mists con marca para habitaciones. Podemos crear un programa de aroma completo por propiedad.",
-          "de": "Reed-Diffuser und Automatikgeräte für Lobbys und Flure; gebrandete Kerzen und Pillow Mists für Gästezimmer. Wir bauen ein komplettes Duftprogramm pro Immobilie auf."
-        }
-      },
-      {
-        "id": "hf-04",
-        "group": "product",
-        "priority": 40,
-        "status": "active",
-        "q": {
-          "en": "Which products suit private label brands best?",
-          "es": "¿Qué productos convienen más a las marcas privadas?",
-          "de": "Welche Produkte eignen sich am besten für Private Label?"
-        },
-        "a": {
-          "en": "Reed diffusers and candles are the strongest entry points — giftable, shippable and easy to brand; sprays and sachets work well as line extensions.",
-          "es": "Los difusores y las velas son la mejor puerta de entrada: regalables, enviables y fáciles de marcar; sprays y saquitos funcionan bien como extensión de línea.",
-          "de": "Reed-Diffuser und Kerzen sind die stärksten Einstiegspunkte – geschenkfähig, gut versendbar, leicht zu branden; Sprays und Duftsäckchen eignen sich als Line-Extensions."
-        }
-      },
-      {
-        "id": "hf-05",
-        "group": "wholesale",
-        "priority": 10,
-        "status": "active",
-        "q": {
-          "en": "Which home fragrance products are available for wholesale?",
-          "es": "¿Qué productos de home fragrance hay al por mayor?",
-          "de": "Welche Home-Fragrance-Produkte sind großhandelsfähig?"
-        },
-        "a": {
-          "en": "All of them — stock models ship with tiered wholesale pricing and typically dispatch within 48 hours.",
-          "es": "Todos: los modelos de stock se envían con precios mayoristas escalonados y salida normalmente en 48 horas.",
-          "de": "Alle – Lagermodelle werden mit gestaffelten Großhandelspreisen geliefert, in der Regel innerhalb von 48 Stunden."
-        }
-      },
-      {
-        "id": "hf-06",
-        "group": "wholesale",
-        "priority": 20,
-        "status": "active",
-        "q": {
-          "en": "Can I combine multiple product types in one order?",
-          "es": "¿Puedo combinar varios tipos de producto en un pedido?",
-          "de": "Kann ich mehrere Produkttypen in einer Bestellung kombinieren?"
-        },
-        "a": {
-          "en": "Yes — mixed-SKU orders across diffusers, candles, sprays and accessories let you launch a complete collection in one shipment.",
-          "es": "Sí: los pedidos multi-SKU entre difusores, velas, sprays y accesorios le permiten lanzar una colección completa en un solo envío.",
-          "de": "Ja – gemischte SKUs über Diffuser, Kerzen, Sprays und Zubehör hinweg ermöglichen eine komplette Kollektion in einer Sendung."
-        }
-      },
-      {
-        "id": "hf-07",
-        "group": "wholesale",
-        "priority": 30,
-        "status": "active",
-        "q": {
-          "en": "What is the MOQ for wholesale home fragrance?",
-          "es": "¿Cuál es el MOQ para home fragrance al por mayor?",
-          "de": "Wie hoch ist das MOQ für Home Fragrance?"
-        },
-        "a": {
-          "en": "Stock models start at 100 pieces per item; custom formulations and packaging are quoted per specification.",
-          "es": "Los modelos de stock parten de 100 piezas por artículo; las formulaciones y embalajes personalizados se cotizan según especificación.",
-          "de": "Lagermodelle starten ab 100 Stück pro Artikel; individuelle Rezepturen und Verpackungen werden je nach Spezifikation angeboten."
-        }
-      },
-      {
-        "id": "hf-08",
-        "group": "oem",
-        "priority": 10,
-        "status": "active",
-        "q": {
-          "en": "Can you develop a private label home fragrance collection?",
-          "es": "¿Pueden desarrollar una colección de marca privada?",
-          "de": "Können Sie eine Private-Label-Kollektion entwickeln?"
-        },
-        "a": {
-          "en": "Yes — we develop a consistent scent identity across diffusers, candles and sprays, with coordinated packaging for your brand.",
-          "es": "Sí: desarrollamos una identidad olfativa coherente entre difusores, velas y sprays, con embalaje coordinado para su marca.",
-          "de": "Ja – wir entwickeln eine durchgängige Duftidentität über Diffuser, Kerzen und Sprays hinweg, mit koordinierter Verpackung für Ihre Marke."
-        }
-      },
-      {
-        "id": "hf-09",
-        "group": "oem",
-        "priority": 20,
-        "status": "active",
-        "q": {
-          "en": "Can you customize packaging across multiple products?",
-          "es": "¿Pueden personalizar el embalaje en varios productos?",
-          "de": "Können Sie Verpackungen über mehrere Produkte hinweg gestalten?"
-        },
-        "a": {
-          "en": "Yes — coordinated boxes, labels and inserts across the whole collection so your line looks consistent on the shelf.",
-          "es": "Sí: cajas, etiquetas e insertos coordinados en toda la colección para que su línea se vea consistente en el lineal.",
-          "de": "Ja – koordinierte Boxen, Etiketten und Einlagen über die gesamte Kollektion, damit Ihre Linie im Regal einheitlich wirkt."
-        }
-      },
-      {
-        "id": "hf-10",
-        "group": "shipping",
-        "priority": 10,
-        "status": "active",
-        "q": {
-          "en": "Can you ship home fragrance products internationally?",
-          "es": "¿Envían productos de home fragrance internacionalmente?",
-          "de": "Versenden Sie Home-Fragrance-Produkte international?"
-        },
-        "a": {
-          "en": "Yes — we export worldwide with the transport classification documents required for sea and air freight, including SDS and transport safety reports.",
-          "es": "Sí: exportamos a todo el mundo con los documentos de clasificación de transporte exigidos para mar y aire, incluidos SDS e informes de seguridad de transporte.",
-          "de": "Ja – wir exportieren weltweit mit den für See- und Luftfracht erforderlichen Transportklassifizierungs-Dokumenten, inklusive SDS und Transportsicherheitsberichten."
-        }
-      },
-      {
-        "id": "hf-11",
-        "group": "shipping",
-        "priority": 20,
-        "status": "active",
-        "q": {
-          "en": "How are mixed collections packed for export?",
-          "es": "¿Cómo se embalan las colecciones mixtas para exportación?",
-          "de": "Wie werden gemischte Kollektionen für den Export verpackt?"
-        },
-        "a": {
-          "en": "Per-SKU inner packing with dividers, consolidated into export cartons or pallets; FBA labeling and shipping marks supported on request.",
-          "es": "Embalaje interior por SKU con divisores, consolidado en cajas de exportación o palés; etiquetado FBA y marcas de envío bajo petición.",
-          "de": "SKU-weise Innenverpackung mit Trennern, konsolidiert in Exportkartons oder Paletten; FBA-Etikettierung und Versandmarkierungen auf Wunsch."
+          "en": "Store it flat and separately so it does not rub against other pieces, and put it on after perfume and hair products have dried.",
+          "ar": "احفظيها مسطحة وبمعزل عن القطع الأخرى حتى لا تحتك بها، وارتدِيها بعد أن تجف العطور ومنتجات الشعر."
         }
       }
     ],
-    "packaging": [
+    "gulf-design": [
       {
-        "id": "pk-01",
+        "id": "gd-01",
         "group": "product",
         "priority": 10,
         "status": "active",
         "q": {
-          "en": "What packaging components can you supply?",
-          "es": "¿Qué componentes de embalaje suministran?",
-          "de": "Welche Verpackungskomponenten liefern Sie?"
+          "en": "What makes the Gulf Design collection different?",
+          "ar": "ما الذي يميّز مجموعة التصميم الخليجي؟"
         },
         "a": {
-          "en": "Glass bottles and jars, diffuser vessels, reeds and wicks, caps and droppers, labels, rigid boxes, folding cartons and gift sets — manufactured and printed to your specification.",
-          "es": "Frascos y tarros de vidrio, vasos de difusor, varillas y mechas, tapas y cuentagotas, etiquetas, cajas rígidas, estuches plegables y sets regalo, fabricados e impresos según su especificación.",
-          "de": "Glasflaschen und -gefäße, Diffusergefäße, Stäbchen und Dochte, Kappen und Tropfer, Etiketten, Stülpschachteln, Faltschachteln und Geschenksets – gefertigt und bedruckt nach Ihrer Spezifikation."
+          "en": "The Gulf Design collection uses motifs and proportions chosen for regional styling — longer lengths, layered silhouettes and warmer finishes.",
+          "ar": "تعتمد مجموعة التصميم الخليجي زخارف ونسبًا مختارة للتنسيق الإقليمي — أطوالًا أطول وتكوينات متعددة الطبقات وتشطيبات أكثر دفئًا."
         }
       },
       {
-        "id": "pk-02",
-        "group": "product",
+        "id": "gd-02",
+        "group": "sizing",
         "priority": 20,
         "status": "active",
         "q": {
-          "en": "Can I order packaging only, without the product?",
-          "es": "¿Puedo pedir solo embalaje, sin producto?",
-          "de": "Kann ich nur Verpackung ohne Produkt bestellen?"
+          "en": "Do Gulf Design necklaces run long?",
+          "ar": "هل قلائد التصميم الخليجي طويلة؟"
         },
         "a": {
-          "en": "Yes — many clients source components separately; we supply empty vessels, boxes and labels to your spec.",
-          "es": "Sí: muchos clientes compran componentes por separado; suministramos envases vacíos, cajas y etiquetas según su especificación.",
-          "de": "Ja – viele Kunden beschaffen Komponenten separat; wir liefern leere Gefäße, Boxen und Etiketten nach Ihrer Vorgabe."
+          "en": "Several designs are cut longer than average for layering. The exact length of each piece is listed under Dimensions on its product page.",
+          "ar": "صُممت عدة قطع بطول أكبر من المعتاد للتنسيق على طبقات. ويُذكر الطول الدقيق لكل قطعة في حقل الأبعاد بصفحتها."
         }
       },
       {
-        "id": "pk-03",
+        "id": "gd-03",
+        "group": "shipping",
+        "priority": 30,
+        "status": "active",
+        "q": {
+          "en": "Do you deliver across the Gulf?",
+          "ar": "هل توصلون إلى جميع دول الخليج؟"
+        },
+        "a": {
+          "en": "We currently deliver within Saudi Arabia and the United Arab Emirates. Other Gulf markets are not open for delivery yet.",
+          "ar": "نوصّل حاليًا داخل المملكة العربية السعودية ودولة الإمارات. ولم تُفتح أسواق خليجية أخرى للتوصيل بعد."
+        }
+      }
+    ],
+    "gold": [
+      {
+        "id": "go-01",
+        "group": "product",
+        "priority": 10,
+        "status": "active",
+        "q": {
+          "en": "Are your gold pieces real gold?",
+          "ar": "هل قطع الذهب لديكم ذهب حقيقي؟"
+        },
+        "a": {
+          "en": "Gold pieces are 18K gold, stamped and shipped with a certificate of authenticity. The Details section of each product page states the material and plating for that specific piece.",
+          "ar": "قطع الذهب من عيار ١٨، مختومة وتُشحن مع شهادة أصالة. ويوضّح قسم التفاصيل في صفحة كل قطعة المادة والطلاء الخاصين بها."
+        }
+      },
+      {
+        "id": "go-02",
+        "group": "care",
+        "priority": 20,
+        "status": "active",
+        "q": {
+          "en": "How do I clean gold jewellery?",
+          "ar": "كيف أنظّف المجوهرات الذهبية؟"
+        },
+        "a": {
+          "en": "Use lukewarm water with a drop of mild soap and a soft cloth, then dry thoroughly. Avoid abrasive polishes, chlorine and ultrasonic cleaners.",
+          "ar": "استخدمي ماءً فاترًا مع قطرة من صابون لطيف وقطعة قماش ناعمة ثم جفّفيها جيدًا. وتجنّبي الملمّعات الكاشطة والكلور وأجهزة التنظيف بالموجات."
+        }
+      },
+      {
+        "id": "go-03",
         "group": "product",
         "priority": 30,
         "status": "active",
         "q": {
-          "en": "Do you offer custom molds for glass and tins?",
-          "es": "¿Ofrecen moldes personalizados para vidrio y latas?",
-          "de": "Bieten Sie eigene Formen für Glas und Dosen an?"
+          "en": "Is the weight shown for gold pieces?",
+          "ar": "هل يُذكر وزن القطع الذهبية؟"
         },
         "a": {
-          "en": "Yes — for higher volumes we can open custom glass or tin molds to your design; mold cost and lead time are quoted per project.",
-          "es": "Sí: para volúmenes mayores podemos abrir moldes personalizados de vidrio o lata según su diseño; el coste y el plazo del molde se cotizan por proyecto.",
-          "de": "Ja – für höhere Mengen öffnen wir auf Wunsch eigene Glas- oder Dosenformen nach Ihrem Design; Formenkosten und Vorlaufzeit werden je Projekt angeboten."
+          "en": "Yes — the Weight field appears in the Details section whenever it is known for that product.",
+          "ar": "نعم — يظهر حقل الوزن في قسم التفاصيل كلما كان متاحًا لتلك القطعة."
         }
-      },
+      }
+    ],
+    "silver": [
       {
-        "id": "pk-04",
+        "id": "si-01",
         "group": "product",
-        "priority": 40,
-        "status": "active",
-        "q": {
-          "en": "What printing and finishing options are available?",
-          "es": "¿Qué opciones de impresión y acabado hay?",
-          "de": "Welche Druck- und Veredelungsoptionen gibt es?"
-        },
-        "a": {
-          "en": "Screen printing, hot stamping, decals and full-color labels on vessels; embossing, foil and magnetic closures on boxes.",
-          "es": "Serigrafía, hot stamping, calcas y etiquetas a todo color en envases; relieve, foil y cierres magnéticos en cajas.",
-          "de": "Siebdruck, Heißprägung, Decals und Vollfarb-Etiketten auf Gefäßen; Prägung, Folie und Magnetverschlüsse auf Boxen."
-        }
-      },
-      {
-        "id": "pk-05",
-        "group": "wholesale",
         "priority": 10,
         "status": "active",
         "q": {
-          "en": "What is the MOQ for packaging components?",
-          "es": "¿Cuál es el MOQ para componentes de embalaje?",
-          "de": "Wie hoch ist das MOQ für Verpackungskomponenten?"
+          "en": "What silver do you use?",
+          "ar": "ما نوع الفضة المستخدمة؟"
         },
         "a": {
-          "en": "Stock molds start at 100 pieces; custom printing and custom molds vary by component — send your specification for a quotation.",
-          "es": "Los moldes de stock parten de 100 piezas; la impresión y los moldes personalizados varían según el componente; envíe su especificación para cotizar.",
-          "de": "Lagerformen starten ab 100 Stück; individueller Druck und eigene Formen variieren je nach Komponente – senden Sie uns Ihre Spezifikation für ein Angebot."
+          "en": "Silver pieces are 925 sterling silver, stamped and shipped with a certificate of authenticity.",
+          "ar": "قطع الفضة من الفضة الإسترلينية ٩٢٥، مختومة وتُشحن مع شهادة أصالة."
         }
       },
       {
-        "id": "pk-06",
-        "group": "wholesale",
+        "id": "si-02",
+        "group": "care",
         "priority": 20,
         "status": "active",
         "q": {
-          "en": "Can packaging be combined with product orders?",
-          "es": "¿Se puede combinar el embalaje con pedidos de producto?",
-          "de": "Kann Verpackung mit Produktbestellungen kombiniert werden?"
+          "en": "Why does sterling silver tarnish?",
+          "ar": "لماذا تتأكسد الفضة الإسترلينية؟"
         },
         "a": {
-          "en": "Yes — we can fill and finish your product in the packaging we supply, or ship components together with stock products in one consolidated shipment.",
-          "es": "Sí: podemos envasar y terminar su producto en el embalaje que suministramos, o enviar componentes junto con productos de stock en un envío consolidado.",
-          "de": "Ja – wir befüllen und konfektionieren Ihr Produkt in der von uns gelieferten Verpackung oder versenden Komponenten zusammen mit Lagerware in einer konsolidierten Sendung."
+          "en": "Tarnish is a normal reaction of sterling silver to air, moisture and sulphur. It is surface-only and reversible: a soft polishing cloth restores the shine.",
+          "ar": "التأكسد تفاعل طبيعي للفضة الإسترلينية مع الهواء والرطوبة والكبريت. وهو سطحي وقابل للعلاج: قطعة قماش ناعمة للتلميع تعيد اللمعان."
         }
       },
       {
-        "id": "pk-07",
-        "group": "oem",
+        "id": "si-03",
+        "group": "care",
+        "priority": 30,
+        "status": "active",
+        "q": {
+          "en": "How do I stop silver from tarnishing in storage?",
+          "ar": "كيف أمنع تأكسد الفضة أثناء التخزين؟"
+        },
+        "a": {
+          "en": "Store pieces in the sealed pouch provided, away from humidity and direct sunlight, and keep them separate so they cannot scratch each other.",
+          "ar": "احفظي القطع في الكيس المغلق المرفق، بعيدًا عن الرطوبة وأشعة الشمس المباشرة، وبمعزل عن بعضها حتى لا تتخدّش."
+        }
+      }
+    ],
+    "pearls": [
+      {
+        "id": "pe-01",
+        "group": "product",
         "priority": 10,
         "status": "active",
         "q": {
-          "en": "Can you match packaging to my brand guidelines?",
-          "es": "¿Pueden adaptar el embalaje a mi manual de marca?",
-          "de": "Können Sie die Verpackung an meine Markenrichtlinien anpassen?"
+          "en": "Are the pearls natural?",
+          "ar": "هل اللؤلؤ طبيعي؟"
         },
         "a": {
-          "en": "Yes — send artwork or a physical reference; we handle color matching, dielines and pre-production samples for approval.",
-          "es": "Sí: envíe arte o una referencia física; nos encargamos de igualar colores, troqueles y muestras de preproducción para su aprobación.",
-          "de": "Ja – senden Sie Artwork oder ein physisches Referenzmuster; wir übernehmen Farbabstimmung, Stanzlinien und Vorproduktionsmuster zur Freigabe."
+          "en": "Each pearl product page states the pearl type and material in the Details section. Please read that section for the specific piece you are considering.",
+          "ar": "توضّح صفحة كل منتج لؤلؤ نوع اللؤلؤ والمادة في قسم التفاصيل. يُرجى مراجعة ذلك القسم للقطعة التي تنوين شراءها."
         }
       },
       {
-        "id": "pk-08",
-        "group": "oem",
+        "id": "pe-02",
+        "group": "care",
         "priority": 20,
         "status": "active",
         "q": {
-          "en": "How long does custom packaging production take?",
-          "es": "¿Cuánto tarda la producción de embalaje personalizado?",
-          "de": "Wie lange dauert die individuelle Verpackungsproduktion?"
+          "en": "How should I care for pearls?",
+          "ar": "كيف أعتني باللؤلؤ؟"
         },
         "a": {
-          "en": "Sampling about 3–12 days; bulk production 10–35 days depending on component and finishing.",
-          "es": "Muestreo de unos 3–12 días; producción en serie de 10–35 días según componente y acabado.",
-          "de": "Bemusterung ca. 3–12 Tage; Serienproduktion 10–35 Tage, je nach Komponente und Veredelung."
+          "en": "Pearls are soft and porous. Put them on last, after perfume and lotions, wipe them with a soft damp cloth after wear, and never use chemical cleaners.",
+          "ar": "اللؤلؤ طري ومسامي. ارتدِيه أخيرًا بعد العطر والمرطبات، وامسحيه بقطعة قماش ناعمة رطبة بعد الاستخدام، ولا تستخدمي منظفات كيميائية."
         }
       },
       {
-        "id": "pk-09",
-        "group": "shipping",
-        "priority": 10,
+        "id": "pe-03",
+        "group": "care",
+        "priority": 30,
         "status": "active",
         "q": {
-          "en": "How is glass packaging protected for export?",
-          "es": "¿Cómo se protege el vidrio para la exportación?",
-          "de": "Wie wird Glasverpackung für den Export geschützt?"
+          "en": "Can I wear pearls every day?",
+          "ar": "هل يمكنني ارتداء اللؤلؤ يوميًا؟"
         },
         "a": {
-          "en": "Dividers, foam or bubble inserts and five-layer cartons; drop-tested packing as standard, palletization on request.",
-          "es": "Divisores, insertos de espuma o burbuja y cajas de cinco capas; embalaje probado contra caídas de serie y paletizado bajo petición.",
-          "de": "Trenner, Schaum- oder Luftpolstereinlagen und fünflagige Kartons; falltestsichere Verpackung als Standard, Palettierung auf Wunsch."
-        }
-      },
-      {
-        "id": "pk-10",
-        "group": "shipping",
-        "priority": 20,
-        "status": "active",
-        "q": {
-          "en": "What information is needed for a packaging quotation?",
-          "es": "¿Qué información se necesita para cotizar embalaje?",
-          "de": "Welche Angaben braucht ein Verpackungsangebot?"
-        },
-        "a": {
-          "en": "Component type, size or dieline, material, printing and finishing, target quantity and destination — we reply within one business day.",
-          "es": "Tipo de componente, tamaño o troquel, material, impresión y acabado, cantidad objetivo y destino; respondemos en un día laborable.",
-          "de": "Komponententyp, Größe oder Stanzlinie, Material, Druck und Veredelung, Zielmenge und Zielort – wir antworten innerhalb eines Werktags."
+          "en": "You can, but pearls dislike perfume, hairspray and direct heat. Keep them away from those and store them separately in a soft pouch.",
+          "ar": "يمكنك ذلك، لكن اللؤلؤ يتأثر بالعطور ومثبّت الشعر والحرارة المباشرة. أبعِديه عنها واحفظيه على حدة في كيس ناعم."
         }
       }
     ]

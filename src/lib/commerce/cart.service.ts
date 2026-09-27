@@ -26,9 +26,18 @@ export class CartService {
     return { id, customer_id: customerId || null, session_id: sessionId, currency, created_at: '', updated_at: '' };
   }
 
-  /** Unified entry: get (or lazily create) the anonymous cart for a session. */
+  /** Unified entry: get (or lazily create) the anonymous cart for a session.
+   *  Carts already claimed by checkout (`checked_out_at` set) are never reused —
+   *  a new cart is opened instead, so the shopper starts from an empty basket. */
   async getCartBySessionId(sessionId: string, currency = 'SAR'): Promise<CartWithLines> {
-    let cart = await this.db.prepare(`SELECT * FROM carts WHERE session_id = ?`).bind(sessionId).first<Cart>();
+    let cart = await this.db
+      .prepare(
+        `SELECT * FROM carts
+          WHERE session_id = ? AND checked_out_at IS NULL
+          ORDER BY created_at DESC LIMIT 1`,
+      )
+      .bind(sessionId)
+      .first<Cart>();
     if (!cart) {
       cart = await this.createCart(sessionId, undefined, currency);
     }
