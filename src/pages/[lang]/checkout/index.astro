@@ -1,0 +1,149 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import type { Locale } from "../../../i18n";
+import { getCommerce } from "../../../lib/commerce";
+
+const { lang } = Astro.params;
+const locale = lang as Locale;
+
+const sessionId = Astro.cookies.get("session_id")?.value;
+if (!sessionId) return Astro.redirect(`/${lang}/cart`);
+
+const db = Astro.locals.runtime.env.DB;
+const commerce = getCommerce(db);
+
+const cartRow = await db.prepare(`SELECT id FROM carts WHERE session_id = ?`).bind(sessionId).first<{id: string}>();
+if (!cartRow) return Astro.redirect(`/${lang}/cart`);
+
+const cartData = await commerce.cart.getCart(cartRow.id);
+if (!cartData || cartData.items.length === 0) return Astro.redirect(`/${lang}/cart`);
+
+const items = cartData.items;
+const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.variant.price), 0);
+const currency = items[0].variant.currency;
+const shipping = 1500; // Hardcoded 15 SAR for V1
+const total = subtotal + shipping;
+
+const formattedPrice = (price: number) => {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(price / 100);
+};
+
+// Feature Flags
+const ENABLE_ONLINE_PAYMENT = false;
+
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+  
+  // Create Order
+  const order = await commerce.orders.createOrder({
+    session_id: sessionId,
+    market: 'KSA',
+    currency,
+    subtotal,
+    shipping_amount: shipping,
+    tax_amount: 0,
+    items: items.map(i => ({
+      product_id: i.product.id,
+      variant_id: i.variant.id,
+      sku: i.variant.sku,
+      title: i.product.title,
+      unit_price: i.variant.price,
+      quantity: i.quantity,
+      product_snapshot: i.product
+    })),
+    shipping_address: {
+      first_name: formData.get("first_name"),
+      last_name: formData.get("last_name"),
+      phone: formData.get("phone"),
+      country: formData.get("country"),
+      city: formData.get("city"),
+      address_line_1: formData.get("address")
+    }
+  });
+
+  // Handle Payment (COD)
+  const paymentMethod = formData.get("payment_method");
+  if (paymentMethod === "cod") {
+    await commerce.codProvider.createCheckout(order);
+    
+    // Clear cart
+    await db.prepare(`DELETE FROM carts WHERE id = ?`).bind(cartRow.id).run();
+    Astro.cookies.delete("session_id", { path: '/' });
+    
+    return Astro.redirect(`/${lang}/order-confirmation?id=${order.id}`);
+  }
+}
+---
+<BaseLayout locale={locale} title="Checkout" description="Secure Checkout">
+  <main class="container-x py-12">
+    <h1 class="text-3xl font-bold mb-8">Checkout</h1>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+      <form method="POST" id="checkout-form" class="space-y-8">
+        
+        <section>
+          <h2 class="text-xl font-semibold mb-4">Contact Information</h2>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <input type="text" name="first_name" placeholder="First Name" required class="border border-line rounded-lg px-4 py-2 w-full" />
+            <input type="text" name="last_name" placeholder="Last Name" required class="border border-line rounded-lg px-4 py-2 w-full" />
+            <input type="tel" name="phone" placeholder="Phone Number" required class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2" />
+          </div>
+        </section>
+
+        <section>
+          <h2 class="text-xl font-semibold mb-4">Shipping Address</h2>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <select name="country" required class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2">
+              <option value="KSA">Saudi Arabia</option>
+              <option value="UAE">United Arab Emirates</option>
+            </select>
+            <input type="text" name="city" placeholder="City" required class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2" />
+            <input type="text" name="address" placeholder="Address Line 1" required class="border border-line rounded-lg px-4 py-2 w-full sm:col-span-2" />
+          </div>
+        </section>
+
+        <section>
+          <h2 class="text-xl font-semibold mb-4">Payment Method</h2>
+          <div class="space-y-3">
+            <label class="flex items-center gap-3 border border-line rounded-lg p-4 cursor-pointer">
+              <input type="radio" name="payment_method" value="cod" required checked class="w-4 h-4 text-accent" />
+              <span class="font-medium">Cash on Delivery (COD)</span>
+            </label>
+            
+            {ENABLE_ONLINE_PAYMENT && (
+              <label class="flex items-center gap-3 border border-line rounded-lg p-4 opacity-50 cursor-not-allowed">
+                <input type="radio" name="payment_method" value="online" disabled class="w-4 h-4" />
+                <span class="font-medium">Online Payment (Coming Soon)</span>
+              </label>
+            )}
+          </div>
+        </section>
+
+        <button type="submit" class="btn btn-primary w-full py-4 text-lg">Place Order</button>
+      </form>
+
+      <div>
+        <div class="border border-line rounded-xl p-6 bg-beige/30 sticky top-6">
+          <h2 class="text-xl font-semibold mb-4">Order Summary</h2>
+          <div class="space-y-4 mb-4">
+            {items.map(item => (
+              <div class="flex justify-between items-center text-sm">
+                <div class="flex gap-3 items-center">
+                  <span class="w-6 h-6 bg-stone/20 rounded-full flex items-center justify-center text-xs">{item.quantity}</span>
+                  <span class="font-medium">{item.product.title}</span>
+                </div>
+                <span>{formattedPrice(item.variant.price * item.quantity)}</span>
+              </div>
+            ))}
+          </div>
+          
+          <dl class="space-y-2 text-sm border-t border-line pt-4">
+            <div class="flex justify-between"><dt>Subtotal</dt><dd>{formattedPrice(subtotal)}</dd></div>
+            <div class="flex justify-between"><dt>Shipping</dt><dd>{formattedPrice(shipping)}</dd></div>
+            <div class="flex justify-between text-lg font-bold border-t border-line pt-2 mt-2"><dt>Total</dt><dd>{formattedPrice(total)}</dd></div>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </main>
+</BaseLayout>

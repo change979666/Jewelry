@@ -1,0 +1,86 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import { getCommerce } from "../../../lib/commerce";
+import type { Locale } from "../../../i18n";
+import { t } from "../../../i18n";
+
+const { slug, lang } = Astro.params;
+const locale = lang as Locale;
+
+// Use App.Locals to get DB
+const db = Astro.locals.runtime.env.DB;
+const commerce = getCommerce(db);
+
+const product = await commerce.products.getProductBySlug(slug as string);
+
+if (!product) {
+  return new Response("Not Found", { status: 404 });
+}
+
+// Convert variant prices for display
+const formattedPrice = (price: number, currency: string) => {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(price / 100);
+};
+
+const defaultVariant = product.variants[0];
+const displayPrice = defaultVariant ? formattedPrice(defaultVariant.price, defaultVariant.currency) : '';
+---
+<BaseLayout locale={locale} title={product.seo_title || product.title} description={product.seo_description || product.short_description || ""}>
+  <main class="container-x py-12">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+      
+      <!-- Gallery -->
+      <div class="flex flex-col gap-4">
+        {product.media.length > 0 ? (
+          <img src={product.media[0].url} alt={product.media[0].alt || product.title} class="w-full rounded-xl bg-beige" />
+        ) : (
+          <div class="w-full aspect-square bg-beige rounded-xl flex items-center justify-center text-stone">No Image</div>
+        )}
+        <div class="flex gap-2 overflow-x-auto">
+          {product.media.slice(1).map(m => (
+            <img src={m.url} alt={m.alt || product.title} class="w-20 h-20 rounded-lg object-cover bg-beige shrink-0" />
+          ))}
+        </div>
+      </div>
+
+      <!-- Details -->
+      <div>
+        <h1 class="text-3xl font-bold">{product.title}</h1>
+        <p class="mt-2 text-xl font-semibold text-accent">{displayPrice}</p>
+        
+        {product.short_description && (
+          <p class="mt-4 text-stone">{product.short_description}</p>
+        )}
+
+        {/* Add to Cart Form */}
+        <form method="POST" action={`/${lang}/api/cart/add`} class="mt-8">
+          <input type="hidden" name="productId" value={product.id} />
+          {defaultVariant && <input type="hidden" name="variantId" value={defaultVariant.id} />}
+          
+          <div class="flex items-center gap-4">
+            <input type="number" name="quantity" min="1" value="1" class="border border-line rounded px-3 py-2 w-20" />
+            <button type="submit" class="btn btn-primary px-8">{t(locale, "shop.add_to_cart") || "Add to Cart"}</button>
+          </div>
+        </form>
+
+        <!-- Product Facts -->
+        <div class="mt-10 border-t border-line pt-6">
+          <h3 class="text-lg font-semibold">Product Facts</h3>
+          <dl class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            {product.material && <div><dt class="text-stone">Material</dt><dd class="font-medium">{product.material}</dd></div>}
+            {product.color && <div><dt class="text-stone">Color</dt><dd class="font-medium">{product.color}</dd></div>}
+            {product.dimensions && <div><dt class="text-stone">Dimensions</dt><dd class="font-medium">{product.dimensions}</dd></div>}
+            {product.care_instructions && <div class="sm:col-span-2"><dt class="text-stone">Care</dt><dd class="font-medium">{product.care_instructions}</dd></div>}
+          </dl>
+        </div>
+
+        {product.description && (
+          <div class="mt-10 border-t border-line pt-6">
+            <h3 class="text-lg font-semibold">Description</h3>
+            <div class="prose mt-4" set:html={product.description} />
+          </div>
+        )}
+      </div>
+    </div>
+  </main>
+</BaseLayout>

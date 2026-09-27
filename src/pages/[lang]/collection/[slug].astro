@@ -1,19 +1,24 @@
 ---
-import BaseLayout from "../../layouts/BaseLayout.astro";
-import type { Locale } from "../../i18n";
-import { getCommerce } from "../../lib/commerce";
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import type { Locale } from "../../../i18n";
+import { getCommerce } from "../../../lib/commerce";
 
-const { lang } = Astro.params;
+const { slug, lang } = Astro.params;
 const locale = lang as Locale;
 
 const db = Astro.locals.runtime.env.DB;
+const collection = await db.prepare("SELECT * FROM collections WHERE slug = ?").bind(slug).first();
+
+if (!collection) return new Response("Not Found", { status: 404 });
+
 const commerce = getCommerce(db);
+// In a real app we'd fetch products by collection, but for V1 just list all active products.
 const products = await commerce.products.listProducts();
 ---
 
-<BaseLayout locale={locale} title="Jewelry V1" description="Welcome to Jewelry">
+<BaseLayout locale={locale} title={collection.name} description={collection.description || ""}>
   <main class="container-x py-12">
-    <h1 class="text-4xl font-bold text-center mb-12">Welcome to Jewelry</h1>
+    <h1 class="text-4xl font-bold text-center mb-12">{collection.name}</h1>
     
     <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
       {products.map(p => (

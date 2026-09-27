@@ -1,0 +1,40 @@
+---
+import "../../../styles/admin-v2.css";
+import AdminShell from "../../../components/admin/layout/AdminShell.astro";
+import Sidebar from "../../../components/admin/layout/Sidebar.astro";
+import Topbar from "../../../components/admin/layout/Topbar.astro";
+
+const db = Astro.locals.runtime.env.DB;
+const { results } = await db.prepare("SELECT * FROM collections ORDER BY created_at DESC").all();
+const collections = results || [];
+---
+
+<AdminShell title="Collections" activeModule="commerce">
+  <Sidebar slot="sidebar" activeModule="commerce" />
+  <Topbar slot="topbar-left" title="Collections" breadcrumbs={[{ label: "Home", href: "/admin-v2" }, { label: "Commerce" }, { label: "Collections" }]} />
+
+  <div class="p-6">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold">Collections</h1>
+    </div>
+
+    <table class="w-full text-left border-collapse">
+      <thead>
+        <tr class="border-b">
+          <th class="p-2">Name</th>
+          <th class="p-2">Slug</th>
+          <th class="p-2">Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {collections.map(c => (
+          <tr class="border-b">
+            <td class="p-2">{c.name}</td>
+            <td class="p-2">{c.slug}</td>
+            <td class="p-2">{c.created_at}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</AdminShell>

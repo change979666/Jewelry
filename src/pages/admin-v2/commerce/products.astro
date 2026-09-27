@@ -1,440 +1,79 @@
 ---
-// Phase 5 — V2 Commerce Product List
 import "../../../styles/admin-v2.css";
 import AdminShell from "../../../components/admin/layout/AdminShell.astro";
 import Sidebar from "../../../components/admin/layout/Sidebar.astro";
 import Topbar from "../../../components/admin/layout/Topbar.astro";
-import Toast from "../../../components/admin/shared/Toast.astro";
-import Skeleton from "../../../components/admin/shared/Skeleton.astro";
+
+const db = Astro.locals.runtime.env.DB;
+const { results } = await db.prepare("SELECT * FROM products ORDER BY created_at DESC").all();
+const products = results || [];
 ---
 
-<AdminShell title="商品管理" activeModule="commerce">
+<AdminShell title="Products" activeModule="commerce">
   <Sidebar slot="sidebar" activeModule="commerce" />
-  <Topbar
-    slot="topbar-left"
-    title="商品管理"
-    breadcrumbs={[{ label: "首页", href: "/admin-v2" }, { label: "商城" }, { label: "商品" }]}
-  />
-  <Toast />
+  <Topbar slot="topbar-left" title="Products" breadcrumbs={[{ label: "Home", href: "/admin-v2" }, { label: "Commerce" }, { label: "Products" }]} />
 
-  <div class="admin-flex-col" style="gap:var(--sp-5);">
-    <!-- Page Header -->
-    <div class="admin-page-header">
-      <h1 class="admin-page-title">商品管理</h1>
-      <p class="admin-page-desc">管理所有商品信息、价格与状态</p>
+  <div class="p-6">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold">Products</h1>
+      <button onclick="document.getElementById('create-modal').style.display='block'" class="bg-blue-600 text-white px-4 py-2 rounded">Create Product</button>
     </div>
 
-    <!-- KPI Bar -->
-    <section
-      id="kpi-bar"
-      style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--sp-3);"
-    >
-      <div class="admin-kpi-card">
-        <div class="admin-kpi-label">全部商品</div>
-        <div class="admin-kpi-value" id="kpi-total">—</div>
-      </div>
-      <div class="admin-kpi-card">
-        <div class="admin-kpi-label">已发布</div>
-        <div class="admin-kpi-value" id="kpi-active">—</div>
-      </div>
-      <div class="admin-kpi-card">
-        <div class="admin-kpi-label">草稿</div>
-        <div class="admin-kpi-value" id="kpi-draft">—</div>
-      </div>
-      <div class="admin-kpi-card">
-        <div class="admin-kpi-label">已下架</div>
-        <div class="admin-kpi-value" id="kpi-archived">—</div>
-      </div>
-    </section>
+    <table class="w-full text-left border-collapse">
+      <thead>
+        <tr class="border-b">
+          <th class="p-2">Title</th>
+          <th class="p-2">Slug</th>
+          <th class="p-2">Status</th>
+          <th class="p-2">Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {products.map(p => (
+          <tr class="border-b">
+            <td class="p-2">{p.title}</td>
+            <td class="p-2">{p.slug}</td>
+            <td class="p-2">{p.status}</td>
+            <td class="p-2">{p.created_at}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
 
-    <!-- Status Tabs + Actions -->
-    <section
-      class="admin-flex admin-items-center admin-justify-between"
-      style="flex-wrap:wrap;gap:var(--sp-3);"
-    >
-      <div class="admin-flex" style="gap:var(--sp-1);" id="status-tabs">
-        <button class="admin-tab active" data-status="">全部</button>
-        <button class="admin-tab" data-status="active">已发布</button>
-        <button class="admin-tab" data-status="draft">草稿</button>
-        <button class="admin-tab" data-status="archived">已下架</button>
+    <div id="create-modal" style="display:none;" class="fixed inset-0 bg-black/50 flex items-center justify-center">
+      <div class="bg-white p-6 rounded-lg w-full max-w-md">
+        <h2 class="text-xl mb-4 font-bold text-black">Create Product</h2>
+        <form id="create-form" class="space-y-4 text-black">
+          <div><label class="block text-sm">Title</label><input name="title" required class="border w-full p-2 rounded" /></div>
+          <div><label class="block text-sm">Slug</label><input name="slug" required class="border w-full p-2 rounded" /></div>
+          <div><label class="block text-sm">Short Description</label><textarea name="short_description" class="border w-full p-2 rounded"></textarea></div>
+          <div><label class="block text-sm">Price (SAR minor units)</label><input type="number" name="price" value="14900" class="border w-full p-2 rounded" /></div>
+          <div class="flex justify-end gap-2 mt-4">
+            <button type="button" onclick="document.getElementById('create-modal').style.display='none'" class="px-4 py-2 border rounded">Cancel</button>
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Save</button>
+          </div>
+        </form>
       </div>
-      <div class="admin-flex" style="gap:var(--sp-2);">
-        <a href="/admin-v2/commerce/merchandising" class="admin-btn admin-btn-secondary">运营位</a>
-        <button class="admin-btn admin-btn-primary" id="btn-new">+ 新建商品</button>
-      </div>
-    </section>
-
-    <!-- Filters -->
-    <section class="admin-flex admin-items-center" style="gap:var(--sp-3);flex-wrap:wrap;">
-      <input
-        type="text"
-        id="search-input"
-        placeholder="搜索商品名称/ID/货号..."
-        class="admin-input"
-        style="max-width:320px;"
-      />
-      <select id="category-filter" class="admin-select" style="max-width:180px;">
-        <option value="">全部分类</option>
-      </select>
-      <select id="qf-filter" class="admin-select" style="max-width:160px;">
-        <option value="">数据质量</option>
-        <option value="no_desc">缺少描述</option>
-        <option value="no_highlights">缺少亮点</option>
-        <option value="no_specs">缺少规格</option>
-        <option value="cn_title">中文标题</option>
-        <option value="no_cover">缺少封面</option>
-      </select>
-    </section>
-
-    <!-- DataTable -->
-    <section>
-      <div class="admin-table-wrapper">
-        <table class="admin-table" id="products-table">
-          <thead>
-            <tr>
-              <th style="width:40px;"><input type="checkbox" id="select-all" /></th>
-              <th style="width:80px;">图片</th>
-              <th data-sort="title" class="sortable">商品名称</th>
-              <th data-sort="category" class="sortable">分类</th>
-              <th>价格</th>
-              <th>SKU</th>
-              <th data-sort="status" class="sortable">状态</th>
-              <th data-sort="completeness" class="sortable">完整度</th>
-              <th data-sort="updated_at" class="sortable">更新时间</th>
-              <th style="width:120px;">操作</th>
-            </tr>
-          </thead>
-          <tbody id="products-tbody">
-            <tr><td colspan="10"><Skeleton lines={5} height="32px" /></td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div
-        class="admin-flex admin-items-center admin-justify-between"
-        style="margin-top:var(--sp-3);"
-      >
-        <div id="pagination-info" class="admin-text-sm admin-text-muted">
-          <span class="admin-skeleton-text"></span>
-        </div>
-        <div class="admin-flex" style="gap:var(--sp-1);" id="pagination-controls"></div>
-      </div>
-    </section>
-
-    <!-- Data Quality Panel -->
-    <section id="quality-panel" class="admin-card" style="display:none;">
-      <div class="admin-card-header">
-        <h3 class="admin-card-title">数据质量概览</h3>
-      </div>
-      <div class="admin-card-body">
-        <div
-          id="quality-content"
-          style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--sp-3);"
-        >
-        </div>
-      </div>
-    </section>
+    </div>
   </div>
 </AdminShell>
 
 <script>
-  const API = "/api/admin/v2/commerce/products";
-  const toast = (window as any).AromisoToast;
-
-  let currentStatus = "";
-  let currentSearch = "";
-  let currentCategory = "";
-  let currentQf = "";
-  let currentSort = "updated_at";
-  let currentOrder = "desc";
-  let currentPage = 1;
-  let currentPageSize = 20;
-
-  function esc(s: unknown): string {
-    if (s == null) return "";
-    return String(s)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  }
-
-  function statusBadge(status: string | null): string {
-    if (!status) return '<span class="admin-badge">—</span>';
-    const cls: Record<string, string> = {
-      active: "admin-badge admin-badge-published",
-      draft: "admin-badge admin-badge-draft",
-      archived: "admin-badge admin-badge-archived",
-    };
-    const labels: Record<string, string> = { active: "已发布", draft: "草稿", archived: "已下架" };
-    return `<span class="${cls[status] || "admin-badge admin-badge-archived"}">${labels[status] ?? status}</span>`;
-  }
-
-  function completenessBar(val: number): string {
-    const color =
-      val >= 80
-        ? "var(--admin-success)"
-        : val >= 50
-          ? "var(--admin-warning)"
-          : "var(--admin-danger)";
-    return `<div style="display:flex;align-items:center;gap:6px;"><div style="flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden;"><div style="width:${val}%;height:100%;background:${color};border-radius:3px;"></div></div><span style="font-size:var(--fs-sm);color:var(--stone);">${val}%</span></div>`;
-  }
-
-  function priceRange(min: number | null, max: number | null): string {
-    if (!min && !max) return '<span class="admin-text-muted">—</span>';
-    if (min === max || !max) return `$${(min || 0).toFixed(2)}`;
-    return `$${(min || 0).toFixed(2)} - $${(max || 0).toFixed(2)}`;
-  }
-
-  async function loadProducts() {
-    const params = new URLSearchParams();
-    if (currentStatus) params.set("status", currentStatus);
-    if (currentSearch) params.set("search", currentSearch);
-    if (currentCategory) params.set("category", currentCategory);
-    if (currentQf) params.set("qf", currentQf);
-    params.set("sort", currentSort);
-    params.set("order", currentOrder);
-    params.set("page", String(currentPage));
-    params.set("pageSize", String(currentPageSize));
-
-    try {
-      const res = await fetch(`${API}?${params}`);
-      if (res.status === 401) {
-        window.location.href = "/admin-v2/login";
-        return;
-      }
-      const json = (await res.json()) as any;
-      if (!json.success) {
-        toast?.show?.("加载失败", "error");
-        return;
-      }
-
-      const { data, meta } = json;
-      renderTable(data);
-      if (meta) {
-        renderPagination(meta.total, meta.page, meta.totalPages);
-        updateKPIs(meta);
-        renderQualityPanel(meta.qualityCounts);
-      }
-    } catch {
-      toast?.show?.("网络错误", "error");
-    }
-  }
-
-  function updateKPIs(meta: any) {
-    const el = (id: string) => document.getElementById(id);
-    el("kpi-total")!.textContent = String(meta.totalAll || 0);
-    el("kpi-active")!.textContent = String(meta.statusCounts?.active || 0);
-    el("kpi-draft")!.textContent = String(meta.statusCounts?.draft || 0);
-    el("kpi-archived")!.textContent = String(meta.statusCounts?.archived || 0);
-  }
-
-  function renderQualityPanel(qc: Record<string, number> | undefined) {
-    if (!qc) return;
-    const panel = document.getElementById("quality-panel")!;
-    const content = document.getElementById("quality-content")!;
-    panel.style.display = "block";
-    const items = [
-      {
-        label: "缺少描述",
-        key: "no_desc",
-        icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
-      },
-      { label: "缺少亮点", key: "no_highlights", icon: "⭐" },
-      {
-        label: "缺少规格",
-        key: "no_specs",
-        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>`,
-      },
-      {
-        label: "中文标题",
-        key: "cn_title",
-        icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>`,
-      },
-      {
-        label: "缺少封面",
-        key: "no_cover",
-        icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
-      },
-    ];
-    content.innerHTML = items
-      .map(
-        (i) => `
-      <div style="display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-2);background:var(--paper);border-radius:var(--r-sm);">
-        <span>${i.icon}</span>
-        <div><div style="font-size:var(--fs-sm);color:var(--stone);">${i.label}</div><div style="font-size:var(--fs-lg);font-weight:600;">${qc[i.key] || 0}</div></div>
-      </div>
-    `,
-      )
-      .join("");
-  }
-
-  function renderTable(products: any[]) {
-    const tbody = document.getElementById("products-tbody")!;
-    if (!products.length) {
-      tbody.innerHTML =
-        '<tr><td colspan="10" class="admin-empty"><div class="admin-empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div><div class="admin-empty-title">暂无商品</div></td></tr>';
-      return;
-    }
-    tbody.innerHTML = products
-      .map(
-        (p) => `
-      <tr data-id="${esc(p.id)}">
-        <td><input type="checkbox" class="row-select" value="${esc(p.id)}" /></td>
-        <td>${p.cover_image ? `<img src="${esc(p.cover_image)}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:var(--r-sm);" />` : '<div style="width:48px;height:48px;background:var(--beige);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:1.25rem;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>'}</td>
-        <td><a href="/admin-v2/commerce/editor?id=${esc(p.id)}" style="color:var(--ink);text-decoration:none;font-weight:500;">${esc(p.title || "(无标题)")}</a><div style="font-size:var(--fs-xs);color:var(--stone);margin-top:var(--sp-1);">${esc(p.display_product_code || p.product_key || "")}</div></td>
-        <td>${esc(p.category || "—")}</td>
-        <td class="text-nowrap">${priceRange(p.min_price, p.max_price)}</td>
-        <td>${p.variant_count || 0}</td>
-        <td>${statusBadge(p.status)}</td>
-        <td style="min-width:100px;">${completenessBar(p.completeness || 0)}</td>
-        <td class="admin-text-muted text-nowrap">${p.updated_at ? new Date(p.updated_at * 1000).toLocaleDateString("zh-CN") : "—"}</td>
-        <td>
-          <div class="admin-flex" style="gap:var(--sp-1);">
-            <a href="/admin-v2/commerce/workbench?id=${esc(p.id)}" class="admin-btn admin-btn-secondary admin-btn-sm">工作台</a>
-            <a href="/admin-v2/commerce/editor?id=${esc(p.id)}" class="admin-btn admin-btn-secondary admin-btn-sm">编辑</a>
-            <button class="admin-btn admin-btn-danger admin-btn-sm btn-delete" data-id="${esc(p.id)}">删除</button>
-          </div>
-        </td>
-      </tr>
-    `,
-      )
-      .join("");
-
-    // Delete handlers
-    tbody.querySelectorAll(".btn-delete").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        if (!confirm("确定要删除此商品？")) return;
-        const id = (btn as HTMLElement).dataset.id;
-        try {
-          const res = await fetch(`${API}?id=${id}`, { method: "DELETE" });
-          const json = (await res.json()) as any;
-          if (json.success) {
-            toast?.show?.("已删除", "success");
-            loadProducts();
-          } else {
-            toast?.show?.(json.error?.message || "删除失败", "error");
-          }
-        } catch {
-          toast?.show?.("网络错误", "error");
-        }
-      });
+  document.getElementById('create-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const data = Object.fromEntries(formData.entries());
+    
+    const res = await fetch('/api/admin/v2/commerce/products', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: { 'Content-Type': 'application/json' }
     });
-  }
-
-  function renderPagination(total: number, page: number, totalPages: number) {
-    const info = document.getElementById("pagination-info");
-    const controls = document.getElementById("pagination-controls");
-    if (window.AromisoPagination && controls) {
-      window.AromisoPagination.render(info, controls, {
-        total,
-        page,
-        totalPages,
-        pageSize: currentPageSize,
-        onChange: ({ page: p, pageSize: ps }) => {
-          currentPage = p;
-          if (ps) currentPageSize = ps;
-          loadProducts();
-        },
-      });
-      return;
+    
+    if (res.ok) {
+      window.location.reload();
+    } else {
+      alert("Error creating product");
     }
-    // 回退：共享分页运行时不可用时，保留最小 上一页/下一页。
-    if (info) info.textContent = `共 ${total} 条，第 ${page}/${totalPages} 页`;
-    if (!controls) return;
-    let html = "";
-    if (page > 1)
-      html += `<button class="admin-btn admin-btn-secondary admin-btn-sm" data-p="${page - 1}">上一页</button>`;
-    if (page < totalPages)
-      html += `<button class="admin-btn admin-btn-secondary admin-btn-sm" data-p="${page + 1}">下一页</button>`;
-    controls.innerHTML = html;
-    controls.querySelectorAll("button").forEach((b) => {
-      b.addEventListener("click", () => {
-        currentPage = Number((b as HTMLElement).dataset.p);
-        loadProducts();
-      });
-    });
-  }
-
-  // Status tabs
-  document.getElementById("status-tabs")?.addEventListener("click", (e) => {
-    const btn = (e.target as HTMLElement).closest("button");
-    if (!btn) return;
-    document
-      .querySelectorAll("#status-tabs .admin-tab")
-      .forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
-    currentStatus = btn.dataset.status || "";
-    currentPage = 1;
-    loadProducts();
   });
-
-  // Search
-  let searchTimer: ReturnType<typeof setTimeout>;
-  document.getElementById("search-input")?.addEventListener("input", (e) => {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => {
-      currentSearch = (e.target as HTMLInputElement).value.trim();
-      currentPage = 1;
-      loadProducts();
-    }, 300);
-  });
-
-  // Category filter
-  document.getElementById("category-filter")?.addEventListener("change", (e) => {
-    currentCategory = (e.target as HTMLSelectElement).value;
-    currentPage = 1;
-    loadProducts();
-  });
-
-  // Quality filter
-  document.getElementById("qf-filter")?.addEventListener("change", (e) => {
-    currentQf = (e.target as HTMLSelectElement).value;
-    currentPage = 1;
-    loadProducts();
-  });
-
-  // New product
-  document.getElementById("btn-new")?.addEventListener("click", () => {
-    window.location.href = "/admin-v2/commerce/editor";
-  });
-
-  // Sort
-  document.querySelectorAll(".sortable").forEach((th) => {
-    th.addEventListener("click", () => {
-      const col = (th as HTMLElement).dataset.sort;
-      if (currentSort === col) currentOrder = currentOrder === "desc" ? "asc" : "desc";
-      else {
-        currentSort = col!;
-        currentOrder = "desc";
-      }
-      window.AromisoSort?.mark(document, currentSort, currentOrder);
-      loadProducts();
-    });
-  });
-  // 初始排序状态可见（默认 updated_at desc）
-  window.AromisoSort?.mark(document, currentSort, currentOrder);
-
-  // Select all
-  document.getElementById("select-all")?.addEventListener("change", (e) => {
-    const checked = (e.target as HTMLInputElement).checked;
-    document.querySelectorAll(".row-select").forEach((cb) => {
-      (cb as HTMLInputElement).checked = checked;
-    });
-  });
-
-  // Load categories on init
-  async function _loadCategories() {
-    try {
-      const res = await fetch("/api/admin/commerce-products?limit=1");
-      const json = (await res.json()) as any;
-      if (json.products) {
-        // Extract unique categories from all products (we'll load separately)
-      }
-    } catch {
-      /* ignore */
-    }
-  }
-
-  loadProducts();
 </script>

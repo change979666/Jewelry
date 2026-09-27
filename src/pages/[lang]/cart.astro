@@ -1,643 +1,80 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import Icon from "../../components/Icon.astro";
-import Turnstile from "../../components/Turnstile.astro";
-import { t, localeStaticPaths } from "../../i18n";
 import type { Locale } from "../../i18n";
-import { getRelativeLocaleUrl } from "astro:i18n";
+import { t } from "../../i18n";
+import { getCommerce } from "../../lib/commerce";
 
-export const getStaticPaths = localeStaticPaths;
+const { lang } = Astro.params;
+const locale = lang as Locale;
 
-const locale = (Astro.props.locale as Locale) ?? "en";
-const shopHref = getRelativeLocaleUrl(locale, "/shop");
+// For V1, we get cart from cookie (session_id)
+const sessionId = Astro.cookies.get("session_id")?.value;
+const db = Astro.locals.runtime.env.DB;
+const commerce = getCommerce(db);
+
+let cartData = null;
+if (sessionId) {
+  // We need to fetch cart by session_id. Let's add that method to CartService.
+  const cartRow = await db.prepare(`SELECT id FROM carts WHERE session_id = ?`).bind(sessionId).first<{id: string}>();
+  if (cartRow) {
+    cartData = await commerce.cart.getCart(cartRow.id);
+  }
+}
+
+const formattedPrice = (price: number, currency: string) => {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(price / 100);
+};
+
+const items = cartData?.items || [];
+const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.variant.price), 0);
+const currency = items.length > 0 ? items[0].variant.currency : 'SAR';
+
 ---
+<BaseLayout locale={locale} title="Cart" description="Your shopping cart">
+  <main class="container-x py-12">
+    <h1 class="text-3xl font-bold">Shopping Cart</h1>
 
-<BaseLayout
-  locale={locale}
-  title={t(locale, "shop.cart")}
-  description={t(locale, "shop.order_subtitle")}
->
-  <!-- Page header -->
-  <section class="container-x pt-20 lg:pt-28">
-    <p class="eyebrow">{t(locale, "shop.cart_eyebrow")}</p>
-    <div class="mt-3 flex flex-wrap items-end justify-between gap-3">
-      <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">
-        {t(locale, "shop.cart_heading")}
-      </h1>
-      <span id="cart-meta" class="text-sm text-stone"></span>
-    </div>
-    <div class="mt-5 h-px w-full bg-line"></div>
-  </section>
-
-  <!-- Cart body: items + sticky summary -->
-  <section class="container-x pb-24 pt-8">
-    <div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px]">
-      <!-- Items column -->
-      <div class="min-w-0">
-        <!-- Empty state -->
-        <div
-          id="cart-empty"
-          class="hidden flex-col items-center justify-center rounded-3xl border border-dashed border-line bg-card/60 py-20 text-center"
-        >
-          <div class="mb-6 grid h-20 w-20 place-items-center rounded-full bg-beige text-accent">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="34"
-              height="34"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-            >
-              <path
-                d="M3 4h2l2.4 12.3a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.8L21 8H6"
-                stroke-linecap="round"
-                stroke-linejoin="round"></path>
-              <circle cx="9" cy="20" r="1.4"></circle>
-              <circle cx="18" cy="20" r="1.4"></circle>
-            </svg>
-          </div>
-          <h2 class="text-xl font-semibold tracking-tight">{t(locale, "shop.cart_empty")}</h2>
-          <p class="mt-2 max-w-sm text-sm text-stone">
-            {t(locale, "shop.bulk_quote_note")}
-          </p>
-          <a href={shopHref} class="btn btn-primary mt-7 inline-flex magnetic">
-            {t(locale, "shop.cart_browse")}
-          </a>
+    {items.length === 0 ? (
+      <div class="mt-8 text-center py-12 border border-dashed border-line rounded-xl">
+        <p class="text-stone">Your cart is empty.</p>
+        <a href={`/${lang}/`} class="btn btn-primary mt-4 inline-block">Continue Shopping</a>
+      </div>
+    ) : (
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 mt-8">
+        <div class="lg:col-span-2 space-y-6">
+          {items.map(item => (
+            <div class="flex items-center gap-4 border border-line p-4 rounded-xl">
+              <div class="flex-1">
+                <h3 class="font-semibold"><a href={`/${lang}/product/${item.product.slug}`} class="hover:underline">{item.product.title}</a></h3>
+                <p class="text-sm text-stone mt-1">{formattedPrice(item.variant.price, item.variant.currency)}</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <form method="POST" action={`/${lang}/api/cart/update`}>
+                  <input type="hidden" name="itemId" value={item.id} />
+                  <input type="number" name="quantity" value={item.quantity} min="0" class="border border-line rounded w-16 px-2 py-1" onchange="this.form.submit()" />
+                </form>
+              </div>
+              <div class="font-semibold w-24 text-right">
+                {formattedPrice(item.variant.price * item.quantity, item.variant.currency)}
+              </div>
+              <form method="POST" action={`/${lang}/api/cart/remove`}>
+                <input type="hidden" name="itemId" value={item.id} />
+                <button type="submit" class="text-red-500 hover:text-red-700 p-2">&times;</button>
+              </form>
+            </div>
+          ))}
         </div>
 
-        <!-- Items list -->
-        <div id="cart-items" class="space-y-4"></div>
-      </div>
-
-      <!-- Sticky summary -->
-      <aside id="cart-summary" class="hidden lg:sticky lg:top-28 lg:self-start">
-        <div
-          class="rounded-3xl border border-line bg-card p-6 shadow-[0_20px_60px_-40px_rgba(33,31,27,0.35)]"
-        >
-          <p class="eyebrow">{t(locale, "shop.order_summary")}</p>
-          <div class="mt-4 space-y-3 text-sm">
-            <div class="flex items-center justify-between">
-              <span class="text-stone">{t(locale, "shop.cart_items_label")}</span>
-              <span id="cart-line-count" class="font-medium tabular-nums">—</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-stone">{t(locale, "shop.cart_subtotal")}</span>
-              <span id="cart-subtotal" class="text-lg font-semibold tabular-nums">$0.00</span>
-            </div>
-            <div class="flex items-center justify-between border-t border-line pt-3">
-              <span class="text-stone">{t(locale, "shop.total_est_weight")}</span>
-              <span id="cart-total-weight" class="font-medium tabular-nums">—</span>
-            </div>
-          </div>
-
-          <button id="cart-to-order" class="btn btn-primary magnetic mt-6 w-full py-3 text-base">
-            {t(locale, "shop.request_bulk_quote")}
-          </button>
-
-          <p class="mt-3 text-center text-xs text-stone">
-            {t(locale, "shop.bulk_quote_note")}
-          </p>
-
-          <div class="mt-5 flex items-center gap-3 border-t border-line pt-5">
-            <a href={shopHref} class="btn btn-ghost btn-sm flex-1">
-              {t(locale, "shop.cart_continue")}
-            </a>
-            <button
-              id="cart-clear"
-              class="btn btn-sm flex-1 border border-line text-red-600 hover:bg-red-50"
-            >
-              {t(locale, "shop.cart_clear")}
-            </button>
-          </div>
+        <div class="border border-line p-6 rounded-xl self-start">
+          <h3 class="text-lg font-semibold">Order Summary</h3>
+          <dl class="mt-4 space-y-2 text-sm">
+            <div class="flex justify-between"><dt>Subtotal</dt><dd>{formattedPrice(subtotal, currency)}</dd></div>
+            <div class="flex justify-between text-stone"><dt>Shipping</dt><dd>Calculated at checkout</dd></div>
+            <div class="flex justify-between font-semibold text-lg border-t border-line pt-2 mt-2"><dt>Total</dt><dd>{formattedPrice(subtotal, currency)}</dd></div>
+          </dl>
+          <a href={`/${lang}/checkout`} class="btn btn-primary w-full mt-6 text-center block">Proceed to Checkout</a>
         </div>
-      </aside>
-    </div>
-  </section>
-
-  <!-- Order Request Form -->
-  <section id="order-section" class="container-x hidden pb-24">
-    <div class="mx-auto max-w-3xl">
-      <div
-        class="rounded-3xl border border-line bg-card p-8 shadow-[0_24px_70px_-44px_rgba(33,31,27,0.4)] sm:p-10"
-      >
-        <p class="eyebrow">{t(locale, "shop.order_title")}</p>
-        <h2 class="mt-2 text-2xl font-semibold tracking-tight">
-          {t(locale, "shop.request_bulk_quote")}
-        </h2>
-        <p class="mt-2 text-sm text-stone">{t(locale, "shop.bulk_quote_note")}</p>
-
-        <form id="order-form" class="mt-8 space-y-6" novalidate>
-          <div class="grid gap-6 sm:grid-cols-2">
-            <div>
-              <label for="of-name" class="mb-1.5 block text-sm font-medium"
-                >{t(locale, "shop.order_name")} <span class="text-red-500">*</span></label
-              >
-              <input
-                id="of-name"
-                name="customer_name"
-                type="text"
-                required
-                maxlength="120"
-                class="w-full rounded-xl border border-line bg-paper px-4 py-2.5 text-sm outline-none transition-colors focus:border-accent"
-              />
-            </div>
-            <div>
-              <label for="of-company" class="mb-1.5 block text-sm font-medium"
-                >{t(locale, "shop.order_company")}</label
-              >
-              <input
-                id="of-company"
-                name="company"
-                type="text"
-                maxlength="120"
-                class="w-full rounded-xl border border-line bg-paper px-4 py-2.5 text-sm outline-none transition-colors focus:border-accent"
-              />
-            </div>
-            <div>
-              <label for="of-email" class="mb-1.5 block text-sm font-medium"
-                >{t(locale, "shop.order_email")} <span class="text-red-500">*</span></label
-              >
-              <input
-                id="of-email"
-                name="email"
-                type="email"
-                required
-                maxlength="200"
-                class="w-full rounded-xl border border-line bg-paper px-4 py-2.5 text-sm outline-none transition-colors focus:border-accent"
-              />
-            </div>
-            <div>
-              <label for="of-country" class="mb-1.5 block text-sm font-medium"
-                >{t(locale, "shop.order_country")} <span class="text-red-500">*</span></label
-              >
-              <input
-                id="of-country"
-                name="country"
-                type="text"
-                required
-                maxlength="80"
-                class="w-full rounded-xl border border-line bg-paper px-4 py-2.5 text-sm outline-none transition-colors focus:border-accent"
-              />
-            </div>
-            <div>
-              <label for="of-city" class="mb-1.5 block text-sm font-medium"
-                >{t(locale, "shop.order_city")}</label
-              >
-              <input
-                id="of-city"
-                name="city"
-                type="text"
-                maxlength="80"
-                class="w-full rounded-xl border border-line bg-paper px-4 py-2.5 text-sm outline-none transition-colors focus:border-accent"
-              />
-            </div>
-            <div>
-              <label for="of-postal" class="mb-1.5 block text-sm font-medium"
-                >{t(locale, "shop.order_postal")}</label
-              >
-              <input
-                id="of-postal"
-                name="postal_code"
-                type="text"
-                maxlength="20"
-                class="w-full rounded-xl border border-line bg-paper px-4 py-2.5 text-sm outline-none transition-colors focus:border-accent"
-              />
-            </div>
-            <div>
-              <label for="of-phone" class="mb-1.5 block text-sm font-medium"
-                >{t(locale, "shop.order_phone")}</label
-              >
-              <input
-                id="of-phone"
-                name="phone"
-                type="tel"
-                maxlength="30"
-                class="w-full rounded-xl border border-line bg-paper px-4 py-2.5 text-sm outline-none transition-colors focus:border-accent"
-              />
-            </div>
-            <div>
-              <label for="of-whatsapp" class="mb-1.5 block text-sm font-medium"
-                >{t(locale, "shop.order_whatsapp")}</label
-              >
-              <input
-                id="of-whatsapp"
-                name="whatsapp"
-                type="text"
-                maxlength="30"
-                class="w-full rounded-xl border border-line bg-paper px-4 py-2.5 text-sm outline-none transition-colors focus:border-accent"
-              />
-            </div>
-          </div>
-          <div>
-            <label for="of-address" class="mb-1.5 block text-sm font-medium"
-              >{t(locale, "shop.order_address")}</label
-            >
-            <input
-              id="of-address"
-              name="address"
-              type="text"
-              maxlength="300"
-              class="w-full rounded-xl border border-line bg-paper px-4 py-2.5 text-sm outline-none transition-colors focus:border-accent"
-            />
-          </div>
-          <div>
-            <label for="of-shipping" class="mb-1.5 block text-sm font-medium"
-              >{t(locale, "shop.shipping_method")}</label
-            >
-            <select
-              id="of-shipping"
-              name="shipping_method"
-              class="w-full rounded-xl border border-line bg-paper px-4 py-2.5 text-sm outline-none transition-colors focus:border-accent"
-            >
-              <option value="recommend">{t(locale, "shop.shipping_method_recommend")}</option>
-              <option value="sea">{t(locale, "shop.shipping_method_sea")}</option>
-              <option value="air">{t(locale, "shop.shipping_method_air")}</option>
-              <option value="express">{t(locale, "shop.shipping_method_express")}</option>
-            </select>
-          </div>
-          <div>
-            <label for="of-note" class="mb-1.5 block text-sm font-medium"
-              >{t(locale, "shop.additional_requirements")}</label
-            >
-            <textarea
-              id="of-note"
-              name="customer_note"
-              rows="3"
-              maxlength="1000"
-              class="w-full rounded-xl border border-line bg-paper px-4 py-2.5 text-sm outline-none transition-colors focus:border-accent"
-            ></textarea>
-          </div>
-
-          <div id="order-error" class="hidden rounded-xl bg-red-50 p-4 text-sm text-red-700">
-            {t(locale, "shop.order_error")}
-          </div>
-
-          <Turnstile />
-
-          <button
-            type="submit"
-            id="order-submit"
-            class="btn btn-primary w-full py-3 text-base magnetic"
-          >
-            {t(locale, "shop.request_bulk_quote")}
-          </button>
-        </form>
       </div>
-    </div>
-  </section>
-
-  <!-- Success state -->
-  <section id="order-success" class="container-x hidden pb-24">
-    <div class="mx-auto max-w-lg py-16 text-center">
-      <div
-        class="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-full bg-green-100 text-green-600"
-      >
-        <Icon name="check" size={32} />
-      </div>
-      <h2 class="text-2xl font-semibold tracking-tight">{t(locale, "shop.order_success_title")}</h2>
-      <p class="mt-3 text-stone">{t(locale, "shop.order_success_text")}</p>
-      <p class="mt-4 text-sm text-stone">
-        {t(locale, "shop.order_number")}: <strong id="success-order-number" class="text-ink"
-        ></strong>
-      </p>
-      <a href={shopHref} class="btn btn-primary mt-8 inline-flex">
-        {t(locale, "shop.order_continue")}
-      </a>
-    </div>
-  </section>
+    )}
+  </main>
 </BaseLayout>
-
-<script
-  is:inline
-  define:vars={{
-    locale,
-    i18n: {
-      cart_empty: t(locale, "shop.cart_empty"),
-      cart_remove: t(locale, "shop.cart_remove"),
-      cart_subtotal: t(locale, "shop.cart_subtotal"),
-      cart_items_label: t(locale, "shop.cart_items_label"),
-      order_submitting: t(locale, "shop.order_submitting"),
-      order_submit: t(locale, "shop.request_bulk_quote"),
-      order_error: t(locale, "shop.order_error"),
-      from_price: t(locale, "shop.from_price"),
-      total_est_weight: t(locale, "shop.total_est_weight"),
-      est_weight: t(locale, "shop.est_weight"),
-      to_be_confirmed: t(locale, "shop.to_be_confirmed"),
-      shipping_method_recommend: t(locale, "shop.shipping_method_recommend"),
-      shipping_method_sea: t(locale, "shop.shipping_method_sea"),
-      shipping_method_air: t(locale, "shop.shipping_method_air"),
-      shipping_method_express: t(locale, "shop.shipping_method_express"),
-    },
-  }}
->
-  (function () {
-    const cartItemsEl = document.getElementById("cart-items");
-    const cartEmptyEl = document.getElementById("cart-empty");
-    const cartSummaryEl = document.getElementById("cart-summary");
-    const cartSubtotalEl = document.getElementById("cart-subtotal");
-    const cartMetaEl = document.getElementById("cart-meta");
-    const cartLineCountEl = document.getElementById("cart-line-count");
-    const orderSection = document.getElementById("order-section");
-    const orderForm = document.getElementById("order-form");
-    const orderSubmit = document.getElementById("order-submit");
-    const orderError = document.getElementById("order-error");
-    const orderSuccess = document.getElementById("order-success");
-
-    // ---- GA4 commerce events ----
-    function trackEvent(name, params) {
-      if (typeof gtag === "function") gtag("event", name, params || {});
-    }
-    trackEvent("cart_view", { locale: locale });
-
-    function esc(s) {
-      const d = document.createElement("div");
-      d.textContent = s || "";
-      return d.innerHTML;
-    }
-    const SHIPPING_LABELS = {
-      recommend: i18n.shipping_method_recommend,
-      sea: i18n.shipping_method_sea,
-      air: i18n.shipping_method_air,
-      express: i18n.shipping_method_express,
-    };
-    const productCache = {};
-
-    // ---- Cart helpers ----
-    function getCart() {
-      try {
-        return JSON.parse(localStorage.getItem("aromiso_cart") || "[]");
-      } catch (_e) {
-        return [];
-      }
-    }
-    function saveCart(cart) {
-      localStorage.setItem("aromiso_cart", JSON.stringify(cart));
-    }
-
-    // ---- Fetch product info for cart display ----
-    function fetchProducts() {
-      return fetch("/api/commerce/products")
-        .then(function (res) {
-          return res.json();
-        })
-        .then(function (data) {
-          const products = data.products || [];
-          for (let i = 0; i < products.length; i++) {
-            productCache[products[i].id] = products[i];
-          }
-        })
-        .catch(function () {});
-    }
-
-    function money(v) {
-      return "$" + Number(v || 0).toFixed(2);
-    }
-
-    // ---- Render cart ----
-    function renderCart() {
-      const cart = getCart();
-
-      if (cart.length === 0) {
-        cartEmptyEl.classList.remove("hidden");
-        cartEmptyEl.classList.add("flex");
-        cartItemsEl.innerHTML = "";
-        cartSummaryEl.classList.add("hidden");
-        orderSection.classList.add("hidden");
-        if (cartMetaEl) cartMetaEl.textContent = "";
-        return;
-      }
-
-      cartEmptyEl.classList.add("hidden");
-      cartEmptyEl.classList.remove("flex");
-      cartSummaryEl.classList.remove("hidden");
-
-      let html = "";
-      let subtotal = 0;
-      let totalWeight = 0;
-      let totalQty = 0;
-
-      for (let i = 0; i < cart.length; i++) {
-        const item = cart[i];
-        // Prefer the snapshot stored at add-to-cart time for display stability,
-        // fall back to freshly fetched product data.
-        const live = productCache[item.product_id] || {};
-        const title = item.title || live.title || "Product #" + (item.product_id || i);
-        const cover = item.cover_image || live.cover_image || "";
-        const price =
-          item.price_from != null && item.price_from !== ""
-            ? item.price_from
-            : live.price_from || 0;
-        const weightKg = Number(item.weight_kg) || 0;
-        const lineTotal = price * item.quantity;
-        subtotal += lineTotal;
-        const estWeight = weightKg * item.quantity;
-        totalWeight += estWeight;
-        totalQty += item.quantity;
-
-        const code = item.display_sku_code || item.display_product_code || item.slug || "";
-        const codeLine = code
-          ? '<p class="mt-1 truncate text-xs text-stone">' + esc(code) + "</p>"
-          : "";
-        const weightLine =
-          weightKg > 0
-            ? '<p class="mt-0.5 text-xs text-stone">' +
-              i18n.est_weight +
-              ": ≈ " +
-              estWeight.toFixed(1) +
-              " kg</p>"
-            : "";
-
-        const thumb = cover
-          ? '<img src="' +
-            esc(cover) +
-            '" alt="" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />'
-          : '<div class="grid h-full w-full place-items-center bg-beige text-accent/40">' +
-            '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg></div>';
-
-        html +=
-          '<article class="cart-item group flex gap-4 rounded-2xl border border-line bg-card p-4 transition-all duration-300 hover:shadow-[0_16px_44px_-28px_rgba(33,31,27,0.45)] sm:gap-5 sm:p-5" data-idx="' +
-          i +
-          '">' +
-          '<div class="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-beige sm:h-24 sm:w-24">' +
-          thumb +
-          "</div>" +
-          '<div class="flex min-w-0 flex-1 flex-col">' +
-          '<div class="flex items-start justify-between gap-3">' +
-          '<div class="min-w-0">' +
-          '<h3 class="truncate text-[15px] font-semibold leading-snug">' +
-          esc(title) +
-          "</h3>" +
-          codeLine +
-          weightLine +
-          "</div>" +
-          '<button class="cart-remove-btn -mr-1 -mt-1 shrink-0 rounded-full p-2 text-stone transition-colors hover:bg-red-50 hover:text-red-600" data-idx="' +
-          i +
-          '" title="' +
-          i18n.cart_remove +
-          '" aria-label="' +
-          i18n.cart_remove +
-          '">' +
-          '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
-          "</button>" +
-          "</div>" +
-          '<div class="mt-auto flex items-center justify-between pt-4">' +
-          '<div class="flex items-center rounded-full border border-line bg-paper p-1">' +
-          '<button class="cart-qty-btn grid h-8 w-8 place-items-center rounded-full text-lg leading-none text-ink/70 transition hover:bg-beige" data-action="dec" data-idx="' +
-          i +
-          '">−</button>' +
-          '<span class="w-9 text-center text-sm font-semibold tabular-nums">' +
-          item.quantity +
-          "</span>" +
-          '<button class="cart-qty-btn grid h-8 w-8 place-items-center rounded-full text-lg leading-none text-ink/70 transition hover:bg-beige" data-action="inc" data-idx="' +
-          i +
-          '">+</button>' +
-          "</div>" +
-          '<div class="text-right">' +
-          '<p class="text-[15px] font-semibold tabular-nums">' +
-          money(lineTotal) +
-          "</p>" +
-          '<p class="text-[11px] text-stone">' +
-          i18n.from_price +
-          " " +
-          money(price) +
-          "</p>" +
-          "</div>" +
-          "</div>" +
-          "</div>" +
-          "</article>";
-      }
-
-      cartItemsEl.innerHTML = html;
-
-      // Summary + meta
-      cartSubtotalEl.textContent = money(subtotal);
-      if (cartLineCountEl)
-        cartLineCountEl.textContent = cart.length + " · " + totalQty + " " + i18n.cart_items_label;
-      if (cartMetaEl) cartMetaEl.textContent = cart.length + " " + i18n.cart_items_label;
-      const totalWeightEl = document.getElementById("cart-total-weight");
-      if (totalWeightEl)
-        totalWeightEl.textContent =
-          totalWeight > 0 ? "≈ " + totalWeight.toFixed(1) + " kg" : i18n.to_be_confirmed;
-
-      // Re-trigger reveal animations for injected nodes
-      if (window.__initReveal) window.__initReveal();
-    }
-
-    // ---- Cart interactions ----
-    document.addEventListener("click", function (e) {
-      const qtyBtn = e.target.closest(".cart-qty-btn");
-      if (qtyBtn) {
-        const idx = parseInt(qtyBtn.getAttribute("data-idx"));
-        const action = qtyBtn.getAttribute("data-action");
-        const cart = getCart();
-        if (cart[idx]) {
-          if (action === "inc") cart[idx].quantity++;
-          else if (action === "dec") cart[idx].quantity = Math.max(1, cart[idx].quantity - 1);
-          saveCart(cart);
-          renderCart();
-        }
-        return;
-      }
-      const removeBtn = e.target.closest(".cart-remove-btn");
-      if (removeBtn) {
-        const ridx = parseInt(removeBtn.getAttribute("data-idx"));
-        const rcart = getCart();
-        rcart.splice(ridx, 1);
-        saveCart(rcart);
-        renderCart();
-        return;
-      }
-    });
-
-    // Clear cart
-    document.getElementById("cart-clear").addEventListener("click", function () {
-      saveCart([]);
-      renderCart();
-    });
-
-    // Show order form
-    document.getElementById("cart-to-order").addEventListener("click", function () {
-      orderSection.classList.remove("hidden");
-      orderSection.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-
-    // ---- Submit order ----
-    orderForm.addEventListener("submit", function (e) {
-      e.preventDefault();
-      orderError.classList.add("hidden");
-
-      const form = new FormData(orderForm);
-      const cart = getCart();
-      if (cart.length === 0) return;
-
-      // Build items array (only product_id, variant_id, quantity — server recalculates price)
-      const items = cart.map(function (c) {
-        return { product_id: c.product_id, variant_id: c.variant_id, quantity: c.quantity };
-      });
-
-      const shippingMethod = (form.get("shipping_method") || "recommend").toString();
-      const noteRaw = (form.get("customer_note") || "").toString().trim();
-      const shippingLabel = SHIPPING_LABELS[shippingMethod] || shippingMethod;
-      const customerNote = "[Shipping: " + shippingLabel + "]" + (noteRaw ? " " + noteRaw : "");
-
-      const body = {
-        items: items,
-        customer_name: (form.get("customer_name") || "").toString().trim(),
-        company: (form.get("company") || "").toString().trim(),
-        email: (form.get("email") || "").toString().trim(),
-        country: (form.get("country") || "").toString().trim(),
-        city: (form.get("city") || "").toString().trim(),
-        address: (form.get("address") || "").toString().trim(),
-        postal_code: (form.get("postal_code") || "").toString().trim(),
-        phone: (form.get("phone") || "").toString().trim(),
-        whatsapp: (form.get("whatsapp") || "").toString().trim(),
-        customer_note: customerNote,
-        source_type: "cart",
-        source_url: window.location.href,
-        locale: locale,
-        "cf-turnstile-response": (form.get("cf-turnstile-response") || "").toString(),
-      };
-
-      // Basic validation
-      if (!body.customer_name || !body.email || !body.country) {
-        orderError.classList.remove("hidden");
-        return;
-      }
-
-      orderSubmit.disabled = true;
-      orderSubmit.textContent = i18n.order_submitting;
-
-      fetch("/api/commerce/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      })
-        .then(function (res) {
-          if (!res.ok) throw new Error("Order failed");
-          return res.json();
-        })
-        .then(function (data) {
-          // Success
-          saveCart([]);
-          orderSection.classList.add("hidden");
-          cartItemsEl.innerHTML = "";
-          cartSummaryEl.classList.add("hidden");
-          orderSuccess.classList.remove("hidden");
-          document.getElementById("success-order-number").textContent = data.order_number || "";
-          orderSuccess.scrollIntoView({ behavior: "smooth" });
-          trackEvent("request_order_submit", { order_number: data.order_number, locale: locale });
-        })
-        .catch(function () {
-          orderError.classList.remove("hidden");
-        })
-        .finally(function () {
-          orderSubmit.disabled = false;
-          orderSubmit.textContent = i18n.order_submit;
-        });
-    });
-
-    // ---- Init ----
-    fetchProducts().then(renderCart);
-  })();
-</script>
