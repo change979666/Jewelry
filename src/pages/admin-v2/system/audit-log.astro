@@ -107,8 +107,8 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
 
       // Pagination
       const pag = document.getElementById("audit-pagination")!;
-      if (window.AromisoPagination) {
-        window.AromisoPagination.render(null, pag, {
+      if (window.JewelryPagination) {
+        window.JewelryPagination.render(null, pag, {
           total: meta.total,
           page,
           totalPages: meta.totalPages,

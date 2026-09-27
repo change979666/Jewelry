@@ -53,9 +53,10 @@ const displayPrice = defaultVariant ? formattedPrice(defaultVariant.price, defau
         )}
 
         {/* Add to Cart Form */}
-        <form method="POST" action={`/${lang}/api/cart/add`} class="mt-8">
+        <form method="POST" action="/api/cart/add" class="mt-8">
           <input type="hidden" name="productId" value={product.id} />
           {defaultVariant && <input type="hidden" name="variantId" value={defaultVariant.id} />}
+          <input type="hidden" name="lang" value={lang} />
           
           <div class="flex items-center gap-4">
             <input type="number" name="quantity" min="1" value="1" class="border border-line rounded px-3 py-2 w-20" />

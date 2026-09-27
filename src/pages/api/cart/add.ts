@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getCommerce } from '../../../../lib/commerce';
+import { getCommerce } from '../../../lib/commerce';
 
 export const POST: APIRoute = async ({ request, cookies, locals, params, redirect }) => {
   const db = locals.runtime.env.DB;
@@ -29,5 +29,6 @@ export const POST: APIRoute = async ({ request, cookies, locals, params, redirec
 
   await commerce.cart.addItem(cartRow.id, productId, variantId, quantity);
 
-  return redirect(`/${params.lang}/cart`);
+  const lang = formData.get('lang') || 'en';
+  return redirect(`/${lang}/cart`);
 };

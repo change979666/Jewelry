@@ -4,7 +4,7 @@
  */
 import type { APIRoute } from "astro";
 
-const SITE = "https://aromiso.com";
+const SITE = "https://jewelry.com";
 
 export const GET: APIRoute = () => {
   const now = new Date().toISOString();

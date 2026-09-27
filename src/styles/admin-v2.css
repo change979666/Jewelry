@@ -1,5 +1,5 @@
 /* ===================================================================
- *  Aromiso Admin V2 — Unified Design System
+ *  Jewelry Admin V2 — Unified Design System
  *  Phase 2: Clean, modern, professional SaaS admin
  *  Extends global.css tokens (paper/beige/sand/ink/stone/accent)
  * =================================================================== */
@@ -16,7 +16,7 @@
   --surface: #ffffff;
   --surface-2: #efede8;
   --surface-3: #e9e6e0;
-  /* Brand accent (Aromiso terracotta) — accent only, never a page background */
+  /* Brand accent (Jewelry terracotta) — accent only, never a page background */
   --accent: #9a6a45;
   --accent-hover: #875b3a;
   --accent-active: #754c30;
@@ -597,7 +597,7 @@ html.dark {
   color: var(--ink);
 }
 
-/* ---- Shared Pagination (AromisoPagination) ---- */
+/* ---- Shared Pagination (JewelryPagination) ---- */
 .aro-pager {
   display: flex;
   align-items: center;
@@ -660,7 +660,7 @@ html.dark {
   }
 }
 
-/* ---- Sortable table headers (AromisoSort) ---- */
+/* ---- Sortable table headers (JewelrySort) ---- */
 th.sortable {
   cursor: pointer;
   user-select: none;
@@ -1825,7 +1825,7 @@ html.dark {
 
 /* =====================================================================
  * V5.57 — Executive Cockpit 视觉层（老板驾驶舱）
- * 设计语言：Linear 级暗色精度 × Aromiso 暖调品牌 DNA。
+ * 设计语言：Linear 级暗色精度 × Jewelry 暖调品牌 DNA。
  * 零标记改动：只做 token 精修与组件质感升级，类名与页面结构不变。
  * 默认主题 = 暗色驾驶舱（AdminShell 主题脚本同步调整），亮色保留可切回。
  * ===================================================================== */

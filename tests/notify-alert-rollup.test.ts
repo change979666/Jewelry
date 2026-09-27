@@ -37,8 +37,8 @@ function baseEnv(kv: MockKV): Env {
   return mockEnv({
     DRAFTS: kv as unknown as KVNamespace,
     RESEND_API_KEY: "test-key",
-    RESEND_TO: "owner@aromiso.com",
-    RESEND_FROM: "Aromiso AI <sales@aromiso.com>",
+    RESEND_TO: "owner@jewelry.com",
+    RESEND_FROM: "Jewelry AI <sales@jewelry.com>",
   });
 }
 

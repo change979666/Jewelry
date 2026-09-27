@@ -4,7 +4,7 @@
 import type { APIRoute } from "astro";
 import { getCollection } from "astro:content";
 
-const SITE = "https://aromiso.com";
+const SITE = "https://jewelry.com";
 const LOCALES = ["en", "es", "de"];
 
 function escapeXml(s: string): string {

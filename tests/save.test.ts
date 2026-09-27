@@ -21,9 +21,9 @@ async function authedRequest(body: unknown): Promise<Request> {
   const token = await newSession(PASSWORD);
   const headers = new Headers({
     "Content-Type": "application/json",
-    Cookie: `aromiso_admin=${encodeURIComponent(token)}`,
+    Cookie: `jewelry_admin=${encodeURIComponent(token)}`,
   });
-  return new Request("https://aromiso.com/api/admin/save", {
+  return new Request("https://jewelry.com/api/admin/save", {
     method: "POST",
     headers,
     body: JSON.stringify(body),
@@ -186,7 +186,7 @@ describe("save — server-side validation", () => {
   });
 
   it("unauthenticated request returns 401", async () => {
-    const req = new Request("https://aromiso.com/api/admin/save", {
+    const req = new Request("https://jewelry.com/api/admin/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ collection: "blog", key: "x", locale: "en" }),

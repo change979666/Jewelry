@@ -55,7 +55,7 @@ describe("login rate limiting", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.ok).toBe(true);
-    expect(res.headers.get("Set-Cookie")).toContain("aromiso_admin=");
+    expect(res.headers.get("Set-Cookie")).toContain("jewelry_admin=");
   });
 
   it("wrong password returns 401", async () => {

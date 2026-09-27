@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-//  Aromiso Admin — shared helpers
+//  Jewelry Admin — shared helpers
 //  Auth (HMAC-signed cookie), GitHub Contents API, Cloudflare KV drafts.
 //  Imported by the admin functions. Not a route itself (no onRequest export).
 // ---------------------------------------------------------------------------
@@ -10,7 +10,7 @@ import type { Env, GhContentItem } from "../../types";
 // `AdminEnv`; the canonical definition now lives in functions/types.ts.
 export type AdminEnv = Env;
 
-const COOKIE = "aromiso_admin";
+const COOKIE = "jewelry_admin";
 const SESSION_DAYS = 7;
 
 // ---- Crypto ----------------------------------------------------------------
@@ -75,7 +75,7 @@ export function isAuthed(request: Request, env: AdminEnv): Promise<boolean> {
 
 // ---- GitHub Contents API --------------------------------------------------
 export function repo(env: AdminEnv): string {
-  return env.ADMIN_GITHUB_REPO || "change979666/Aromiso";
+  return env.ADMIN_GITHUB_REPO || "change979666/Jewelry";
 }
 
 function ghHeaders(token: string): Record<string, string> {
@@ -85,7 +85,7 @@ function ghHeaders(token: string): Record<string, string> {
     "X-GitHub-Api-Version": "2022-11-28",
     "Content-Type": "application/json",
     // GitHub rejects requests without a User-Agent; Workers' fetch sends none by default.
-    "User-Agent": "Aromiso-CMS",
+    "User-Agent": "Jewelry-CMS",
   };
 }
 

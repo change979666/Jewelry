@@ -262,8 +262,8 @@ import Toast from "../../../components/admin/shared/Toast.astro";
         pagination.innerHTML = "";
         return;
       }
-      if (window.AromisoPagination) {
-        window.AromisoPagination.render(null, pagination, {
+      if (window.JewelryPagination) {
+        window.JewelryPagination.render(null, pagination, {
           total: meta.total,
           page: meta.page,
           totalPages: meta.totalPages,
@@ -322,8 +322,8 @@ import Toast from "../../../components/admin/shared/Toast.astro";
         const res = await fetch(`${API}?${params}`);
         const data = (await res.json()) as any;
         // M5/S12/F06：降级/部分失败的响应必须挂横幅，不能当成「媒体库就这么点」。
-        if (!window.AromisoNotifyDegraded?.(data, "媒体库")) {
-          window.AromisoNotifyDegraded?.(data?.data, "媒体库");
+        if (!window.JewelryNotifyDegraded?.(data, "媒体库")) {
+          window.JewelryNotifyDegraded?.(data?.data, "媒体库");
         }
         if (!data.success) {
           grid.innerHTML = `<div style="color:var(--admin-danger);">加载失败：${data?.error?.message || data?.error?.code || "未知错误"}</div>`;
@@ -478,7 +478,7 @@ import Toast from "../../../components/admin/shared/Toast.astro";
     function handleFiles(files: any) {
       for (const f of files) {
         if (f.size > 50 * 1024 * 1024) {
-          AromisoToast.warning(`${f.name} 超过 50MB 限制`);
+          JewelryToast.warning(`${f.name} 超过 50MB 限制`);
           continue;
         }
         pendingFiles.push(f);

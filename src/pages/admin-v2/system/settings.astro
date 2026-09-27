@@ -40,7 +40,7 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
 
 <script>
   const container = document.getElementById("settings-container")!;
-  const toast = (window as any).AromisoToast;
+  const toast = (window as any).JewelryToast;
   let allSettings: Record<string, { value: string; category: string; description: string }> = {};
 
   function esc(s: unknown): string {

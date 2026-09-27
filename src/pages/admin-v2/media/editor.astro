@@ -158,8 +158,8 @@ import Toast from "../../../components/admin/shared/Toast.astro";
       const res = await fetch(`${API}?pageSize=999`);
       const data = (await res.json()) as any;
       // M5/S12：降级响应必须挂横幅，否则看起来像「媒体文件未找到」。
-      if (!window.AromisoNotifyDegraded?.(data, "媒体编辑")) {
-        window.AromisoNotifyDegraded?.(data?.data, "媒体编辑");
+      if (!window.JewelryNotifyDegraded?.(data, "媒体编辑")) {
+        window.JewelryNotifyDegraded?.(data?.data, "媒体编辑");
       }
       if (!data.success) {
         $("#media-preview").innerHTML =
@@ -255,7 +255,7 @@ import Toast from "../../../components/admin/shared/Toast.astro";
       const type = $("#e-link-type").value;
       const eid = $("#e-link-id").value.trim();
       if (!type || !eid) {
-        AromisoToast.warning("请选择关联类型并输入 ID");
+        JewelryToast.warning("请选择关联类型并输入 ID");
         return;
       }
       await fetch(API, {

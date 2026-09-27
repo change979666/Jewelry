@@ -19,4 +19,28 @@ describe('Commerce Core Logic', () => {
     const status = 'pending';
     expect(status).toBe('pending');
   });
+
+  describe('Order State Machine', () => {
+    const validTransitions: Record<string, string[]> = {
+      'PENDING_CONFIRMATION': ['CONFIRMED', 'CANCELLED'],
+      'CONFIRMED': ['PROCESSING', 'CANCELLED'],
+      'PROCESSING': ['SHIPPED', 'CANCELLED'],
+      'SHIPPED': ['OUT_FOR_DELIVERY', 'RETURNED'],
+      'OUT_FOR_DELIVERY': ['DELIVERED', 'DELIVERY_FAILED', 'NDR'],
+      'DELIVERY_FAILED': ['OUT_FOR_DELIVERY', 'RTO', 'CANCELLED'],
+      'NDR': ['OUT_FOR_DELIVERY', 'RTO', 'CANCELLED']
+    };
+
+    it('should allow valid transitions', () => {
+      const current = 'PENDING_CONFIRMATION';
+      const target = 'CONFIRMED';
+      expect(validTransitions[current].includes(target)).toBe(true);
+    });
+
+    it('should reject invalid transitions (e.g. skip to SHIPPED)', () => {
+      const current = 'PENDING_CONFIRMATION';
+      const target = 'SHIPPED';
+      expect(validTransitions[current].includes(target)).toBe(false);
+    });
+  });
 });

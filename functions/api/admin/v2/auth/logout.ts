@@ -26,7 +26,7 @@ export async function onRequest(context: { request: Request; env: AdminEnv }) {
   }
 
   const cookieHeader = request.headers.get("Cookie") || "";
-  const match = cookieHeader.match(/aromiso_admin_v2=([^;]+)/);
+  const match = cookieHeader.match(/jewelry_admin_v2=([^;]+)/);
 
   // Finding 4: malformed percent-encoding → treat as invalid cookie (not 500).
   let token: string | null = null;
@@ -57,7 +57,7 @@ export async function onRequest(context: { request: Request; env: AdminEnv }) {
     });
   }
 
-  const v2Clear = `aromiso_admin_v2=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`;
+  const v2Clear = `jewelry_admin_v2=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`;
 
   return new Response(JSON.stringify({ success: true, data: null, error: null, meta: null }), {
     status: 200,

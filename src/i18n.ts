@@ -152,7 +152,7 @@ const dict: Record<string, any> = {
       solutions_downloads: "Download Center",
       resources_blog: "Blog & Insights",
       resources_downloads: "Download Center",
-      about_company: "About Aromiso",
+      about_company: "About Jewelry",
       about_factory: "Factory & Capabilities",
       about_certificates: "Certifications & Compliance",
       about_faq: "FAQ",
@@ -256,12 +256,12 @@ const dict: Record<string, any> = {
         "Complete English master product catalog covering the full home-fragrance range, series by series.",
     },
     site: {
-      name: "Aromiso",
+      name: "Jewelry",
       tagline: "Aroma Manufacturing & China Sourcing",
       description:
-        "Aromiso helps international buyers source premium aroma products and trusted factories across China — from essential oils to OEM/ODM manufacturing and consolidated shipping.",
+        "Jewelry helps international buyers source premium aroma products and trusted factories across China — from essential oils to OEM/ODM manufacturing and consolidated shipping.",
       address: "Yiwu, Zhejiang, China",
-      email: "sales@aromiso.com",
+      email: "sales@jewelry.com",
       phone: "+86-159-9322-8742",
     },
     a11y: {
@@ -277,8 +277,8 @@ const dict: Record<string, any> = {
       explore: "Explore Products",
       quote: "Request a Quote",
       cta_note: "Reply within 24 hours · No commitment",
-      image_alt: "Private-label aroma products manufactured by Aromiso",
-      card_eyebrow: "Why brands choose Aromiso",
+      image_alt: "Private-label aroma products manufactured by Jewelry",
+      card_eyebrow: "Why brands choose Jewelry",
       card_points: ["ISO 9001 & IFRA compliant", "MOQ from 500 units", "Samples in 7–10 days"],
       stat1_num: "40+",
       stat1_lbl: "Countries served",
@@ -311,7 +311,7 @@ const dict: Record<string, any> = {
       },
     ],
     why: {
-      eyebrow: "Why Aromiso",
+      eyebrow: "Why Jewelry",
       title: "A buying partner, not just a middleman",
       subtitle:
         "We de-risk your sourcing with verification, expertise, and end-to-end ownership of the process.",
@@ -570,7 +570,7 @@ const dict: Record<string, any> = {
     },
     blog: {
       eyebrow: "Insights",
-      title: "From the Aromiso journal",
+      title: "From the Jewelry journal",
       posts: [
         { t: "How to verify a Chinese factory before paying", c: "Sourcing" },
         { t: "Essential oil basics: notes, grades & blends", c: "Aroma" },
@@ -705,7 +705,7 @@ const dict: Record<string, any> = {
     },
     about: {
       page_title: "About Us",
-      meta: "Aromiso is a Yiwu-based aroma manufacturer and sourcing partner since 2013 — private-label candles, essential oils and reed diffusers for importers, brand owners and retailers worldwide.",
+      meta: "Jewelry is a Yiwu-based aroma manufacturer and sourcing partner since 2013 — private-label candles, essential oils and reed diffusers for importers, brand owners and retailers worldwide.",
       eyebrow: "Who we are",
       title: "Bridging the world to China's aroma industry since 2013",
       who_title: "Who we help",
@@ -813,10 +813,10 @@ const dict: Record<string, any> = {
     },
     shop: {
       nav_label: "Shop",
-      page_title: "Aromiso Wholesale",
+      page_title: "Jewelry Wholesale",
       page_subtitle:
         "Curated aroma products from China's supply chain — transparent specs, MOQ, pricing and sourcing support for international buyers.",
-      eyebrow: "Aromiso Wholesale",
+      eyebrow: "Jewelry Wholesale",
       browse_products: "Browse Products",
       request_oem: "Request OEM Quote",
       all: "All",
@@ -1013,7 +1013,7 @@ const dict: Record<string, any> = {
       shipping_method_sea: "Sea Freight",
       shipping_method_air: "Air Freight",
       shipping_method_express: "Express / Courier",
-      shipping_method_recommend: "Let Aromiso recommend",
+      shipping_method_recommend: "Let Jewelry recommend",
       additional_requirements: "Additional Requirements",
       bulk_quote_note:
         "Submit your bulk purchase request. We confirm stock and international freight, then send your final quote. No payment required now.",
@@ -1179,7 +1179,7 @@ const dict: Record<string, any> = {
       solutions_downloads: "Centro de descargas",
       resources_blog: "Blog y artículos",
       resources_downloads: "Centro de descargas",
-      about_company: "Sobre Aromiso",
+      about_company: "Sobre Jewelry",
       about_factory: "Fábrica y capacidades",
       about_certificates: "Certificaciones y cumplimiento",
       about_faq: "Preguntas frecuentes",
@@ -1278,12 +1278,12 @@ const dict: Record<string, any> = {
         "Catálogo maestro completo en inglés que cubre toda la gama de ambientación para el hogar, serie por serie.",
     },
     site: {
-      name: "Aromiso",
+      name: "Jewelry",
       tagline: "Fabricación de aromas y abastecimiento en China",
       description:
-        "Aromiso ayuda a los compradores internacionales a obtener productos aromáticos de primera calidad y fábricas confiables en toda China.",
+        "Jewelry ayuda a los compradores internacionales a obtener productos aromáticos de primera calidad y fábricas confiables en toda China.",
       address: "Yiwu, Zhejiang, China",
-      email: "sales@aromiso.com",
+      email: "sales@jewelry.com",
       phone: "+86-159-9322-8742",
     },
     a11y: {
@@ -1299,8 +1299,8 @@ const dict: Record<string, any> = {
       explore: "Explorar productos",
       quote: "Solicitar cotización",
       cta_note: "Respuesta en 24 horas · Sin compromiso",
-      image_alt: "Productos aromáticos de marca blanca fabricados por Aromiso",
-      card_eyebrow: "Por qué las marcas eligen Aromiso",
+      image_alt: "Productos aromáticos de marca blanca fabricados por Jewelry",
+      card_eyebrow: "Por qué las marcas eligen Jewelry",
       card_points: [
         "Cumplimiento ISO 9001 e IFRA",
         "MOQ desde 500 unidades",
@@ -1337,7 +1337,7 @@ const dict: Record<string, any> = {
       },
     ],
     why: {
-      eyebrow: "Por qué Aromiso",
+      eyebrow: "Por qué Jewelry",
       title: "Un socio de compra, no solo un intermediario",
       subtitle:
         "Reducimos el riesgo de su abastecimiento con verificación, experiencia y propiedad de extremo a extremo del proceso.",
@@ -1603,7 +1603,7 @@ const dict: Record<string, any> = {
     },
     blog: {
       eyebrow: "Perspectivas",
-      title: "Del diario de Aromiso",
+      title: "Del diario de Jewelry",
       posts: [
         { t: "Cómo verificar una fábrica china antes de pagar", c: "Abastecimiento" },
         { t: "Lo básico sobre aceites esenciales: notas, grados y mezclas", c: "Aroma" },
@@ -1739,7 +1739,7 @@ const dict: Record<string, any> = {
     },
     about: {
       page_title: "Sobre Nosotros",
-      meta: "Aromiso es un fabricante y socio de abastecimiento de aromas con sede en Yiwu desde 2013 — velas, aceites esenciales y difusores de marca privada para importadores, marcas y minoristas de todo el mundo.",
+      meta: "Jewelry es un fabricante y socio de abastecimiento de aromas con sede en Yiwu desde 2013 — velas, aceites esenciales y difusores de marca privada para importadores, marcas y minoristas de todo el mundo.",
       eyebrow: "Quiénes somos",
       title: "Conectando el mundo con la industria de aromas de China desde 2013",
       who_title: "A quién ayudamos",
@@ -1847,10 +1847,10 @@ const dict: Record<string, any> = {
     },
     shop: {
       nav_label: "Tienda",
-      page_title: "Aromiso Wholesale",
+      page_title: "Jewelry Wholesale",
       page_subtitle:
         "Productos aromáticos seleccionados de la cadena de suministro de China: especificaciones, MOQ y precios transparentes para compradores internacionales.",
-      eyebrow: "Aromiso Wholesale",
+      eyebrow: "Jewelry Wholesale",
       browse_products: "Ver Productos",
       request_oem: "Solicitar Cotización OEM",
       all: "Todos",
@@ -2050,7 +2050,7 @@ const dict: Record<string, any> = {
       shipping_method_sea: "Flete Marítimo",
       shipping_method_air: "Flete Aéreo",
       shipping_method_express: "Express / Mensajería",
-      shipping_method_recommend: "Que Aromiso recomiende",
+      shipping_method_recommend: "Que Jewelry recomiende",
       additional_requirements: "Requisitos Adicionales",
       bulk_quote_note:
         "Envíe su solicitud de compra al por mayor. Confirmamos stock y flete internacional, luego enviamos su cotización final. Sin pago por ahora.",
@@ -2217,7 +2217,7 @@ const dict: Record<string, any> = {
       solutions_downloads: "Download-Center",
       resources_blog: "Blog & Insights",
       resources_downloads: "Download-Center",
-      about_company: "Über Aromiso",
+      about_company: "Über Jewelry",
       about_factory: "Fabrik & Kapazitäten",
       about_certificates: "Zertifizierungen & Konformität",
       about_faq: "Häufige Fragen",
@@ -2317,12 +2317,12 @@ const dict: Record<string, any> = {
         "Vollständiger englischer Gesamtkatalog mit der gesamten Home-Fragrance-Range, Serie für Serie.",
     },
     site: {
-      name: "Aromiso",
+      name: "Jewelry",
       tagline: "Aroma-Herstellung & Beschaffung in China",
       description:
-        "Aromiso hilft internationalen Käufern, hochwertige Aroma-Produkte und vertrauenswürdige Fabriken in ganz China zu beziehen — von ätherischen Ölen bis zu OEM/ODM-Fertigung und konsolidiertem Versand.",
+        "Jewelry hilft internationalen Käufern, hochwertige Aroma-Produkte und vertrauenswürdige Fabriken in ganz China zu beziehen — von ätherischen Ölen bis zu OEM/ODM-Fertigung und konsolidiertem Versand.",
       address: "Yiwu, Zhejiang, China",
-      email: "sales@aromiso.com",
+      email: "sales@jewelry.com",
       phone: "+86-159-9322-8742",
     },
     a11y: {
@@ -2338,8 +2338,8 @@ const dict: Record<string, any> = {
       explore: "Produkte entdecken",
       quote: "Angebot anfordern",
       cta_note: "Antwort innerhalb von 24 Stunden · Ohne Verpflichtung",
-      image_alt: "Private-Label-Aroma-Produkte von Aromiso",
-      card_eyebrow: "Warum Marken Aromiso wählen",
+      image_alt: "Private-Label-Aroma-Produkte von Jewelry",
+      card_eyebrow: "Warum Marken Jewelry wählen",
       card_points: ["ISO 9001 & IFRA konform", "MOQ ab 500 Einheiten", "Muster in 7–10 Tagen"],
       stat1_num: "40+",
       stat1_lbl: "Länder bedient",
@@ -2372,7 +2372,7 @@ const dict: Record<string, any> = {
       },
     ],
     why: {
-      eyebrow: "Warum Aromiso",
+      eyebrow: "Warum Jewelry",
       title: "Ein Beschaffungspartner, nicht nur ein Zwischenhändler",
       subtitle:
         "Wir reduzieren Ihr Beschaffungsrisiko durch Verifizierung, Fachwissen und durchgängige Prozessverantwortung.",
@@ -2639,7 +2639,7 @@ const dict: Record<string, any> = {
     },
     blog: {
       eyebrow: "Einblicke",
-      title: "Aus dem Aromiso-Journal",
+      title: "Aus dem Jewelry-Journal",
       posts: [
         { t: "So verifizieren Sie eine chinesische Fabrik vor der Zahlung", c: "Beschaffung" },
         { t: "Grundlagen ätherischer Öle: Noten, Qualitäten & Mischungen", c: "Aroma" },
@@ -2774,7 +2774,7 @@ const dict: Record<string, any> = {
     },
     about: {
       page_title: "Über uns",
-      meta: "Aromiso ist Aroma-Hersteller und Beschaffungspartner in Yiwu seit 2013 — Private-Label-Kerzen, ätherische Öle und Diffusoren für Importeure, Marken und Händler weltweit.",
+      meta: "Jewelry ist Aroma-Hersteller und Beschaffungspartner in Yiwu seit 2013 — Private-Label-Kerzen, ätherische Öle und Diffusoren für Importeure, Marken und Händler weltweit.",
       eyebrow: "Wer wir sind",
       title: "Brücke zur chinesischen Aroma-Industrie seit 2013",
       who_title: "Wem wir helfen",
@@ -2892,10 +2892,10 @@ const dict: Record<string, any> = {
     },
     shop: {
       nav_label: "Shop",
-      page_title: "Aromiso Wholesale",
+      page_title: "Jewelry Wholesale",
       page_subtitle:
         "Kuratierte Aromaprodukte aus Chinas Lieferkette — transparente Spezifikationen, MOQ, Preise und Beschaffungsunterstützung für internationale Einkäufer.",
-      eyebrow: "Aromiso Wholesale",
+      eyebrow: "Jewelry Wholesale",
       browse_products: "Produkte Ansehen",
       request_oem: "OEM-Angebot Anfordern",
       all: "Alle",
@@ -3094,7 +3094,7 @@ const dict: Record<string, any> = {
       shipping_method_sea: "Seefracht",
       shipping_method_air: "Luftfracht",
       shipping_method_express: "Express / Kurier",
-      shipping_method_recommend: "Aromiso empfiehlt",
+      shipping_method_recommend: "Jewelry empfiehlt",
       additional_requirements: "Zusätzliche Anforderungen",
       bulk_quote_note:
         "Senden Sie Ihre Großbestellanfrage. Wir bestätigen Warenbestand und internationalen Fracht, dann senden wir Ihr finales Angebot. Keine Zahlung jetzt nötig.",

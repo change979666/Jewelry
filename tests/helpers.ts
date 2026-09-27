@@ -170,7 +170,7 @@ export function mockEnv(overrides?: Partial<Env>): Env {
 export function mockRequest(body: unknown, opts?: { ip?: string; method?: string }): Request {
   const headers = new Headers({ "Content-Type": "application/json" });
   if (opts?.ip) headers.set("CF-Connecting-IP", opts.ip);
-  return new Request("https://aromiso.com/api/admin/test", {
+  return new Request("https://jewelry.com/api/admin/test", {
     method: opts?.method || "POST",
     headers,
     body: JSON.stringify(body),

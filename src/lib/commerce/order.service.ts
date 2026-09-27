@@ -71,6 +71,24 @@ export class OrderService {
   }
 
   async updateOrderStatus(orderId: string, status: string, reason?: string): Promise<void> {
+    const order = await this.getOrder(orderId);
+    if (!order) throw new Error("Order not found");
+
+    const validTransitions: Record<string, string[]> = {
+      'PENDING_CONFIRMATION': ['CONFIRMED', 'CANCELLED'],
+      'CONFIRMED': ['PROCESSING', 'CANCELLED'],
+      'PROCESSING': ['SHIPPED', 'CANCELLED'],
+      'SHIPPED': ['OUT_FOR_DELIVERY', 'RETURNED'],
+      'OUT_FOR_DELIVERY': ['DELIVERED', 'DELIVERY_FAILED', 'NDR'],
+      'DELIVERY_FAILED': ['OUT_FOR_DELIVERY', 'RTO', 'CANCELLED'],
+      'NDR': ['OUT_FOR_DELIVERY', 'RTO', 'CANCELLED']
+    };
+
+    const allowed = validTransitions[order.order_status] || [];
+    if (!allowed.includes(status)) {
+      throw new Error(`Invalid transition from ${order.order_status} to ${status}`);
+    }
+
     await this.db.prepare(`UPDATE orders SET order_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(status, orderId).run();
     await this.addOrderEvent(orderId, status, reason || 'Status updated manually');
   }

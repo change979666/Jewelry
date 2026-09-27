@@ -156,13 +156,13 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
         body: JSON.stringify({ status: newStatus }),
       });
       const json = (await res.json()) as any;
-      (window as any).AromisoToast?.show({
+      (window as any).JewelryToast?.show({
         message: json.success ? `用户已${action}` : json.error?.message || `${action}失败`,
         type: json.success ? "success" : "error",
       });
       loadUsers();
     } catch (_e) {
-      (window as any).AromisoToast?.show({ message: "网络错误", type: "error" });
+      (window as any).JewelryToast?.show({ message: "网络错误", type: "error" });
     }
   }
 
@@ -181,13 +181,13 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
     try {
       const res = await fetch(`/api/admin/v2/system/users/${id}`, { method: "DELETE" });
       const json = (await res.json()) as any;
-      (window as any).AromisoToast?.show({
+      (window as any).JewelryToast?.show({
         message: json.success ? "用户已删除" : json.error?.message || "删除失败",
         type: json.success ? "success" : "error",
       });
       loadUsers();
     } catch (_e) {
-      (window as any).AromisoToast?.show({ message: "网络错误", type: "error" });
+      (window as any).JewelryToast?.show({ message: "网络错误", type: "error" });
     }
   }
 
@@ -213,7 +213,7 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
     const password = (document.getElementById("user-password") as HTMLInputElement).value;
     const roleId = (document.getElementById("user-role") as unknown as HTMLSelectElement).value;
     if (!username) {
-      (window as any).AromisoToast?.show({ message: "用户名不能为空", type: "error" });
+      (window as any).JewelryToast?.show({ message: "用户名不能为空", type: "error" });
       return;
     }
 
@@ -227,7 +227,7 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
           body: JSON.stringify(body),
         });
         const json = (await res.json()) as any;
-        (window as any).AromisoToast?.show({
+        (window as any).JewelryToast?.show({
           message: json.success ? "用户已更新" : json.error?.message || "更新失败",
           type: json.success ? "success" : "error",
         });
@@ -236,11 +236,11 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
           loadUsers();
         }
       } catch (_e) {
-        (window as any).AromisoToast?.show({ message: "网络错误", type: "error" });
+        (window as any).JewelryToast?.show({ message: "网络错误", type: "error" });
       }
     } else {
       if (!password) {
-        (window as any).AromisoToast?.show({ message: "密码不能为空", type: "error" });
+        (window as any).JewelryToast?.show({ message: "密码不能为空", type: "error" });
         return;
       }
       try {
@@ -250,7 +250,7 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
           body: JSON.stringify({ username, password, role_id: roleId }),
         });
         const json = (await res.json()) as any;
-        (window as any).AromisoToast?.show({
+        (window as any).JewelryToast?.show({
           message: json.success ? "用户已创建" : json.error?.message || "创建失败",
           type: json.success ? "success" : "error",
         });
@@ -259,7 +259,7 @@ import Skeleton from "../../../components/admin/shared/Skeleton.astro";
           loadUsers();
         }
       } catch (_e) {
-        (window as any).AromisoToast?.show({ message: "网络错误", type: "error" });
+        (window as any).JewelryToast?.show({ message: "网络错误", type: "error" });
       }
     }
   });

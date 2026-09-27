@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-//  Aromiso — Content access layer
+//  Jewelry — Content access layer
 //  Thin wrappers over Astro's getCollection for blog & products, scoped by
 //  locale. Used by list + detail pages. Cross-locale `key` lets detail pages
 //  build hreflang alternates.

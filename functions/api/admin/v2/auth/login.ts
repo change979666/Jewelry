@@ -1,7 +1,7 @@
 // Phase 2 Auth — V2 Login endpoint
 // W1: Per-user password (HMAC-SHA256 vs admin_users.password_hash, constant-time compare)
 // F3: IP-based login rate limiting (KV, 5 attempts / 5-minute window, 15-minute cooldown)
-// Cookie: aromiso_admin_v2 (JWT-style HMAC token with username embedded)
+// Cookie: jewelry_admin_v2 (JWT-style HMAC token with username embedded)
 
 import type { AdminEnv } from "../../../admin/shared";
 import { json } from "../../../admin/shared";
@@ -204,7 +204,7 @@ export async function onRequest(context: { request: Request; env: AdminEnv }) {
   }
 
   const token = await newV2Token(username, env);
-  const cookie = `aromiso_admin_v2=${encodeURIComponent(token)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${7 * 24 * 3600}`;
+  const cookie = `jewelry_admin_v2=${encodeURIComponent(token)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${7 * 24 * 3600}`;
 
   await logAction(env, {
     actor_type: "human",

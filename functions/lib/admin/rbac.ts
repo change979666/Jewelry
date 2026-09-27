@@ -158,7 +158,7 @@ export async function authenticateRequest(
 ): Promise<AuthUser | null> {
   // First try V2 RBAC: check for V2 session cookie
   const v2Cookie = request.headers.get("Cookie") || "";
-  const v2Match = v2Cookie.match(/aromiso_admin_v2=([^;]+)/);
+  const v2Match = v2Cookie.match(/jewelry_admin_v2=([^;]+)/);
   if (v2Match) {
     const { verifyV2Token, sha256Hex } = await import("../../api/admin/v2/auth/login");
     // Finding 4: malformed percent-encoding → treat as invalid cookie (not 500).

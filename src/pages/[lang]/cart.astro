@@ -49,16 +49,18 @@ const currency = items.length > 0 ? items[0].variant.currency : 'SAR';
                 <p class="text-sm text-stone mt-1">{formattedPrice(item.variant.price, item.variant.currency)}</p>
               </div>
               <div class="flex items-center gap-2">
-                <form method="POST" action={`/${lang}/api/cart/update`}>
+                <form method="POST" action="/api/cart/update">
                   <input type="hidden" name="itemId" value={item.id} />
+                  <input type="hidden" name="lang" value={lang} />
                   <input type="number" name="quantity" value={item.quantity} min="0" class="border border-line rounded w-16 px-2 py-1" onchange="this.form.submit()" />
                 </form>
               </div>
               <div class="font-semibold w-24 text-right">
                 {formattedPrice(item.variant.price * item.quantity, item.variant.currency)}
               </div>
-              <form method="POST" action={`/${lang}/api/cart/remove`}>
+              <form method="POST" action="/api/cart/remove">
                 <input type="hidden" name="itemId" value={item.id} />
+                <input type="hidden" name="lang" value={lang} />
                 <button type="submit" class="text-red-500 hover:text-red-700 p-2">&times;</button>
               </form>
             </div>
