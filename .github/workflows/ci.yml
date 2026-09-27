@@ -20,7 +20,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20 # 与 .nvmrc 保持一致
+          node-version: 22 # 与 .nvmrc / .node-version 保持一致（wrangler 4.x 要求 Node >=22）
           cache: npm
 
       - run: npm ci

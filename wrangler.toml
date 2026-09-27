@@ -1,39 +1,29 @@
 # ============================================================================
-#  Jewelry DTC �?Cloudflare Pages configuration (V1.0)
-#  Completely isolated from the legacy Jewelry project: new D1 / R2 / KV.
+#  Jewelry DTC — Cloudflare Pages configuration (V1.0)
+#  Completely isolated from the legacy Aromiso project: new D1 / R2 / KV.
 #
-#  STATUS: resources created (Free plan) and ids wired in below.
-#
-#  Create resources (run once, after `wrangler login`):
-#    wrangler d1 create jewelry-db
-#    wrangler r2 bucket create jewelry-images
-#    wrangler kv namespace create DRAFTS
-#  Then paste the returned ids into this file and set the secrets:
-#    wrangler pages secret put ADMIN_PASSWORD
-#    wrangler pages secret put SILICONFLOW_API_KEY
+#  Bindings below are read by `wrangler pages deploy` / Workers Builds.
+#  After any change here, push to main → Cloudflare Pages applies bindings.
 # ============================================================================
 
 name = "jewelry"
 pages_build_output_dir = "dist"
 compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]  # Astro SSR + Web Crypto need nodejs_compat
 
-# KV namespace for CMS drafts (create: wrangler kv namespace create DRAFTS)
+# KV namespace for CMS drafts (rate-limit / token cache)
 [[kv_namespaces]]
 binding = "DRAFTS"
 id = "ff88490bc647479ab03290014c971056"
 
-# D1 database �?Jewelry Commerce Core (create: wrangler d1 create jewelry-db)
+# D1 database — Jewelry Commerce Core
 [[d1_databases]]
 binding = "DB"
 database_name = "jewelry-db"
 database_id = "a820e393-3744-478e-9a1b-9e9fb1e80363"
 migrations_dir = "migrations"
 
-# R2 bucket �?product & media images (create: wrangler r2 bucket create jewelry-images)
+# R2 bucket — product & media images
 [[r2_buckets]]
 binding = "IMAGES"
 bucket_name = "jewelry-images"
-
-# NOTE: the legacy Jewelry "KB" R2 binding (Jewelry-kb knowledge base) is not
-# carried over. If a Jewelry knowledge/asset bucket is needed later it can be
-# added as a new binding without touching the Commerce Core.
