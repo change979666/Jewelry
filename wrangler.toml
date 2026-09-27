@@ -8,6 +8,11 @@
 
 name = "jewelry"
 pages_build_output_dir = "dist"
+
+# Workers Builds reads this from wrangler.toml (BETA). Without it the Git
+# integration skips the build step and fails on the missing dist/ directory.
+[build]
+command = "npm run build"
 compatibility_date = "2024-11-01"
 compatibility_flags = ["nodejs_compat"]  # Astro SSR + Web Crypto need nodejs_compat
 
